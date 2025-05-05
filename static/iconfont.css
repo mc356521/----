@@ -1,0 +1,84 @@
+@font-face {
+  font-family: 'iconfont';
+  src: url('https://at.alicdn.com/t/font_3044557_nm5o24o1oh.ttf') format('truetype');
+}
+
+.iconfont {
+  font-family: 'iconfont';
+}
+
+.icon-user::before {
+  content: '\e7ae';
+}
+
+.icon-lock::before {
+  content: '\e7c9';
+}
+
+.icon-eye-slash::before {
+  content: '\e8ef';
+}
+
+.icon-eye::before {
+  content: '\e7aa';
+}
+
+.icon-weixin::before {
+  content: '\e606';
+}
+
+.icon-qq::before {
+  content: '\e615';
+}
+
+.icon-mobile::before {
+  content: '\e785';
+}
+
+.icon-home::before {
+  content: '\e7c6';
+}
+
+.icon-trophy::before {
+  content: '\e8aa';
+}
+
+.icon-users::before {
+  content: '\e8b5';
+}
+
+.icon-plus::before {
+  content: '\e8fe';
+}
+
+.icon-search::before {
+  content: '\e82e';
+}
+
+.icon-calendar::before {
+  content: '\e7d3';
+}
+
+.icon-project::before {
+  content: '\e64f';
+}
+
+.icon-clock::before {
+  content: '\e74f';
+}
+
+.icon-team::before {
+  content: '\e7b4';
+}
+
+.icon-fire::before {
+  content: '\e842';
+}
+
+.icon-graduation::before {
+  content: '\e7f1';
+}
+
+.icon-idcard::before {
+  content: '\e75e';
+} 
