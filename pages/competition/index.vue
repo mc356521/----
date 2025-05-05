@@ -111,8 +111,8 @@
                 <text class="iconfont icon-calendar"></text>
                 <text class="date-text">{{ isUpcoming(item) ? '报名开始' : '报名截止' }}: {{ formatDate(isUpcoming(item) ? item.registrationStart : item.registrationDeadline) }}</text>
               </view>
-              <view class="action-btn" :class="{'disabled-btn': item.status === '1'}">
-                {{ item.status === '1' ? '提醒我' : '查看详情' }}
+              <view class="action-btn" :class="{'disabled-btn': item.status === '0' || item.status === '3'}">
+                {{ getActionText(item.status) }}
               </view>
             </view>
           </view>
@@ -268,74 +268,7 @@ export default {
               icon: 'none'
             });
           }
-        } else {
-          // 接口请求失败时使用模拟数据
-          console.log('获取竞赛列表失败，使用模拟数据');
-          setTimeout(() => {
-            this.competitionList = [
-              {
-                id: 1,
-                title: '互联网+创新创业大赛',
-                categoryName: '创新创业',
-                level: '国家级',
-                status: '0',
-                statusText: '报名中',
-                registrationDeadline: '2025-05-15T23:59:59',
-                registrationStart: '2025-04-01T00:00:00',
-                coverImageUrl: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=500',
-                shortDescription: '国内顶级创新创业赛事，培养创新精神和实践能力',
-                teamSize: 3,
-                teamMax: 5,
-                isHot: true
-              },
-              {
-                id: 2,
-                title: '全国大学生数学建模竞赛',
-                categoryName: '学科竞赛',
-                level: '国家级',
-                status: '0',
-                statusText: '报名中',
-                registrationDeadline: '2025-08-20T23:59:59',
-                registrationStart: '2025-07-15T00:00:00',
-                coverImageUrl: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=500',
-                shortDescription: '全国规模最大的数学建模竞赛',
-                teamSize: 3,
-                teamMax: 3,
-                isHot: true
-              },
-              {
-                id: 3,
-                title: '挑战杯创业计划大赛',
-                categoryName: '创新创业',
-                level: '省级',
-                status: '0',
-                statusText: '报名中',
-                registrationDeadline: '2025-06-10T23:59:59',
-                registrationStart: '2025-05-01T00:00:00',
-                coverImageUrl: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=500',
-                shortDescription: '中国大学生创业计划竞赛，侧重商业计划书',
-                teamSize: 4,
-                teamMax: 6,
-                isHot: true
-              },
-              {
-                id: 4,
-                title: 'ACM程序设计大赛',
-                categoryName: '科技竞赛',
-                level: '校级',
-                status: '1',
-                statusText: '即将开始',
-                registrationDeadline: '2025-06-01T23:59:59',
-                registrationStart: '2025-05-25T00:00:00',
-                coverImageUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=500',
-                shortDescription: '国际大学生程序设计竞赛，考验算法和编程能力',
-                teamSize: 3,
-                teamMax: 3,
-                isHot: false
-              }
-            ];
-          }, 300);
-        }
+        } 
       } catch (error) {
         console.error('获取竞赛列表失败:', error);
         uni.showToast({
@@ -386,11 +319,13 @@ export default {
     getStatusClass(status) {
       switch(status) {
         case '0':
-          return 'status-active';
+          return 'status-upcoming';  // 未开始 - 灰色
         case '1':
-          return 'status-upcoming';
+          return 'status-active';    // 报名中 - 绿色
         case '2':
-          return 'status-ended';
+          return 'status-ongoing';   // 进行中 - 蓝色
+        case '3':
+          return 'status-ended';     // 已截止 - 灰色
         default:
           return '';
       }
@@ -405,9 +340,9 @@ export default {
       return `${month}月${day}日`;
     },
     
-    // 是否为报名前期
+    // 是否为报名前期（未开始）
     isUpcoming(item) {
-      return item.status === '1';
+      return item.status === '0';
     },
     
     // 选择分类
@@ -453,6 +388,21 @@ export default {
           });
         }
       });
+    },
+    
+    // 获取操作按钮文本
+    getActionText(status) {
+      switch(status) {
+        case '0':
+          return '提醒我';
+        case '1':
+        case '2':
+          return '查看详情';
+        case '3':
+          return '查看结果';
+        default:
+          return '查看详情';
+      }
     }
   }
 }
@@ -462,12 +412,13 @@ export default {
 @import '../../static/iconfont.css';
 
 // 颜色变量
-$primary-color: #3B82F6;
+$primary-color: #247ae4;
 $background-color: #f8fafc;
 $card-color: #ffffff;
 $text-color: #333333;
 $text-secondary: #6B7280;
-$text-muted: #9CA3AF;
+$text-muted: #344347;
+$text-muted2: #d6d6d6;
 $shadow-sm: 0 2rpx 6rpx rgba(0, 0, 0, 0.05);
 $shadow-md: 0 4rpx 10rpx rgba(0, 0, 0, 0.1);
 $border-radius-lg: 16rpx;
@@ -484,9 +435,11 @@ $category-purple-bg: #EDE9FE;
 $category-purple-text: #7C3AED;
 
 // 状态标签颜色
-$status-active-bg: #6B7280;
-$status-upcoming-bg: #22d384;
-$status-ended-bg: #EF4444;
+$status-active-bg: #10b981;    // 报名中 - 绿色
+$status-upcoming-bg: #6b7280;  // 未开始 - 灰色
+$status-ongoing-bg: #2679cc;   // 进行中 - 蓝色  
+$status-ended-bg: #6b7280;     // 已截止 - 灰色
+$status-color-bg: #2679cc;     // 底部按钮 - 蓝色
 
 // 混合器
 @mixin flex-center {
@@ -750,6 +703,10 @@ page {
           background-color: $status-upcoming-bg;
         }
         
+        &.status-ongoing {
+          background-color: $status-ongoing-bg;
+        }
+        
         &.status-ended {
           background-color: $status-ended-bg;
         }
@@ -844,13 +801,13 @@ page {
         .action-btn {
           padding: 8rpx 20rpx;
           border-radius: $border-radius-full;
-          background-color: $primary-color;
-          color: white;
+          background-color: $status-color-bg;
+          color: rgb(255, 255, 255);
           font-size: 24rpx;
           
           &.disabled-btn {
-            background-color: #E5E7EB;
-            color: $text-muted;
+            background-color: #e5e7eb;
+            color: #9ca3af;
           }
         }
       }

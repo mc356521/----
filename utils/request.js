@@ -43,8 +43,8 @@ const requestInterceptor = (config) => {
   // 添加token到请求头
   const token = getToken();
   if (token) {
-    // 确保token只包含ISO-8859-1字符集的字符
-    config.header['Authorization'] = `Bearer ${encodeURIComponent(token)}`;
+    // 直接使用token，不进行额外的编码
+    config.header['Authorization'] = `Bearer ${token}`;
   }
   
   // 默认添加内容类型

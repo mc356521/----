@@ -62,24 +62,6 @@ const emit = defineEmits(['tab-change', 'publish']);
 function switchTab(tab) {
   if (tab !== props.activeTab) {
     emit('tab-change', tab);
-    // 直接在组件内处理跳转
-    if (tab === 'home') {
-      uni.switchTab({
-        url: '/pages/index/index'
-      });
-    } else if (tab === 'competition') {
-      uni.switchTab({
-        url: '/pages/competition/index'
-      });
-    } else if (tab === 'team') {
-      uni.switchTab({
-        url: '/pages/team/list'
-      });
-    } else if (tab === 'profile') {
-      uni.switchTab({
-        url: '/pages/profile/index'
-      });
-    }
   }
 }
 

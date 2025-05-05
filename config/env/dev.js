@@ -3,7 +3,7 @@
  */
 export default {
   // API基础路径（使用代理地址）
-  baseUrl: 'http://103.38.83.91:8080',
+  baseUrl: 'http://localhost:8080',
 
   // 超时时间
   timeout: 60000,

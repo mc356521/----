@@ -180,8 +180,8 @@ async function handleLogin() {
     
     // 登录成功，跳转到首页
     setTimeout(() => {
-      uni.navigateTo({
-      	url:'/pages/index/index'
+      uni.switchTab({
+        url: '/pages/index/index'
       })
     }, 1500);
   } catch (error) {
