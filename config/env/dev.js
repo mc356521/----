@@ -2,14 +2,15 @@
  * 开发环境配置
  */
 export default {
-  // API基础路径
-  baseUrl: '/api',
+  // API基础路径（使用代理地址）
+  baseUrl: 'http://103.38.83.91:8080',
+
   // 超时时间
   timeout: 60000,
   // 上传接口
-  uploadUrl: 'http://localhost:3000/api/upload',
+  uploadUrl: '/api/upload',
   // WebSocket地址
-  wsUrl: 'ws://localhost:3000/ws',
+  wsUrl: 'ws://localhost:8080/ws',
   // 调试模式
   debug: true,
   // 版本号

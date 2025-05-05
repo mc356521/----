@@ -3,9 +3,17 @@
  */
 export default {
   // API基础路径
-  baseUrl: '/api',
+  baseUrl: 'https://test-api.example.com',
   // 超时时间
-  timeout: 60000,
+  timeout: 45000,
+  // 上传接口
+  uploadUrl: '/api/upload',
+  // WebSocket地址
+  wsUrl: 'wss://test-api.example.com/ws',
+  // 调试模式
+  debug: true,
+  // 版本号
+  version: '1.0.0',
   // 环境名称
-  env: 'development'
+  env: 'test'
 }; 

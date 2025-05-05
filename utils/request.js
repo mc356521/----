@@ -6,14 +6,46 @@ import { getEnv } from '@/config/env';
 // 获取当前环境配置
 const env = getEnv();
 
+// 调试输出环境配置
+if (env.debug) {
+  console.log('当前API环境配置:', env);
+  console.log('API基础路径:', env.baseUrl);
+  if (env.actualBaseUrl) {
+    console.log('实际API地址:', env.actualBaseUrl);
+  }
+}
+
+// 存储token的key
+const TOKEN_KEY = 'auth_token';
+
+/**
+ * 获取本地存储的token
+ * @returns {String} token字符串
+ */
+const getToken = () => {
+  return uni.getStorageSync(TOKEN_KEY) || '';
+};
+
+/**
+ * 设置token到本地存储
+ * @param {String} token - 要存储的token
+ */
+const setToken = (token) => {
+  uni.setStorageSync(TOKEN_KEY, token);
+};
+
 /**
  * 请求拦截器
  * @param {Object} config - 请求配置
  * @returns {Object} 处理后的请求配置
  */
 const requestInterceptor = (config) => {
-  // 这里可以添加通用请求头，如token等
-  // 示例: config.header.Authorization = 'Bearer xxx';
+  // 添加token到请求头
+  const token = getToken();
+  if (token) {
+    // 确保token只包含ISO-8859-1字符集的字符
+    config.header['Authorization'] = `Bearer ${encodeURIComponent(token)}`;
+  }
   
   // 默认添加内容类型
   if (!config.header['Content-Type']) {
@@ -29,49 +61,46 @@ const requestInterceptor = (config) => {
  * @returns {Promise} 处理后的响应Promise
  */
 const responseInterceptor = (response) => {
-  // 请求成功，但业务状态可能失败
+  // 请求成功
   if (response.statusCode === 200) {
-    // API 返回格式统一为 { code, data, message }
-    const { code, data, message } = response.data;
-    
-    // 成功
-    if (code === 0 || code === 200) {
-      return Promise.resolve(data);
-    } 
-    // token 失效，需要重新登录
-    else if (code === 401) {
-      // 显示错误提示
-      uni.showToast({
-        title: '登录已过期，请重新登录',
-        icon: 'none'
-      });
-      
-      // 可以在这里处理登录失效逻辑
-      // 例如跳转到登录页
-      uni.navigateTo({
-        url: '/pages/login/login'
-      });
-      
-      return Promise.reject(new Error(message || '登录已过期，请重新登录'));
-    } 
-    // 其他业务错误
-    else {
-      // 显示错误提示
-      uni.showToast({
-        title: message || '请求失败',
-        icon: 'none'
-      });
-      
-      return Promise.reject(new Error(message || '请求失败'));
+    // 仅处理登录接口的token
+    if (response.config && response.config.url && 
+        (response.config.url.includes('/users/login') || response.config.url.includes('/user/login'))) {
+      // 登录接口直接返回data
+      if (response.data && response.data.data) {
+        setToken(response.data.data);
+        if (env.debug) {
+          console.log('已保存token:', response.data.data);
+        }
+        return Promise.resolve(response.data);
+      }
     }
+    
+    // 直接返回响应数据，不做解包处理
+    return Promise.resolve(response.data);
   } 
   // HTTP 状态码错误
   else {
+    const errorMsg = `请求失败: ${response.statusCode}`;
+    
     // 显示错误提示
     uni.showToast({
-      title: `请求失败: ${response.statusCode}`,
+      title: errorMsg,
       icon: 'none'
     });
+    
+    // 对特定状态码做特殊处理
+    if (response.statusCode === 401 || response.statusCode === 403) {
+      // 清除本地token
+      setToken('');
+      
+      // 跳转到登录页
+      setTimeout(() => {
+        uni.navigateTo({
+          url: '/pages/login/login'
+        });
+      }, 1500);
+    }
     
     return Promise.reject(new Error(`HTTP错误: ${response.statusCode}`));
   }
@@ -90,7 +119,7 @@ const request = (options) => {
     data: options.data || {},
     params: options.params || {},
     header: options.header || {},
-    timeout: options.timeout || 60000
+    timeout: options.timeout || env.timeout || 60000
   };
 
   // 将GET请求参数处理到URL
@@ -100,6 +129,13 @@ const request = (options) => {
       .join('&');
     
     config.url = `${config.url}${config.url.includes('?') ? '&' : '?'}${queryString}`;
+  }
+
+  if (env.debug) {
+    console.log(`${config.method} 请求:`, config.url);
+    if (config.data && Object.keys(config.data).length > 0) {
+      console.log('请求数据:', config.data);
+    }
   }
 
   // 请求拦截
@@ -114,12 +150,23 @@ const request = (options) => {
       header: interceptedConfig.header,
       timeout: interceptedConfig.timeout,
       success: (res) => {
+        if (env.debug) {
+          console.log('响应数据:', res);
+        }
+        
+        // 将原始请求配置附加到响应对象
+        res.config = interceptedConfig;
+        
         // 响应拦截
         responseInterceptor(res)
           .then(data => resolve(data))
           .catch(error => reject(error));
       },
       fail: (err) => {
+        if (env.debug) {
+          console.error('请求失败:', err);
+        }
+        
         uni.showToast({
           title: '网络错误，请检查网络连接',
           icon: 'none'
@@ -130,4 +177,9 @@ const request = (options) => {
   });
 };
 
-export default request; 
+// 导出请求函数和token相关工具
+export default request;
+export {
+  getToken,
+  setToken
+}; 

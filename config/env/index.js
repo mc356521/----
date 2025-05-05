@@ -30,4 +30,8 @@ export const getEnv = () => {
 
 export default {
   getEnv
-}; 
+};
+
+// 导出当前环境的配置项
+const config = getEnv();
+export const { baseUrl, version } = config; 

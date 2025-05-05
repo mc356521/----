@@ -13,6 +13,55 @@
 				"navigationBarTitleText": "校园任务与组队平台",
 				"navigationStyle": "custom"
 			}
+		},
+		{
+			"path": "pages/team/detail",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "队伍详情",
+				"enablePullDownRefresh": true
+			}
+		},
+		{
+			"path": "pages/team/list",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "组队广场",
+				"enablePullDownRefresh": true
+			}
+		},
+		{
+			"path": "pages/team/create",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "创建团队",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/competition/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "竞赛广场",
+				"enablePullDownRefresh": true,
+				"onReachBottomDistance": 50
+			}
+		},
+		{
+			"path": "pages/competition/detail",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "竞赛详情",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/profile/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "个人中心",
+				"enablePullDownRefresh": false
+			}
 		}
 	],
 	"globalStyle": {
@@ -28,6 +77,32 @@
 		"color": "#9CA3AF",
 		"selectedColor": "#3B82F6",
 		"backgroundColor": "#FFFFFF",
-		"borderStyle": "black"
+		"borderStyle": "black",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "首页",
+				"iconPath": "static/tabbar/home.png",
+				"selectedIconPath": "static/tabbar/home-active.png"
+			},
+			{
+				"pagePath": "pages/competition/index",
+				"text": "竞赛",
+				"iconPath": "static/tabbar/competition.png",
+				"selectedIconPath": "static/tabbar/competition-active.png"
+			},
+			{
+				"pagePath": "pages/team/list",
+				"text": "组队",
+				"iconPath": "static/tabbar/team.png",
+				"selectedIconPath": "static/tabbar/team-active.png"
+			},
+			{
+				"pagePath": "pages/profile/index",
+				"text": "我的",
+				"iconPath": "static/tabbar/profile.png",
+				"selectedIconPath": "static/tabbar/profile-active.png"
+			}
+		]
 	}
 }

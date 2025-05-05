@@ -1,22 +1,18 @@
 @font-face {
   font-family: 'iconfont';
-  src: url('https://at.alicdn.com/t/font_3044557_nm5o24o1oh.ttf') format('truetype');
+  src: url('iconfont/iconfont.ttf') format('truetype');
 }
 
 .iconfont {
-  font-family: 'iconfont';
+  font-family: "iconfont" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .icon-user::before {
   content: '\e7ae';
-}
-
-.icon-lock::before {
-  content: '\e7c9';
-}
-
-.icon-eye-slash::before {
-  content: '\e8ef';
 }
 
 .icon-eye::before {
@@ -24,14 +20,10 @@
 }
 
 .icon-weixin::before {
-  content: '\e606';
+  content: '\e607';
 }
 
 .icon-qq::before {
-  content: '\e615';
-}
-
-.icon-mobile::before {
   content: '\e785';
 }
 
@@ -52,7 +44,7 @@
 }
 
 .icon-search::before {
-  content: '\e82e';
+  content: '\e8ef';
 }
 
 .icon-calendar::before {
@@ -68,7 +60,7 @@
 }
 
 .icon-team::before {
-  content: '\e7b4';
+  content: '\e603';
 }
 
 .icon-fire::before {
@@ -76,9 +68,86 @@
 }
 
 .icon-graduation::before {
-  content: '\e7f1';
+  content: '\e60a';
 }
 
-.icon-idcard::before {
-  content: '\e75e';
-} 
+/* 新增图标 */
+.icon-spark::before {
+  content: '\e842'; /* 使用火焰图标作为火花图标 */
+}
+
+.icon-arrow-left::before {
+  content: '\e6e2';
+}
+
+.icon-star::before {
+  content: '\e732';
+}
+
+.icon-share::before {
+  content: '\e739';
+}
+
+.icon-check-circle::before {
+  content: '\e77d';
+}
+
+.icon-hourglass::before {
+  content: '\e786';
+}
+
+.icon-times-circle::before {
+  content: '\e780';
+}
+
+.icon-paper-plane::before {
+  content: '\e916';
+}
+
+.icon-phone::before {
+  content: '\e7e3';
+}
+
+.icon-user-plus::before {
+  content: '\e7d5';
+}
+
+.icon-edit::before {
+  content: '\e78c';
+}
+
+.icon-trash::before {
+  content: '\e7c4';
+}
+
+.icon-signout::before {
+  content: '\e78c';
+}
+
+.icon-filter::before {
+  content: '\e699';
+}
+
+.icon-location::before {
+  content: '\e650';
+}
+
+.icon-star-outline::before {
+  content: '\e7df';
+}
+
+.icon-time::before {
+  content: '\e65f';
+}
+
+.icon-settings:before {
+  content: "\e78e";
+}
+
+.icon-feedback:before {
+  content: "\e7cb";
+}
+
+.icon-info-circle:before {
+  content: "\e7dc";
+}

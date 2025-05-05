@@ -20,7 +20,7 @@
         <view class="input-field">
           <view class="input-content">
             <text class="iconfont icon-user"></text>
-            <input type="text" placeholder="学号/手机号" class="form-input" v-model="loginForm.phoneNumber" />
+            <input type="text" placeholder="学号/手机号" class="form-input" v-model="loginForm.phone" />
           </view>
         </view>
         
@@ -49,7 +49,7 @@
         <view class="input-field">
           <view class="input-content">
             <text class="iconfont icon-mobile"></text>
-            <input type="text" placeholder="手机号" class="form-input" v-model="registerForm.phoneNumber" />
+            <input type="text" placeholder="手机号" class="form-input" v-model="registerForm.phone" />
           </view>
         </view>
         
@@ -129,12 +129,12 @@ const isRegistering = ref(false);
 
 // 表单数据
 const loginForm = reactive({
-  phoneNumber: '',
+  phone: '',
   password: ''
 });
 
 const registerForm = reactive({
-  phoneNumber: '',
+  phone: '',
   password: '',
   realName: '',
   schoolId: 1,
@@ -159,7 +159,7 @@ function togglePasswordVisibility() {
 
 // 登录
 async function handleLogin() {
-  if (!loginForm.phoneNumber || !loginForm.password) {
+  if (!loginForm.phone || !loginForm.password) {
     uni.showToast({
       title: '请输入手机号和密码',
       icon: 'none'
@@ -169,7 +169,7 @@ async function handleLogin() {
   
   try {
     const res = await api.user.login({
-      phoneNumber: loginForm.phoneNumber,
+      phone: loginForm.phone,
       password: loginForm.password
     });
     
@@ -180,9 +180,9 @@ async function handleLogin() {
     
     // 登录成功，跳转到首页
     setTimeout(() => {
-      uni.switchTab({
-        url: '/pages/index/index'
-      });
+      uni.navigateTo({
+      	url:'/pages/index/index'
+      })
     }, 1500);
   } catch (error) {
     uni.showToast({
@@ -195,7 +195,7 @@ async function handleLogin() {
 // 注册
 async function handleRegister() {
   // 表单验证
-  if (!registerForm.phoneNumber) {
+  if (!registerForm.phone) {
     uni.showToast({
       title: '请输入手机号',
       icon: 'none'

@@ -12,6 +12,9 @@ app.$mount()
 
 // #ifdef VUE3
 import { createSSRApp } from 'vue'
+import { getEnv } from '@/config/env'
+const env = getEnv()
+
 export function createApp() {
   const app = createSSRApp(App)
   return {
