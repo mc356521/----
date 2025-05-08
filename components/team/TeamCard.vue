@@ -107,11 +107,11 @@ const showHotIcon = computed(() => {
 
 const isPulse = computed(() => {
   // 状态为招募中或status等于0时
-  return props.team.status === '0' || props.team.statusText === '组队中';
+  return props.team.status === '0' || props.team.statusText === '招募中';
 });
 
 const positions = computed(() => {
-  // 兼容两种不同的数据结构
+  // 兼容不同的数据结构
   return props.team.positions || props.team.roles || [];
 });
 
@@ -119,17 +119,25 @@ const avatars = computed(() => {
   // 兼容两种不同的数据结构
   if (props.team.avatars) return props.team.avatars;
   if (props.team.teamMemberAvatars) {
-    // 过滤掉无效的头像URL
-    return props.team.teamMemberAvatars.filter(avatar => 
-      avatar && !avatar.includes('.pdf')
-    );
+    // 如果是字符串，尝试分割
+    if (typeof props.team.teamMemberAvatars === 'string') {
+      return props.team.teamMemberAvatars.split(',').filter(avatar => 
+        avatar && !avatar.includes('.pdf')
+      );
+    }
+    // 如果是数组，直接过滤
+    if (Array.isArray(props.team.teamMemberAvatars)) {
+      return props.team.teamMemberAvatars.filter(avatar => 
+        avatar && !avatar.includes('.pdf')
+      );
+    }
   }
   return [];
 });
 
 const canJoin = computed(() => {
   // 判断是否可以加入
-  return props.team.status === '0' || props.team.statusText === '组队中';
+  return props.team.status === '0' || props.team.statusText === '招募中';
 });
 
 const hasProgress = computed(() => {

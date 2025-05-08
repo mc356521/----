@@ -25,8 +25,9 @@
         </view>
         
         <view class="input-field">
+			
           <view class="input-content">
-            <text class="iconfont icon-lock"></text>
+            <text class="iconfont icon-user"></text>
             <input type="text" placeholder="密码" class="form-input" v-model="loginForm.password" :password="showPassword" />
             <text class="iconfont" :class="showPassword ? 'icon-eye-slash' : 'icon-eye'" @click="togglePasswordVisibility"></text>
           </view>
@@ -167,11 +168,23 @@ async function handleLogin() {
     return;
   }
   
+  // 显示加载指示器
+  uni.showLoading({
+    title: '正在登录...',
+    mask: true
+  });
+  
   try {
+    console.log('正在连接登录服务器...');
     const res = await api.user.login({
       phone: loginForm.phone,
       password: loginForm.password
     });
+    
+    // 关闭加载指示器
+    uni.hideLoading();
+    
+    console.log('登录响应:', res);
     
     uni.showToast({
       title: '登录成功',
@@ -182,12 +195,18 @@ async function handleLogin() {
     setTimeout(() => {
       uni.switchTab({
         url: '/pages/index/index'
-      })
+      });
     }, 1500);
   } catch (error) {
+    console.error('登录失败:', error);
+    
+    // 关闭加载指示器
+    uni.hideLoading();
+    
     uni.showToast({
-      title: error.message || '登录失败',
-      icon: 'none'
+      title: error.message || '登录失败，请检查网络连接或服务器配置',
+      icon: 'none',
+      duration: 3000
     });
   }
 }

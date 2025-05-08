@@ -12,7 +12,9 @@
  * api.user.register({...});
  */
 
-// 导入各模块API
+/**
+ * API模块集中导出
+ */
 import userApi from './modules/user';
 import teamApi from './modules/team';
 import competitionsApi from './modules/competitions';

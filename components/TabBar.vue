@@ -1,5 +1,5 @@
 <template>
-  <view class="tab-bar">
+  <view class="tab-bar" :class="{ 'dark-mode': isDarkMode }">
     <view 
       class="tab-item" 
       :class="{ active: activeTab === 'home' }" 
@@ -46,7 +46,8 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue';
+import { defineProps, defineEmits, computed, ref, onMounted } from 'vue';
+import userApi from '@/api/modules/user';
 
 const props = defineProps({
   activeTab: {
@@ -56,18 +57,139 @@ const props = defineProps({
   }
 });
 
+// 用户角色
+const userRole = ref('');
+
+// 获取用户角色
+async function getUserRole() {
+  try {
+    const res = await userApi.getUserRole();
+    if (res.code === 200 && res.data) {
+      userRole.value = res.data;
+      console.log('当前用户角色:', userRole.value);
+    }
+  } catch (error) {
+    console.error('获取用户角色失败:', error);
+  }
+}
+
+// 组件挂载时获取用户角色
+onMounted(() => {
+  const token = uni.getStorageSync('token');
+  if (token) {
+    getUserRole();
+  }
+});
+
+// 根据当前页面自动判断是否使用深色模式
+const isDarkMode = computed(() => {
+  return props.activeTab === 'team';
+});
+
 const emit = defineEmits(['tab-change', 'publish']);
 
 // 切换底部标签
 function switchTab(tab) {
   if (tab !== props.activeTab) {
-    emit('tab-change', tab);
+    // 直接使用uni.switchTab进行页面切换
+    const tabRoutes = {
+      'home': '/pages/index/index',
+      'competition': '/pages/competition/index',
+      'team': '/pages/team/list',
+      'profile': '/pages/profile/index'
+    };
+    
+    uni.switchTab({
+      url: tabRoutes[tab],
+      fail: (err) => {
+        console.error('切换Tab失败:', err);
+        // 如果切换失败，仍然触发事件，让父组件处理
+        emit('tab-change', tab);
+      }
+    });
   }
 }
 
 // 显示发布选项
 function showPublishOptions() {
-  emit('publish');
+  // 检查是否登录
+  const token = uni.getStorageSync('token');
+  if (!token) {
+    uni.showModal({
+      title: '提示',
+      content: '请先登录后再操作',
+      confirmText: '去登录',
+      success: function(res) {
+        if (res.confirm) {
+          uni.navigateTo({
+            url: '/pages/login/login'
+          });
+        }
+      }
+    });
+    return;
+  }
+  
+  console.log('当前token:', token);
+  
+  // 如果还没获取到角色，先获取用户角色
+  if (!userRole.value) {
+    console.log('开始获取用户角色...');
+    userApi.getUserRole(token).then(res => {
+      console.log('获取角色成功, 完整响应:', res);
+      if (res.code === 200 && res.data) {
+        userRole.value = res.data;
+        console.log('设置当前用户角色:', userRole.value);
+        showPublishMenu();
+      } else {
+        console.warn('获取角色返回异常:', res);
+        showPublishMenu(); // 仍然显示菜单，但不包含管理员选项
+      }
+    }).catch(err => {
+      console.error('获取用户角色失败:', err);
+      console.error('错误详情:', JSON.stringify(err));
+      // 出错时也显示菜单，但不包含管理员选项
+      showPublishMenu();
+    });
+  } else {
+    console.log('使用缓存角色信息:', userRole.value);
+    showPublishMenu();
+  }
+}
+
+// 显示发布菜单
+function showPublishMenu() {
+  const options = ['创建队伍', '发布任务'];
+  
+  // 如果是管理员，添加创建竞赛选项
+  if (userRole.value === 'admin') {
+    options.unshift('创建竞赛');
+  }
+  
+  uni.showActionSheet({
+    itemList: options,
+    success: function(res) {
+      const index = res.tapIndex;
+      
+      // 根据选择的选项跳转到相应页面
+      if (index === 1) {
+        // 创建团队
+        uni.navigateTo({
+          url: '/pages/team/create'
+        });
+      } else if (index === 2) {
+        // 招募队友
+        uni.navigateTo({
+          url: '/pages/team/create?mode=recruit'
+        });
+      } else if (index === 0 && userRole.value === 'admin') {
+        // 创建竞赛（仅管理员可见）
+        uni.navigateTo({
+          url: '/pages/competition/create'
+        });
+      }
+    }
+  });
 }
 </script>
 
@@ -97,7 +219,31 @@ $text-muted: #36364e;
   justify-content: space-around;
   align-items: center;
   box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
-  z-index: 100;
+  z-index: 1000; /* 提高z-index，确保显示在最上层 */
+  
+  /* 确保在深色页面上也能正常显示 */
+  &.dark-mode {
+    background-color: #222222;
+    box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.2);
+    
+    .tab-item {
+      .iconfont, .tab-text {
+        color: #b3b3b3;
+      }
+      
+      &.active {
+        .iconfont, .tab-text {
+          color: $primary-color;
+        }
+      }
+    }
+    
+    .publish-btn-container {
+      .publish-text {
+        color: #b3b3b3;
+      }
+    }
+  }
   
   .tab-item {
     flex: 1;
@@ -132,7 +278,7 @@ $text-muted: #36364e;
       bottom: 10rpx;
       width: 40rpx;
       height: 6rpx;
-  
+      background-color: $primary-color;
       border-radius: 3rpx;
     }
   }
@@ -142,6 +288,8 @@ $text-muted: #36364e;
     flex-direction: column;
     align-items: center;
     width: 120rpx;
+    position: relative;
+    flex: 0 0 120rpx; /* 固定宽度，不伸缩 */
     
     .publish-btn {
       width: 100rpx;

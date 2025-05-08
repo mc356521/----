@@ -6,12 +6,20 @@ import request from '@/utils/request';
 const teamApi = {
   /**
    * 获取团队列表
+   * @param {Object} params - 查询参数
+   * @param {Number} params.pageNum - 页码
+   * @param {Number} params.pageSize - 每页条数
+   * @param {String} params.keyword - 搜索关键词
+   * @param {Number} params.categoryId - 分类ID
+   * @param {Number} params.competitionId - 竞赛ID
+   * @param {Boolean} params.orderByViewCount - 是否按浏览量排序
    * @returns {Promise} 团队列表的Promise对象
    */
-  getTeamList() {
+  getTeamList(params = {}) {
     return request({
       url: '/teams/list',
-      method: 'GET'
+      method: 'GET',
+      params
     });
   },
   
@@ -21,17 +29,9 @@ const teamApi = {
    * @returns {Promise} 团队详情的Promise对象
    */
   getTeamDetail(id) {
-    return new Promise((resolve, reject) => {
-      request({
-        url: `/teams/${id}`,
-        method: 'GET'
-      }).then(res => {
-        resolve(res);
-      }).catch(err => {
-        console.log('使用模拟数据');
-        // 当API请求失败时，返回模拟数据
-        resolve(mockTeamDetail(id));
-      });
+    return request({
+      url: `/teams/${id}`,
+      method: 'GET'
     });
   },
   
@@ -54,7 +54,7 @@ const teamApi = {
    */
   createTeam(data) {
     return request({
-      url: '/teams/create',
+      url: '/teams',
       method: 'POST',
       data
     });
@@ -62,72 +62,125 @@ const teamApi = {
   
   /**
    * 申请加入团队
-   * @param {Number} teamId 团队ID
-   * @param {Object} data 申请数据
+   * @param {Object} data - 申请数据
+   * @param {Number} data.teamId - 要申请的队伍ID
+   * @param {Number} data.roleId - 要申请的角色ID
+   * @param {String} data.message - 申请留言
    * @returns {Promise} 申请结果的Promise对象
    */
-  joinTeam(teamId, data) {
+  applyTeam(data) {
     return request({
-      url: `/teams/${teamId}/join`,
+      url: '/team-applications',
       method: 'POST',
       data
     });
   },
   
   /**
-   * 申请特定角色
-   * @param {Number} teamId - 团队ID
-   * @param {Number} roleId - 角色ID
-   * @param {Object} data - 申请数据
+   * 获取我的申请列表
+   * @param {Object} params - 查询参数
+   * @param {String} params.status - 按申请状态筛选
+   * @param {Number} params.pageNum - 页码
+   * @param {Number} params.pageSize - 每页数量
    * @returns {Promise} 请求结果Promise对象
    */
-  applyRole(teamId, roleId, data) {
+  getMyApplications(params = {}) {
     return request({
-      url: `/teams/${teamId}/roles/${roleId}/apply`,
-      method: 'POST',
-      data
+      url: '/team-applications/list',
+      method: 'GET',
+      params: { ...params, role: 'applicant' }
     });
   },
   
   /**
-   * 编辑团队信息
-   * @param {Number} teamId - 团队ID
-   * @param {Object} data - 更新的团队信息
+   * 获取我收到的申请列表 (队长)
+   * @param {Object} params - 查询参数
+   * @param {Number} params.teamId - 按队伍ID筛选
+   * @param {String} params.status - 按申请状态筛选
+   * @param {Number} params.pageNum - 页码
+   * @param {Number} params.pageSize - 每页数量
    * @returns {Promise} 请求结果Promise对象
    */
-  updateTeam(teamId, data) {
+  getTeamApplications(params = {}) {
     return request({
-      url: `/teams/${teamId}`,
+      url: '/team-applications/list',
+      method: 'GET',
+      params: { ...params, role: 'leader' }
+    });
+  },
+  
+  /**
+   * 处理队伍申请 (队长)
+   * @param {Number} id - 申请ID
+   * @param {Object} data - 处理数据
+   * @param {String} data.status - 处理结果: "approved" 或 "rejected"
+   * @param {String} data.reviewNotes - 处理备注
+   * @returns {Promise} 请求结果Promise对象
+   */
+  handleApplication(id, data) {
+    return request({
+      url: `/team-applications/${id}`,
       method: 'PUT',
       data
     });
   },
   
   /**
-   * 解散团队
+   * 取消申请 (申请者)
+   * @param {Number} id - 申请ID
+   * @returns {Promise} 请求结果Promise对象
+   */
+  cancelApplication(id) {
+    return request({
+      url: `/team-applications/${id}`,
+      method: 'DELETE'
+    });
+  },
+  
+  /**
+   * 检查用户是否申请或加入队伍
+   * @param {Number} teamId - 队伍ID
+   * @returns {Promise} 请求结果Promise对象
+   */
+  checkTeamStatus(teamId) {
+    return request({
+      url: `/teams/${teamId}/has-applied`,
+      method: 'GET'
+    });
+  },
+  
+  /**
+   * 解散团队 (队长)
    * @param {Number} teamId - 团队ID
    * @returns {Promise} 请求结果Promise对象
    */
   disbandTeam(teamId) {
     return request({
-      url: `/teams/${teamId}/disband`,
+      url: `/teams/${teamId}/dissolve`,
       method: 'POST'
     });
   },
   
   /**
-   * 退出团队
+   * 退出团队 (队员)
    * @param {String|Number} teamId - 团队ID
    * @returns {Promise} 请求结果Promise对象
    */
   leaveTeam(teamId) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          code: 200,
-          message: "已成功退出团队"
-        });
-      }, 500);
+    return request({
+      url: `/team-members/teams/${teamId}`,
+      method: 'DELETE'
+    });
+  },
+  
+  /**
+   * 获取我的队伍列表
+   * @returns {Promise} 请求结果Promise对象
+   */
+  getMyTeams() {
+    return request({
+      url: '/teams/my',
+      method: 'GET'
     });
   }
 };

@@ -191,242 +191,385 @@
   </view>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue';
+<script>
 import teamApi from '@/api/modules/team';
 
-const defaultAvatar = 'https://randomuser.me/api/portraits/men/1.jpg';
-
-// 页面参数
-const teamId = ref(null);
-const teamInfo = ref({});
-const teamMembers = ref([]);
-const showPhone = ref(false);
-const isLoading = ref(true);
-
-// 计算属性
-const isTeamMember = computed(() => {
-  // 检查当前用户是否是团队成员
-  // 需要根据实际存储的用户数据来实现
-  return false;
-});
-
-const isTeamLeader = computed(() => {
-  // 检查当前用户是否是团队队长
-  // 需要根据实际存储的用户数据来实现
-  return false;
-});
-
-const hasAvailableRoles = computed(() => {
-  if (!teamInfo.value.roles) return false;
-  return teamInfo.value.roles.some(role => role.currentCount < role.requiredCount);
-});
-
-// 方法
-function getStatusClass(status) {
-  switch (status) {
-    case '0': return 'status-recruiting';
-    case '1': return 'status-filled';
-    case '2': return 'status-disbanded';
-    default: return 'status-recruiting';
-  }
-}
-
-function getStatusIcon(status) {
-  switch (status) {
-    case '0': return 'icon-check-circle';
-    case '1': return 'icon-hourglass';
-    case '2': return 'icon-times-circle';
-    default: return 'icon-check-circle';
-  }
-}
-
-function hidePhone(phone) {
-  if (!phone) return '';
-  // 隐藏中间四位数字
-  return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
-}
-
-function togglePhone() {
-  showPhone.value = !showPhone.value;
-}
-
-function copyText(text) {
-  uni.setClipboardData({
-    data: text,
-    success: () => {
-      uni.showToast({
-        title: '复制成功',
-        icon: 'success'
-      });
+export default {
+  data() {
+    return {
+      defaultAvatar: '/static/images/default-avatar.png',
+      teamId: null,
+      teamInfo: {},
+      teamMembers: [],
+      showPhone: false,
+      isLoading: true,
+      userInfo: null,
+      hasApplied: false, // 是否已申请加入
+      isTeamMember: false, // 是否是团队成员
+      isTeamLeader: false, // 是否是团队队长
+      applyLoading: false // 申请按钮加载状态
+    };
+  },
+  
+  computed: {
+    hasAvailableRoles() {
+      if (!this.teamInfo.roles) return false;
+      return this.teamInfo.roles.some(role => role.currentCount < role.requiredCount);
     }
-  });
-}
-
-function goBack() {
-  uni.navigateBack();
-}
-
-function goToCompetition(competitionId) {
-  uni.navigateTo({
-    url: `/pages/competition/detail?id=1`
-  });
-}
-
-function applyRole(roleId) {
-  uni.showModal({
-    title: '申请加入',
-    content: '确定要申请该角色吗？',
-    success: (res) => {
-      if (res.confirm) {
-        // 调用申请接口
-        uni.showToast({
-          title: '申请已提交',
-          icon: 'success'
-        });
-      }
-    }
-  });
-}
-
-function showApplyOptions() {
-  // 如果有多个可申请角色，显示选择框
-  if (teamInfo.value.roles && teamInfo.value.roles.length > 0) {
-    const availableRoles = teamInfo.value.roles.filter(role => role.currentCount < role.requiredCount);
-    
-    if (availableRoles.length > 1) {
-      const itemList = availableRoles.map(role => `${role.name}（${role.currentCount}/${role.requiredCount}）`);
-      
-      uni.showActionSheet({
-        itemList,
-        success: (res) => {
-          applyRole(availableRoles[res.tapIndex].id);
-        }
-      });
-    } else if (availableRoles.length === 1) {
-      applyRole(availableRoles[0].id);
-    }
-  }
-}
-
-function editTeam() {
-  uni.navigateTo({
-    url: `/pages/team/edit?id=${teamId.value}`
-  });
-}
-
-function disbandTeam() {
-  uni.showModal({
-    title: '解散队伍',
-    content: '确定要解散该队伍吗？此操作不可撤销',
-    confirmColor: '#f56c6c',
-    success: (res) => {
-      if (res.confirm) {
-        // 调用解散队伍接口
-        uni.showToast({
-          title: '队伍已解散',
-          icon: 'success'
-        });
-      }
-    }
-  });
-}
-
-function leaveTeam() {
-  uni.showModal({
-    title: '退出队伍',
-    content: '确定要退出该队伍吗？',
-    confirmColor: '#f56c6c',
-    success: (res) => {
-      if (res.confirm) {
-        // 调用退出队伍接口
-        teamApi.leaveTeam(teamId.value).then(() => {
-          uni.showToast({
-            title: '已退出队伍',
-            icon: 'success',
-            success: () => {
-              setTimeout(() => {
-                uni.navigateBack();
-              }, 1500);
-            }
-          });
-        }).catch(err => {
-          uni.showToast({
-            title: '退出失败',
-            icon: 'none'
-          });
-        });
-      }
-    }
-  });
-}
-
-// 获取队伍成员数据
-async function getTeamMembers() {
-  try {
-    const res = await teamApi.getTeamMembers(teamId.value);
-    if (res && res.code === 200 && res.data) {
-      teamMembers.value = res.data;
-      console.log('获取到队伍成员:', teamMembers.value);
-    } else {
-      console.log('获取队伍成员失败:', res?.message);
-    }
-  } catch (error) {
-    console.error('获取队伍成员出错', error);
-  }
-}
-
-// 获取队伍详情数据
-async function getTeamDetail() {
-  isLoading.value = true;
-  try {
-    const res = await teamApi.getTeamDetail(teamId.value);
-    if (res && res.code === 200 && res.data) {
-      teamInfo.value = res.data;
-      console.log('获取到队伍详情:', teamInfo.value);
-      // 获取队伍成员
-      getTeamMembers();
+  },
+  
+  // 页面生命周期函数
+  onLoad(option) {
+    console.log('队伍详情页面参数:', option);
+    if (option && option.id) {
+      this.teamId = option.id;
+      this.getUserInfo();
+      this.getTeamDetail();
     } else {
       uni.showToast({
-        title: res?.message || '获取队伍详情失败',
+        title: '队伍ID不能为空',
         icon: 'none'
       });
-      console.log('获取队伍详情失败:', res);
+      setTimeout(() => {
+        uni.navigateBack();
+      }, 1500);
     }
-  } catch (error) {
-    console.error('获取队伍详情出错', error);
-    uni.showToast({
-      title: '网络异常，请稍后重试',
-      icon: 'none'
-    });
-  } finally {
-    isLoading.value = false;
+  },
+  
+  onShow() {
+    // 每次页面显示时检查用户信息和团队状态
+    this.getUserInfo();
+    if (this.teamId) {
+      this.checkTeamStatus();
+    }
+  },
+  
+  methods: {
+    // 获取当前用户信息
+    getUserInfo() {
+      const userInfo = uni.getStorageSync('userInfo');
+      if (userInfo) {
+        this.userInfo = typeof userInfo === 'string' ? JSON.parse(userInfo) : userInfo;
+      }
+    },
+    
+    // 检查用户与团队的关系状态
+    async checkTeamStatus() {
+      if (!this.userInfo || !this.userInfo.userId) return;
+      
+      try {
+        const res = await teamApi.checkTeamStatus(this.teamId);
+        if (res.code === 200) {
+          this.hasApplied = res.data === true;
+        }
+      } catch (error) {
+        console.error('检查团队状态失败', error);
+      }
+    },
+    
+    getStatusClass(status) {
+      switch (status) {
+        case '0': return 'status-recruiting';
+        case '1': return 'status-filled';
+        case '2': return 'status-disbanded';
+        default: return 'status-recruiting';
+      }
+    },
+    
+    getStatusIcon(status) {
+      switch (status) {
+        case '0': return 'icon-check-circle';
+        case '1': return 'icon-hourglass';
+        case '2': return 'icon-times-circle';
+        default: return 'icon-check-circle';
+      }
+    },
+    
+    hidePhone(phone) {
+      if (!phone) return '';
+      // 隐藏中间四位数字
+      return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
+    },
+    
+    togglePhone() {
+      this.showPhone = !this.showPhone;
+    },
+    
+    copyText(text) {
+      uni.setClipboardData({
+        data: text,
+        success: () => {
+          uni.showToast({
+            title: '复制成功',
+            icon: 'success'
+          });
+        }
+      });
+    },
+    
+    goBack() {
+      uni.navigateBack();
+    },
+    
+    goToCompetition(competitionId) {
+      if (!competitionId) return;
+      uni.navigateTo({
+        url: `/pages/competition/detail?id=${competitionId}`
+      });
+    },
+    
+    async applyRole(roleId) {
+      // 已申请过，提示用户
+      if (this.hasApplied) {
+        uni.showToast({
+          title: '您已申请或已加入该团队',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      // 弹窗让用户输入申请留言
+      uni.showModal({
+        title: '申请加入',
+        content: '请输入您的申请理由',
+        editable: true,
+        placeholderText: '我希望加入团队参与...',
+        success: async (res) => {
+          if (res.confirm) {
+            const message = res.content || '希望能加入团队，与大家一起学习成长。';
+            this.applyLoading = true;
+            
+            try {
+              const applyData = {
+                teamId: this.teamId,
+                roleId: roleId,
+                message: message
+              };
+              
+              const result = await teamApi.applyTeam(applyData);
+              if (result.code === 200) {
+                uni.showToast({
+                  title: '申请已提交',
+                  icon: 'success'
+                });
+                this.hasApplied = true;
+              } else {
+                uni.showToast({
+                  title: result.message || '申请提交失败',
+                  icon: 'none'
+                });
+              }
+            } catch (error) {
+              console.error('申请失败', error);
+              uni.showToast({
+                title: '网络异常，请稍后重试',
+                icon: 'none'
+              });
+            } finally {
+              this.applyLoading = false;
+            }
+          }
+        }
+      });
+    },
+    
+    showApplyOptions() {
+      // 检查登录状态
+      if (!this.userInfo || !this.userInfo.userId) {
+        uni.showModal({
+          title: '提示',
+          content: '请先登录后再申请加入团队',
+          confirmText: '去登录',
+          success: (res) => {
+            if (res.confirm) {
+              uni.navigateTo({
+                url: '/pages/login/login'
+              });
+            }
+          }
+        });
+        return;
+      }
+      
+      // 已申请过，提示用户
+      if (this.hasApplied) {
+        uni.showToast({
+          title: '您已申请或已加入该团队',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      // 如果有多个可申请角色，显示选择框
+      if (this.teamInfo.roles && this.teamInfo.roles.length > 0) {
+        const availableRoles = this.teamInfo.roles.filter(role => role.currentCount < role.requiredCount);
+        
+        if (availableRoles.length > 1) {
+          const itemList = availableRoles.map(role => `${role.name}（${role.currentCount}/${role.requiredCount}）`);
+          
+          uni.showActionSheet({
+            itemList,
+            success: (res) => {
+              this.applyRole(availableRoles[res.tapIndex].id);
+            }
+          });
+        } else if (availableRoles.length === 1) {
+          this.applyRole(availableRoles[0].id);
+        } else {
+          uni.showToast({
+            title: '当前没有可申请的角色',
+            icon: 'none'
+          });
+        }
+      } else {
+        uni.showToast({
+          title: '当前没有可申请的角色',
+          icon: 'none'
+        });
+      }
+    },
+    
+    editTeam() {
+      uni.navigateTo({
+        url: `/pages/team/edit?id=${this.teamId}`
+      });
+    },
+    
+    async disbandTeam() {
+      uni.showModal({
+        title: '解散队伍',
+        content: '确定要解散该队伍吗？此操作不可撤销',
+        confirmColor: '#f56c6c',
+        success: async (res) => {
+          if (res.confirm) {
+            try {
+              const result = await teamApi.disbandTeam(this.teamId);
+              if (result.code === 200) {
+                uni.showToast({
+                  title: '队伍已解散',
+                  icon: 'success'
+                });
+                setTimeout(() => {
+                  uni.navigateBack();
+                }, 1500);
+              } else {
+                uni.showToast({
+                  title: result.message || '解散队伍失败',
+                  icon: 'none'
+                });
+              }
+            } catch (error) {
+              console.error('解散队伍失败', error);
+              uni.showToast({
+                title: '网络异常，请稍后重试',
+                icon: 'none'
+              });
+            }
+          }
+        }
+      });
+    },
+    
+    async leaveTeam() {
+      uni.showModal({
+        title: '退出队伍',
+        content: '确定要退出该队伍吗？',
+        confirmColor: '#f56c6c',
+        success: async (res) => {
+          if (res.confirm) {
+            try {
+              const result = await teamApi.leaveTeam(this.teamId);
+              if (result.code === 200) {
+                uni.showToast({
+                  title: '已退出队伍',
+                  icon: 'success'
+                });
+                setTimeout(() => {
+                  uni.navigateBack();
+                }, 1500);
+              } else {
+                uni.showToast({
+                  title: result.message || '退出失败',
+                  icon: 'none'
+                });
+              }
+            } catch (error) {
+              console.error('退出队伍失败', error);
+              uni.showToast({
+                title: '网络异常，请稍后重试',
+                icon: 'none'
+              });
+            }
+          }
+        }
+      });
+    },
+    
+    // 获取队伍成员数据
+    async getTeamMembers() {
+      try {
+        const res = await teamApi.getTeamMembers(this.teamId);
+        if (res && res.code === 200 && res.data) {
+          this.teamMembers = res.data;
+          
+          // 判断当前用户是否是团队成员
+          if (this.userInfo && this.userInfo.userId) {
+            const currentUserId = this.userInfo.userId;
+            const isMember = this.teamMembers.some(member => member.userId === currentUserId);
+            const isLeader = isMember && this.teamMembers.some(member => member.userId === currentUserId && member.isLeader);
+            
+            this.isTeamMember = isMember;
+            this.isTeamLeader = isLeader;
+          }
+          
+          console.log('获取到队伍成员:', this.teamMembers);
+        } else {
+          console.log('获取队伍成员失败:', res?.message);
+        }
+      } catch (error) {
+        console.error('获取队伍成员出错', error);
+      }
+    },
+    
+    // 获取队伍详情数据
+    async getTeamDetail() {
+      this.isLoading = true;
+      try {
+        const res = await teamApi.getTeamDetail(this.teamId);
+        if (res && res.code === 200 && res.data) {
+          this.teamInfo = res.data;
+          console.log('获取到队伍详情:', this.teamInfo);
+          
+          // 检查当前用户是否是队长
+          if (this.userInfo && this.userInfo.userId && this.teamInfo.leaderId === this.userInfo.userId) {
+            this.isTeamLeader = true;
+            this.isTeamMember = true;
+          }
+          
+          // 获取队伍成员
+          this.getTeamMembers();
+          
+          // 检查用户与团队的关系
+          this.checkTeamStatus();
+        } else {
+          uni.showToast({
+            title: res?.message || '获取队伍详情失败',
+            icon: 'none'
+          });
+          console.log('获取队伍详情失败:', res);
+        }
+      } catch (error) {
+        console.error('获取队伍详情出错', error);
+        uni.showToast({
+          title: '网络异常，请稍后重试',
+          icon: 'none'
+        });
+      } finally {
+        this.isLoading = false;
+      }
+    }
   }
 }
-
-// 生命周期
-onMounted(() => {
-  const options = uni.getLaunchOptionsSync() || {};
-  // 获取路由参数
-  const pages = getCurrentPages();
-  console.log("在什么");
-    console.log(pages);
-  const currentPage = pages[pages.length - 1];
-  const id = currentPage.options?.id || options.id 
-  
-  if (id) {
-    teamId.value = id;
-    getTeamDetail();
-  } else {
-    uni.showToast({
-      title: '队伍ID不能为空',
-      icon: 'none'
-    });
-    setTimeout(() => {
-      uni.navigateBack();
-    }, 1500);
-  }
-});
 </script>
 
 <style>

@@ -43,8 +43,11 @@ const requestInterceptor = (config) => {
   // 添加token到请求头
   const token = getToken();
   if (token) {
-    // 直接使用token，不进行额外的编码
+    // 不要对token进行编码，直接使用Bearer格式
     config.header['Authorization'] = `Bearer ${token}`;
+    if (env.debug) {
+      console.log('发送请求头Authorization:', `Bearer ${token}`);
+    }
   }
   
   // 默认添加内容类型

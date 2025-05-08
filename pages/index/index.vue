@@ -1,157 +1,164 @@
 <template>
   <view class="container">
-
-
-    <!-- 搜索框 -->
-    <view class="search-container animate__animated animate__fadeInDown">
-      <view class="search-box-wrapper">
-        <input class="search-box" type="text" placeholder="搜索竞赛、项目或队伍" confirm-type="search" />
-        <text class="iconfont icon-search search-icon"></text>
+    <!-- 顶部导航栏 - 已经自动适配安全区域 -->
+    <view class="custom-nav-bar">
+      <view class="title-section">
+        <text class="page-title">校园任务与组队平台</text>
       </view>
-    </view>
-
-    <!-- 轮播图 -->
-    <view class="swiper-container">
-      <swiper class="swiper animate__animated animate__fadeIn" 
-              circular autoplay interval="3000" duration="500"
-              indicator-dots indicator-active-color="#3B82F6" indicator-color="rgba(0, 0, 0, 0.2)">
-        <swiper-item>
-          <view class="swiper-item">
-            <image src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800" mode="aspectFill"></image>
-            <view class="swiper-overlay">
-              <text class="swiper-title">互联网+创新创业大赛</text>
-              <view class="swiper-date">
-                <text class="iconfont icon-calendar date-icon"></text>
-                <text class="date-text">报名截止：5月15日</text>
-              </view>
-            </view>
-          </view>
-        </swiper-item>
-        <swiper-item>
-          <view class="swiper-item">
-            <image src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800" mode="aspectFill"></image>
-            <view class="swiper-overlay">
-              <text class="swiper-title">挑战杯创业计划大赛</text>
-              <view class="swiper-date">
-                <text class="iconfont icon-calendar date-icon"></text>
-                <text class="date-text">报名截止：6月10日</text>
-              </view>
-            </view>
-          </view>
-        </swiper-item>
-        <swiper-item>
-          <view class="swiper-item">
-            <image src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800" mode="aspectFill"></image>
-            <view class="swiper-overlay">
-              <text class="swiper-title">创青春创业大赛</text>
-              <view class="swiper-date">
-                <text class="iconfont icon-calendar date-icon"></text>
-                <text class="date-text">报名截止：7月5日</text>
-              </view>
-            </view>
-          </view>
-        </swiper-item>
-      </swiper>
-    </view>
-
-    <!-- 功能图标入口 -->
-    <view class="menu-container">
-      <view class="menu-grid">
-        <view class="menu-item animate__animated animate__fadeInUp" style="animation-delay: 0.1s" @click="navigateTo('competition')">
-          <view class="menu-icon blue">
-            <text class="iconfont icon-trophy"></text>
-          </view>
-          <text class="menu-text">竞赛活动</text>
-        </view>
-        <view class="menu-item animate__animated animate__fadeInUp" style="animation-delay: 0.2s" @click="navigateTo('findPartner')">
-          <view class="menu-icon green">
-            <text class="iconfont icon-users"></text>
-          </view>
-          <text class="menu-text">寻找队友</text>
-        </view>
-        <view class="menu-item animate__animated animate__fadeInUp" style="animation-delay: 0.3s" @click="navigateTo('project')">
-          <view class="menu-icon purple">
-            <text class="iconfont icon-project"></text>
-          </view>
-          <text class="menu-text">项目展示</text>
-        </view>
-        <view class="menu-item animate__animated animate__fadeInUp" style="animation-delay: 0.4s" @click="navigateTo('schedule')">
-          <view class="menu-icon orange">
-            <text class="iconfont icon-calendar"></text>
-          </view>
-          <text class="menu-text">日程安排</text>
+      <view class="search-section" @click="goToSearch">
+        <view class="search-box">
+          <text class="iconfont icon-search"></text>
+          <text class="search-placeholder">搜索竞赛/队伍</text>
         </view>
       </view>
     </view>
-
-    <!-- 热门竞赛 -->
-    <view class="section">
-      <view class="section-header">
-        <text class="section-title animate__animated animate__fadeInLeft">热门竞赛</text>
-        <text class="view-all animate__animated animate__fadeInRight" @click="viewAll('competition')">查看全部</text>
+    
+    <!-- 页面内容 -->
+    <scroll-view scroll-y class="content-scroll">
+      <view class="content-section">
+        <text class="section-title">安全区域自动适配示例</text>
+        <text class="section-desc">此页面已经适配了状态栏高度，不会撞到手机顶部</text>
       </view>
-      <view class="competition-list">
-        
-        <view class="competition-item card-hover animate__animated animate__fadeInUp" style="animation-delay: 0.1s" @click="viewDetail('competition', 2)" v-for="competition in competitionsList" :key="competition.id">
-          <view class="competition-flex">
-            <view class="competition-image-container">
-              <image class="competition-image" src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800" mode="aspectFill"></image>
-            </view>
-            <view class="competition-content">
-              <view class="flex-between">
-                <text class="competition-title">{{ competition.title }}</text>
-                <text class="status-tag pulse">{{ competition.status }}</text>
-              </view>
-              <view class="tag-row">
-                <text class="tag green-tag">{{ competition.category }}</text>
-                <text class="tag gray-tag">{{ competition.level }}</text>
-              </view>
-              <view class="competition-info">
-                <view class="info-item">
-                  <text class="iconfont icon-clock"></text>
-                  <text class="info-text">报名截止: {{ competition.registrationDeadlineFormatted }}</text>
-                </view>
-                <view class="info-item">
-                  <text class="iconfont icon-team"></text>
-                  <text class="info-text">3-6人/队</text>
+      
+      <!-- 轮播图 -->
+      <view class="swiper-container">
+        <swiper class="swiper animate__animated animate__fadeIn" 
+                circular autoplay interval="3000" duration="500"
+                indicator-dots indicator-active-color="#3B82F6" indicator-color="rgba(0, 0, 0, 0.2)">
+          <swiper-item>
+            <view class="swiper-item">
+              <image src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800" mode="aspectFill"></image>
+              <view class="swiper-overlay">
+                <text class="swiper-title">互联网+创新创业大赛</text>
+                <view class="swiper-date">
+                  <text class="iconfont icon-calendar date-icon"></text>
+                  <text class="date-text">报名截止：5月15日</text>
                 </view>
               </view>
             </view>
+          </swiper-item>
+          <swiper-item>
+            <view class="swiper-item">
+              <image src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800" mode="aspectFill"></image>
+              <view class="swiper-overlay">
+                <text class="swiper-title">挑战杯创业计划大赛</text>
+                <view class="swiper-date">
+                  <text class="iconfont icon-calendar date-icon"></text>
+                  <text class="date-text">报名截止：6月10日</text>
+                </view>
+              </view>
+            </view>
+          </swiper-item>
+          <swiper-item>
+            <view class="swiper-item">
+              <image src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800" mode="aspectFill"></image>
+              <view class="swiper-overlay">
+                <text class="swiper-title">创青春创业大赛</text>
+                <view class="swiper-date">
+                  <text class="iconfont icon-calendar date-icon"></text>
+                  <text class="date-text">报名截止：7月5日</text>
+                </view>
+              </view>
+            </view>
+          </swiper-item>
+        </swiper>
+      </view>
+
+      <!-- 功能图标入口 -->
+      <view class="menu-container">
+        <view class="menu-grid">
+          <view class="menu-item animate__animated animate__fadeInUp" style="animation-delay: 0.1s" @click="navigateTo('competition')">
+            <view class="menu-icon blue">
+              <text class="iconfont icon-trophy"></text>
+            </view>
+            <text class="menu-text">竞赛活动</text>
+          </view>
+          <view class="menu-item animate__animated animate__fadeInUp" style="animation-delay: 0.2s" @click="navigateTo('findPartner')">
+            <view class="menu-icon green">
+              <text class="iconfont icon-users"></text>
+            </view>
+            <text class="menu-text">寻找队友</text>
+          </view>
+          <view class="menu-item animate__animated animate__fadeInUp" style="animation-delay: 0.3s" @click="navigateTo('project')">
+            <view class="menu-icon purple">
+              <text class="iconfont icon-project"></text>
+            </view>
+            <text class="menu-text">项目展示</text>
+          </view>
+          <view class="menu-item animate__animated animate__fadeInUp" style="animation-delay: 0.4s" @click="navigateTo('schedule')">
+            <view class="menu-icon orange">
+              <text class="iconfont icon-calendar"></text>
+            </view>
+            <text class="menu-text">日程安排</text>
           </view>
         </view>
       </view>
-    </view>
 
-    <!-- 推荐队伍 -->
-    <view class="section">
-      <view class="section-header">
-        <text class="section-title animate__animated animate__fadeInLeft">热门队伍</text>
-        <text class="view-all animate__animated animate__fadeInRight" @click="viewAll('team')">查看全部</text>
-      </view>
-      <view class="team-list">
-        <!-- 使用团队卡片组件 -->
-        <template v-if="teamList.length > 0">
-          <team-card
-            v-for="(team, index) in teamList" 
-            :key="team.id"
-            :team="team"
-            :index="index"
-            @detail="(id) => viewDetail('team', id)"
-            @apply="joinTeam"
-          ></team-card>
-        </template>
-        <view v-else class="empty-state">
-          <text class="empty-text">加载中...</text>
+      <!-- 热门竞赛 -->
+      <view class="section">
+        <view class="section-header">
+          <text class="section-title animate__animated animate__fadeInLeft">热门竞赛</text>
+          <text class="view-all animate__animated animate__fadeInRight" @click="viewAll('competition')">查看全部</text>
+        </view>
+        <view class="competition-list">
+          
+          <view class="competition-item card-hover animate__animated animate__fadeInUp" style="animation-delay: 0.1s" @click="viewDetail('competition', 2)" v-for="competition in competitionsList" :key="competition.id">
+            <view class="competition-flex">
+              <view class="competition-image-container">
+                <image class="competition-image" src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800" mode="aspectFill"></image>
+              </view>
+              <view class="competition-content">
+                <view class="flex-between">
+                  <text class="competition-title">{{ competition.title }}</text>
+                  <text class="status-tag pulse">{{ competition.status }}</text>
+                </view>
+                <view class="tag-row">
+                  <text class="tag green-tag">{{ competition.category }}</text>
+                  <text class="tag gray-tag">{{ competition.level }}</text>
+                </view>
+                <view class="competition-info">
+                  <view class="info-item">
+                    <text class="iconfont icon-clock"></text>
+                    <text class="info-text">报名截止: {{ competition.registrationDeadlineFormatted }}</text>
+                  </view>
+                  <view class="info-item">
+                    <text class="iconfont icon-team"></text>
+                    <text class="info-text">3-6人/队</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
         </view>
       </view>
-    </view>
 
-    <!-- 底部导航栏 -->
-    <tab-bar 
-      active-tab="home" 
-      @tab-change="handleTabChange" 
-      @publish="showPublishOptions"
-    ></tab-bar>
+      <!-- 推荐队伍 -->
+      <view class="section">
+        <view class="section-header">
+          <text class="section-title animate__animated animate__fadeInLeft">热门队伍</text>
+          <text class="view-all animate__animated animate__fadeInRight" @click="viewAll('team')">查看全部</text>
+        </view>
+        <view class="team-list">
+          <!-- 使用团队卡片组件 -->
+          <template v-if="teamList.length > 0">
+            <team-card
+              v-for="(team, index) in teamList" 
+              :key="team.id"
+              :team="team"
+              :index="index"
+              @detail="(id) => viewDetail('team', id)"
+              @apply="joinTeam"
+            ></team-card>
+          </template>
+          <view v-else class="empty-state">
+            <text class="empty-text">加载中...</text>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+    
+    <!-- 底部TabBar - 由自定义组件处理 -->
+    <TabBar activeTab="home" />
   </view>
 </template>
 
@@ -250,44 +257,17 @@ function joinTeam(id) {
   });
 }
 
-// 处理标签切换
-function handleTabChange(tab) {
-  if (tab === 'competition') {
-    uni.switchTab({
-      url: '/pages/competition/index'
-    });
-  } else if (tab === 'team') {
-    uni.switchTab({
-      url: '/pages/team/list'
-    });
-  } else if (tab === 'profile') {
-    uni.switchTab({
-      url: '/pages/profile/index'
-    });
-  }
-}
-
-// 显示发布选项
-function showPublishOptions() {
-  uni.showActionSheet({
-    itemList: ['发布竞赛信息', '招募队友', '发布项目展示'],
-    success: function (res) {
-      uni.showToast({
-        title: `选择了: ${res.tapIndex}`,
-        icon: 'none'
-      });
-    }
+// 跳转到搜索页
+function goToSearch() {
+  uni.navigateTo({
+    url: '/pages/search/index'
   });
 }
 
-// 随机活动状态
-function randomActivity() {
-  // 在实际应用中，这里可以从服务器获取在线状态
-  setTimeout(randomActivity, 3000);
-}
-
 onMounted(() => {
-  randomActivity();
+  // 获取状态栏高度
+  const statusBarHeight = uni.getSystemInfoSync().statusBarHeight;
+  console.log('状态栏高度:', statusBarHeight);
   getTeamList();
   getCompetitionsList();
 });
@@ -353,39 +333,77 @@ page {
 
 .container {
   font-family: 'Noto Sans SC', "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
 }
 
 .flex-between {
   @include flex-between;
 }
 
-// 搜索框
-.search-container {
-  padding: 20rpx 30rpx;
-  
-  .search-box-wrapper {
-    position: relative;
-    
-    .search-box {
-      width: 100%;
-      height: 80rpx;
-      background: $card-color;
-      border-radius: 40rpx;
-      padding: 0 80rpx;
-      font-size: 26rpx;
-      @include card-shadow;
-      transition: all 0.3s;
-    }
-    
-    .search-icon {
-      position: absolute;
-      left: 30rpx;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #999;
-      font-size: 28rpx;
-    }
-  }
+/* 导航栏样式 */
+.custom-nav-bar {
+  background-color: #ffffff;
+  box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.05);
+  width: 100%;
+  z-index: 100;
+  padding: 0 30rpx;
+}
+
+.title-section {
+  margin-bottom: 16rpx;
+}
+
+.page-title {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.search-section {
+  padding-bottom: 16rpx;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background-color: #f5f5f5;
+  border-radius: 36rpx;
+  height: 72rpx;
+  padding: 0 30rpx;
+}
+
+.search-placeholder {
+  color: #999999;
+  font-size: 28rpx;
+  margin-left: 10rpx;
+}
+
+/* 内容区域 */
+.content-scroll {
+  flex: 1;
+  padding: 30rpx;
+}
+
+.content-section {
+  background-color: #ffffff;
+  border-radius: 12rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333333;
+  margin-bottom: 16rpx;
+}
+
+.section-desc {
+  font-size: 28rpx;
+  color: #666666;
+  line-height: 1.5;
 }
 
 // 轮播图

@@ -24,18 +24,26 @@ const userApi = {
         password: data.password
       }
     }).then(result => {
-      // 后端返回的token是直接放在data字段的字符串
-      if (typeof result === 'string' && result.length > 20) {
-        // 手动存储token
-        setToken(result);
+      console.log('登录响应:', result);
+      
+      // 检查响应结构
+      if (result && result.code === 200 && result.data) {
+        // 保存token
+        const token = result.data;
+        setToken(token);
         console.log('登录成功，已保存token');
         
-        // 返回更友好的数据结构
         return {
-          token: result,
+          token: token,
           isLogin: true
         };
       }
+      
+      // 如果响应不符合预期，抛出错误
+      if (result && result.message) {
+        throw new Error(result.message);
+      }
+      
       return result;
     });
   },
@@ -64,6 +72,29 @@ const userApi = {
     return request({
       url: '/user/info',
       method: 'GET'
+    });
+  },
+  
+  /**
+   * 获取用户角色
+   * @param {String} token - 用户token，如不传则使用本地存储的token
+   * @returns {Promise} 请求结果Promise对象，返回用户角色（student/teacher/admin）
+   */
+  getUserRole(token) {
+    // 如果未传递token，使用本地存储的token
+    const authToken = token || getToken();
+    
+    if (!authToken) {
+      return Promise.reject(new Error('未登录'));
+    }
+    
+    // 使用POST方法，但token作为query参数传递
+    return request({
+      url: `/users/role/parse?token=${encodeURIComponent(authToken)}`, // 直接在URL中添加token作为查询参数
+      method: 'POST',
+      header: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
     });
   },
   

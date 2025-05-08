@@ -37,6 +37,39 @@
 		--color-text-secondary: #666666;
 	}
 
+	/* 解决安全区域问题，让所有页面都自动适配状态栏高度 */
+	.container {
+		padding-top: var(--status-bar-height);
+		box-sizing: border-box;
+	}
+	
+	/* 处理有sticky-header的页面，让sticky-header考虑安全区域 */
+	.sticky-header {
+		padding-top: var(--status-bar-height);
+		top: 0;
+	}
+	
+	/* 提供一个通用的安全区域类，可以单独添加到顶部元素 */
+	.safe-area-inset-top {
+		padding-top: var(--status-bar-height);
+	}
+	
+	/* 底部安全区域适配，主要用于全面屏手机的底部 */
+	.safe-area-inset-bottom {
+		padding-bottom: constant(safe-area-inset-bottom); /* iOS 11.0 */
+		padding-bottom: env(safe-area-inset-bottom); /* iOS 11.2+ */
+	}
+	
+	/* 导航栏自定义样式，考虑安全区域 */
+	.custom-nav-bar {
+		height: calc(44px + var(--status-bar-height));
+		padding-top: var(--status-bar-height);
+		display: flex;
+		align-items: center;
+		position: relative;
+		z-index: 100;
+	}
+
 	/* #endif */
 	.example-info {
 		font-size: 14px;

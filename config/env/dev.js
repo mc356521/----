@@ -2,7 +2,7 @@
  * 开发环境配置
  */
 export default {
-  // API基础路径（使用代理地址）
+  // API基础路径（使用本地地址）
   baseUrl: 'http://localhost:8080',
 
   // 超时时间
