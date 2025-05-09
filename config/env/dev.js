@@ -3,8 +3,9 @@
  */
 export default {
   // API基础路径（使用本地地址）
-  baseUrl: 'http://localhost:8080',
-
+  // baseUrl: 'http://localhost:8080',
+  // API基础路径
+  baseUrl: 'http://103.38.83.91:8080',
   // 超时时间
   timeout: 60000,
   // 上传接口
