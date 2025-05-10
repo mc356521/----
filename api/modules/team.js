@@ -47,18 +47,22 @@ const teamApi = {
     });
   },
   
-  /**
-   * 创建团队
-   * @param {Object} data - 团队信息
-   * @returns {Promise} 请求结果Promise对象
+ /**
+   * 申请加入团队
+   * @param {Object} data - 申请数据
+   * @param {Number} data.teamId - 要申请的队伍ID
+   * @param {Number} data.roleId - 要申请的角色ID
+   * @param {String} data.message - 申请留言
+   * @returns {Promise} 申请结果的Promise对象
    */
-  createTeam(data) {
+  applyTeam(data) {
     return request({
-      url: '/teams',
+      url: '/team-applications',
       method: 'POST',
       data
     });
   },
+
   
   /**
    * 申请加入团队

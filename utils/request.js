@@ -16,7 +16,7 @@ if (env.debug) {
 }
 
 // 存储token的key
-const TOKEN_KEY = 'auth_token';
+const TOKEN_KEY = 'token';
 
 /**
  * 获取本地存储的token

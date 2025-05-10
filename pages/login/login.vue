@@ -186,6 +186,9 @@ async function handleLogin() {
     
     console.log('登录响应:', res);
     
+    // 检查登录结果
+    if (res && res.token) {
+      // 登录成功的情况
     uni.showToast({
       title: '登录成功',
       icon: 'success'
@@ -197,6 +200,13 @@ async function handleLogin() {
         url: '/pages/index/index'
       });
     }, 1500);
+    } else {
+      // 登录失败但没有明确错误信息
+      uni.showToast({
+        title: '登录失败，请检查账号密码',
+        icon: 'none'
+      });
+    }
   } catch (error) {
     console.error('登录失败:', error);
     

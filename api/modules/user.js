@@ -28,9 +28,9 @@ const userApi = {
       
       // 检查响应结构
       if (result && result.code === 200 && result.data) {
-        // 保存token
+        // 保存token - 直接使用token key而不是auth_token
         const token = result.data;
-        setToken(token);
+        uni.setStorageSync('token', token); // 直接设置token到本地存储
         console.log('登录成功，已保存token');
         
         return {

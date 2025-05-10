@@ -83,7 +83,7 @@
 <script setup>
 import { computed } from 'vue';
 
-// 组件接收的属性
+// 组件属性
 const props = defineProps({
   team: {
     type: Object,
@@ -178,15 +178,18 @@ function onApplyJoin() {
 
 <style lang="scss">
 // 颜色变量
-$primary-color: #3B82F6;
-$background-color: #ffaa00;
+$primary-color: #247ae4;
+$background-color: #f8fafc;
 $card-color: #ffffff;
 $text-color: #333333;
-$text-secondary: #b3b3b3;
-$text-muted: #9CA3AF;
+$text-secondary: #6B7280;
+$text-muted: #344347;
 $success-color: #10B981;
 $warning-color: #F59E0B;
 $hot-color: #F59E0B;
+$shadow-sm: 0 2rpx 6rpx rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4rpx 10rpx rgba(0, 0, 0, 0.1);
+$border-radius-lg: 16rpx;
 
 // 动画
 @keyframes sparkle {
@@ -216,19 +219,18 @@ $hot-color: #F59E0B;
 // 卡片样式
 .team-item {
   background-color: $card-color;
-  border-radius: 16rpx;
-  padding: 20rpx 20rpx;
+  border-radius: $border-radius-lg;
+  padding: 24rpx;
   margin-bottom: 20rpx;
-  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+  box-shadow: $shadow-sm;
   width: 100%;
   box-sizing: border-box;
   
   &.card-hover {
-    transition: all 0.3s;
+    transition: all 0.3s ease;
     
     &:active {
-      transform: translateY(-10rpx);
-      box-shadow: 0 10rpx 20rpx rgba(0, 0, 0, 0.1);
+      transform: scale(0.98);
     }
   }
   
@@ -279,24 +281,23 @@ $hot-color: #F59E0B;
         
         .tag {
           font-size: 24rpx;
-          padding: 4rpx 12rpx;
-          border-radius: 30rpx;
+          padding: 4rpx 16rpx;
+          border-radius: 8rpx;
           margin-right: 10rpx;
           
           &.orange-tag {
-            background-color: #d8ffff;
-            color: #7291ff;
+            background-color: #DBEAFE;
+            color: #2563EB;
           }
         }
       }
       
       .status-tag {
         font-size: 24rpx;
-        padding: 6rpx 25rpx;
-        margin-left: 25rpx;
-        border-radius: 20rpx;
-        background-color: rgba($primary-color, 0.1);
-        color: $primary-color;
+        padding: 6rpx 16rpx;
+        border-radius: 8rpx;
+        background-color: #10B981;
+        color: white;
         text-align: center;
         
         &.pulse {
@@ -322,21 +323,20 @@ $hot-color: #F59E0B;
     .role-tag {
       display: flex;
       align-items: center;
-      padding: 6rpx 12rpx;
-      border-radius: 6rpx;
-      background-color: #dddff4;
+      padding: 4rpx 16rpx;
+      border-radius: 8rpx;
+      background-color: #F3F4F6;
       
       .role-name {
-        font-size: 23rpx;
-        color: #000000;
+        font-size: 22rpx;
+        color: $text-secondary;
       }
       
       .role-count {
         display: inline-block;
         margin-left: 8rpx;
-        font-size: 23rpx;
+        font-size: 22rpx;
         padding: 2rpx 8rpx;
-        border-radius: 4rpx;
         
         &.success {
           color: $success-color;
@@ -354,6 +354,11 @@ $hot-color: #F59E0B;
     color: $text-secondary;
     line-height: 1.5;
     margin-bottom: 20rpx;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .team-bottom {
@@ -381,7 +386,7 @@ $hot-color: #F59E0B;
           width: 48rpx;
           height: 48rpx;
           border-radius: 50%;
-          background-color: #333333;
+          background-color: #F3F4F6;
           display: flex;
           justify-content: center;
           align-items: center;
@@ -406,24 +411,20 @@ $hot-color: #F59E0B;
     }
     
     .join-btn {
-      font-size: 24rpx;
-      padding: 6rpx 27rpx;
-      border-radius: 30rpx;
-      margin-right: 2px;
+      padding: 8rpx 20rpx;
+      border-radius: 100rpx;
       white-space: nowrap;
-      height: 50rpx;
-      line-height: 50rpx;
-      min-width: 100rpx;
+      font-size: 24rpx;
       text-align: center;
       
       &.blue-join {
-        background-color: #EFF6FF;
-        color: $primary-color;
+        background-color: $primary-color;
+        color: white;
       }
       
       &.gray-join {
-        background-color: #F3F4F6;
-        color: $text-muted;
+        background-color: #E5E7EB;
+        color: #9CA3AF;
       }
     }
   }

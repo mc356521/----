@@ -15,11 +15,6 @@
     
     <!-- 页面内容 -->
     <scroll-view scroll-y class="content-scroll">
-      <view class="content-section">
-        <text class="section-title">安全区域自动适配示例</text>
-        <text class="section-desc">此页面已经适配了状态栏高度，不会撞到手机顶部</text>
-      </view>
-      
       <!-- 轮播图 -->
       <view class="swiper-container">
         <swiper class="swiper animate__animated animate__fadeIn" 
@@ -383,7 +378,6 @@ page {
 /* 内容区域 */
 .content-scroll {
   flex: 1;
-  padding: 30rpx;
 }
 
 .content-section {

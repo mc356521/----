@@ -5,8 +5,12 @@
       <view class="header-title">
         <text class="section-title">组队广场</text>
         <view class="header-actions">
+          <view class="action-btn">
           <text class="iconfont icon-search"></text>
+          </view>
+          <view class="action-btn">
           <text class="iconfont icon-filter"></text>
+          </view>
         </view>
       </view>
       
@@ -74,7 +78,7 @@ import TabBar from '@/components/TabBar.vue';
 import teamApi from '@/api/modules/team';
 
 // 分类数据
-const categories = ref(['全部', '学科竞赛', '创新创业', '体育竞赛', '文艺比赛']);
+const categories = ref(['全部队伍', '学科竞赛', '创新创业', '体育竞赛', '文艺比赛']);
 const currentCategory = ref(0);
 
 // 团队列表数据
@@ -104,24 +108,7 @@ const queryParams = reactive({
 
 // 获取团队列表
 async function getTeamList(refresh = false) {
-  // 检查是否已登录
-  const token = uni.getStorageSync('token');
-  if (!token) {
-    uni.showModal({
-      title: '提示',
-      content: '请先登录后查看团队列表',
-      confirmText: '去登录',
-      success: function(res) {
-        if (res.confirm) {
-          uni.navigateTo({
-            url: '/pages/login/login'
-          });
-        }
-      }
-    });
-    return;
-  }
-
+  // 不在这里检查登录状态，移到onMounted中检查
   if (refresh) {
     queryParams.pageNum = 1;
     refreshing.value = true;
@@ -240,6 +227,26 @@ function selectCategory(index) {
 // 页面加载
 onMounted(() => {
   console.log('组队列表页面加载');
+  
+  // 检查是否已登录
+  const token = uni.getStorageSync('token');
+  if (!token) {
+    uni.showModal({
+      title: '提示',
+      content: '请先登录后查看团队列表',
+      confirmText: '去登录',
+      success: function(res) {
+        if (res.confirm) {
+          uni.navigateTo({
+            url: '/pages/login/login'
+          });
+        }
+      }
+    });
+    return;
+  }
+  
+  // 已登录，获取团队列表
   getTeamList();
 });
 
@@ -343,12 +350,16 @@ function showPublishOptions() {
 @import '../../static/animate.css';
 
 // 颜色变量
-$primary-color: #3B82F6;
-$background-color: #000000;
-$card-color: #222222;
-$text-color: #ffffff;
-$text-secondary: #b3b3b3;
-$text-muted: #9CA3AF;
+$primary-color: #247ae4;
+$background-color: #f8fafc;
+$card-color: #ffffff;
+$text-color: #333333;
+$text-secondary: #6B7280;
+$text-muted: #344347;
+$shadow-sm: 0 2rpx 6rpx rgba(91, 51, 51, 0.05);
+$shadow-md: 0 4rpx 10rpx rgba(0, 0, 0, 0.1);
+$border-radius-lg: 16rpx;
+$border-radius-full: 100rpx;
 
 // 动画
 @keyframes pulse {
@@ -363,13 +374,13 @@ page {
   color: $text-color;
   height: 100%;
   padding-bottom: 150rpx;
+  font-family: 'Noto Sans SC', "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  font-family: 'Noto Sans SC', "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 // 混合器
@@ -384,25 +395,36 @@ page {
   position: sticky;
   top: 0;
   z-index: 10;
-  background-color: $background-color;
+  background-color: $card-color;
+  box-shadow: $shadow-sm;
   
   .header-title {
     @include flex-between;
-    padding: 30rpx 30rpx 20rpx 30rpx;
+    padding: 20rpx 30rpx;
     
     .section-title {
-      font-size: 32rpx;
+      font-size: 36rpx;
       font-weight: bold;
       color: $text-color;
     }
     
     .header-actions {
       display: flex;
-      gap: 30rpx;
+      gap: 20rpx;
+      
+      .action-btn {
+        width: 70rpx;
+        height: 70rpx;
+        border-radius: 50%;
+        background-color: #F3F4F6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       
       .iconfont {
-        font-size: 40rpx;
-        color: $text-color;
+          font-size: 36rpx;
+          color: $text-secondary;
+        }
       }
     }
   }
@@ -411,24 +433,25 @@ page {
   .category-scroll {
     width: 100%;
     white-space: nowrap;
-    padding: 10rpx 10rpx  10rpx  20rpx;
+    padding: 16rpx 20rpx;
     
     .category-list {
       display: inline-flex;
-      gap: 20rpx;
-      padding-right: 40rpx;
+      gap: 16rpx;
+      padding: 0 10rpx;
       
       .category-item {
         display: inline-block;
-        padding: 12rpx 19rpx;
-        border-radius: 30rpx;
-        background-color: #222222;
-        font-size: 24rpx;
-        color: #999999;
+        padding: 13rpx 13rpx;
+        border-radius: $border-radius-full;
+        background-color: #F3F4F6;
+        font-size: 26rpx;
+        color: $text-secondary;
+        transition: all 0.3s;
         
         &.active-category {
           background-color: $primary-color;
-          color: $text-color;
+          color: $card-color;
         }
       }
     }
@@ -453,35 +476,6 @@ page {
   .empty-text {
     font-size: 28rpx;
     color: $text-muted;
-  }
-}
-
-// 创建团队按钮
-.publish-btn-container {
-  position: fixed;
-  right: 40rpx;
-  bottom: 40rpx;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 120rpx;
-  z-index: 100;
-  
-  .publish-btn {
-    width: 100rpx;
-    height: 100rpx;
-    border-radius: 50%;
-    background: linear-gradient(to right, #3B82F6, #8B5CF6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 6rpx 16rpx rgba(59, 130, 246, 0.3);
-  }
-  
-  .publish-text {
-    font-size: 22rpx;
-    color: $text-muted;
-    margin-top: 10rpx;
   }
 }
 
@@ -514,11 +508,13 @@ page {
   justify-content: center;
   align-items: center;
   padding: 20rpx 0;
-  
-  .loading-text {
-    font-size: 28rpx;
+  text-align: center;
     color: $text-muted;
-    margin-left: 20rpx;
+  font-size: 26rpx;
   }
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style> 

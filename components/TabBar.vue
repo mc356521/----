@@ -83,7 +83,7 @@ onMounted(() => {
 
 // 根据当前页面自动判断是否使用深色模式
 const isDarkMode = computed(() => {
-  return props.activeTab === 'team';
+  return false; // 不再根据页面类型使用深色模式，统一使用浅色模式
 });
 
 const emit = defineEmits(['tab-change', 'publish']);
@@ -159,34 +159,52 @@ function showPublishOptions() {
 
 // 显示发布菜单
 function showPublishMenu() {
-  const options = ['创建队伍', '发布任务'];
+  // 定义菜单选项和对应的操作
+  const menuOptions = [];
   
   // 如果是管理员，添加创建竞赛选项
   if (userRole.value === 'admin') {
-    options.unshift('创建竞赛');
-  }
-  
-  uni.showActionSheet({
-    itemList: options,
-    success: function(res) {
-      const index = res.tapIndex;
-      
-      // 根据选择的选项跳转到相应页面
-      if (index === 1) {
-        // 创建团队
-        uni.navigateTo({
-          url: '/pages/team/create'
-        });
-      } else if (index === 2) {
-        // 招募队友
-        uni.navigateTo({
-          url: '/pages/team/create?mode=recruit'
-        });
-      } else if (index === 0 && userRole.value === 'admin') {
-        // 创建竞赛（仅管理员可见）
+    menuOptions.push({
+      text: '创建竞赛',
+      action: () => {
         uni.navigateTo({
           url: '/pages/competition/create'
         });
+      }
+    });
+  }
+  
+  // 添加通用选项
+  menuOptions.push(
+    {
+      text: '创建队伍',
+      action: () => {
+        uni.navigateTo({
+          url: '/pages/team/create'
+        });
+      }
+    },
+    {
+      text: '发布任务',
+      action: () => {
+        uni.navigateTo({
+          url: '/pages/team/create?mode=recruit'
+        });
+      }
+    }
+  );
+  
+  // 提取选项文本用于显示
+  const itemList = menuOptions.map(option => option.text);
+  
+  uni.showActionSheet({
+    itemList: itemList,
+    success: function(res) {
+      const tapIndex = res.tapIndex;
+      
+      // 执行对应的操作
+      if (tapIndex >= 0 && tapIndex < menuOptions.length) {
+        menuOptions[tapIndex].action();
       }
     }
   });
