@@ -1,5 +1,6 @@
 /* 水平间距 */
 /* 水平间距 */
+/* 导入主题变量 */
 .uniui-cart-filled[data-v-d31e1c47]:before {
   content: "\e6d0";
 }
@@ -509,6 +510,7 @@
 }
 /* 水平间距 */
 /* 水平间距 */
+/* 导入主题变量 */
 .uni-easyinput[data-v-09fd5285] {
   width: 100%;
   flex: 1;

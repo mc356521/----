@@ -1,0 +1,47 @@
+// 核心颜色变量
+$primary-color: #247ae4;
+$success-color: #10B981;
+$warning-color: #F59E0B;
+$danger-color: #EF4444;
+$info-color: #64748B;
+
+// 背景色与卡片
+$background-color: #f8fafc;
+$card-color: #ffffff;
+
+// 文本颜色
+$text-color: #333333;
+$text-secondary: #6B7280;
+$text-muted: #344347;
+$text-light: #ffffff;
+
+// 边框与阴影
+$border-color: #E5E7EB;
+$shadow-sm: 0 2rpx 6rpx rgba(91, 51, 51, 0.05);
+$shadow-md: 0 4rpx 10rpx rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 8rpx 30rpx rgba(0, 0, 0, 0.1);
+
+// 圆角
+$border-radius-sm: 8rpx;
+$border-radius-md: 12rpx;
+$border-radius-lg: 16rpx;
+$border-radius-full: 100rpx;
+
+// 间距
+$spacing-xs: 10rpx;
+$spacing-sm: 16rpx;
+$spacing-md: 24rpx; 
+$spacing-lg: 30rpx;
+$spacing-xl: 40rpx;
+
+// 标签颜色
+$tag-blue-bg: #EFF6FF;
+$tag-blue-text: $primary-color;
+$tag-green-bg: #ECFDF5; 
+$tag-green-text: $success-color;
+$tag-yellow-bg: #FFFBEB;
+$tag-yellow-text: $warning-color;
+$tag-red-bg: #FEF2F2;
+$tag-red-text: $danger-color;
+$tag-gray-bg: #F3F4F6;
+$tag-gray-text: $text-secondary; 

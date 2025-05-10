@@ -124,6 +124,17 @@ const competitionsApi = {
       url: '/competitions/categories',
       method: 'GET'
     });
+  },
+  
+  /**
+   * 获取竞赛基本信息列表（用于选择）
+   * @returns {Promise} 包含竞赛基本信息的Promise对象
+   */
+  getCompetitionsBasicInfo() {
+    return request({
+      url: '/competitions/basic-info',
+      method: 'GET'
+    });
   }
 };
 

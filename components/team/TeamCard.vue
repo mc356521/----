@@ -20,7 +20,7 @@
           </view>
         </view>
         <view>
-          <text class="status-tag" :class="{'pulse': isPulse}">{{ team.statusText }}</text>
+          <text class="status-tag" :class="[{'pulse': isPulse}, getStatusClass]">{{ team.statusText }}</text>
           <view class="date-info">截止: {{ team.deadline || team.recruitmentDeadlineFormatted }}</view>
         </view>
       </view>
@@ -69,7 +69,7 @@
         v-if="canJoin"
         class="join-btn blue-join" 
         @click.stop="onApplyJoin">
-        申请加入
+        查看详情
       </view>
       <view 
         v-else
@@ -108,6 +108,24 @@ const showHotIcon = computed(() => {
 const isPulse = computed(() => {
   // 状态为招募中或status等于0时
   return props.team.status === '0' || props.team.statusText === '招募中';
+});
+
+// 获取状态样式类
+const getStatusClass = computed(() => {
+  const status = props.team.status;
+  const statusText = props.team.statusText;
+  
+  if (status === '0' || statusText === '招募中') {
+    return 'status-recruiting';
+  } else if (status === '1' || statusText === '进行中') {
+    return 'status-ongoing';
+  } else if (status === '2' || statusText === '已完成') {
+    return 'status-completed';
+  } else if (status === '3' || statusText === '已截止') {
+    return 'status-ended';
+  } else {
+    return 'status-default';
+  }
 });
 
 const positions = computed(() => {
@@ -172,7 +190,8 @@ function goToDetail() {
 }
 
 function onApplyJoin() {
-  emit('apply', props.team.id);
+  // 直接调用详情页跳转函数，不再触发apply事件
+  goToDetail();
 }
 </script>
 
@@ -296,12 +315,36 @@ $border-radius-lg: 16rpx;
         font-size: 24rpx;
         padding: 6rpx 16rpx;
         border-radius: 8rpx;
-        background-color: #10B981;
-        color: white;
+        margin-left: 35rpx;
         text-align: center;
         
         &.pulse {
           animation: pulse 2s infinite;
+        }
+        
+        &.status-default {
+          background-color: #10B981;
+          color: white;
+        }
+        
+        &.status-recruiting {
+          background-color: #DBEAFE;
+          color: #2563EB;
+        }
+        
+        &.status-ongoing {
+          background-color: #DEF7EC;
+          color: #10B981;
+        }
+        
+        &.status-completed {
+          background-color: #D1FAE5;
+          color: #059669;
+        }
+        
+        &.status-ended {
+          background-color: #FEE2E2;
+          color: #EF4444;
         }
       }
       
@@ -411,12 +454,12 @@ $border-radius-lg: 16rpx;
     }
     
     .join-btn {
-      padding: 8rpx 20rpx;
+      padding: 10rpx 35rpx;
       border-radius: 100rpx;
       white-space: nowrap;
       font-size: 24rpx;
+	  margin-right: 10rpx;
       text-align: center;
-      
       &.blue-join {
         background-color: $primary-color;
         color: white;

@@ -18,11 +18,12 @@
       <text class="tab-text">竞赛</text>
       <view v-if="activeTab === 'competition'" class="active-indicator"></view>
     </view>
+ 
     <view class="publish-btn-container">
       <view class="publish-btn pulse" @click="showPublishOptions">
         <text class="iconfont icon-plus"></text>
       </view>
-      <text class="publish-text">发布</text>
+
     </view>
     <view 
       class="tab-item" 
@@ -53,7 +54,7 @@ const props = defineProps({
   activeTab: {
     type: String,
     default: 'home',
-    validator: (value) => ['home', 'competition', 'team', 'profile'].includes(value)
+    validator: (value) => ['home', 'competition', 'task-square', 'team', 'profile'].includes(value)
   }
 });
 
@@ -95,6 +96,7 @@ function switchTab(tab) {
     const tabRoutes = {
       'home': '/pages/index/index',
       'competition': '/pages/competition/index',
+      'task-square': '/pages/task-square/index',
       'team': '/pages/team/list',
       'profile': '/pages/profile/index'
     };
@@ -188,7 +190,7 @@ function showPublishMenu() {
       text: '发布任务',
       action: () => {
         uni.navigateTo({
-          url: '/pages/team/create?mode=recruit'
+          url: '/pages/task-square/create'
         });
       }
     }

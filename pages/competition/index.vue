@@ -410,6 +410,7 @@ export default {
 
 <style lang="scss">
 @import '../../static/iconfont.css';
+@import '@/config/theme.scss';
 
 // 颜色变量
 $primary-color: #247ae4;

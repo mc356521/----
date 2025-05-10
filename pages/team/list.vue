@@ -1,33 +1,15 @@
 <template>
   <view class="container">
     <!-- 顶部导航栏 -->
-    <view class="sticky-header">
-      <view class="header-title">
-        <text class="section-title">组队广场</text>
-        <view class="header-actions">
-          <view class="action-btn">
-          <text class="iconfont icon-search"></text>
-          </view>
-          <view class="action-btn">
-          <text class="iconfont icon-filter"></text>
-          </view>
-        </view>
-      </view>
-      
-      <!-- 分类标签 -->
-      <scroll-view scroll-x="true" class="category-scroll">
-        <view class="category-list">
-          <view 
-            v-for="(category, index) in categories" 
-            :key="index" 
-            class="category-item"
-            :class="currentCategory === index ? 'active-category' : ''"
-            @click="selectCategory(index)">
-            <text>{{ category }}</text>
-          </view>
-        </view>
-      </scroll-view>
-    </view>
+    <header-bar
+      title="组队广场"
+      :categories="categories"
+      :default-category="currentCategory"
+      show-filter="true"
+      @search="goToSearch"
+      @filter="showFilterOptions"
+      @category-change="selectCategory"
+    ></header-bar>
 
     <!-- 组队列表 -->
     <scroll-view scroll-y="true" class="team-list" @scrolltolower="loadMore">
@@ -75,6 +57,7 @@
 import { ref, reactive, onMounted } from 'vue';
 import TeamCard from '@/components/team/TeamCard.vue';
 import TabBar from '@/components/TabBar.vue';
+import HeaderBar from '@/components/HeaderBar.vue';
 import teamApi from '@/api/modules/team';
 
 // 分类数据
@@ -343,23 +326,33 @@ function showPublishOptions() {
   });
 }
 
+// 跳转到搜索页
+function goToSearch() {
+  uni.navigateTo({
+    url: '/pages/search/index'
+  });
+}
+
+// 显示筛选选项
+function showFilterOptions() {
+  uni.showActionSheet({
+    itemList: ['最新发布', '热门团队', '即将截止'],
+    success: function (res) {
+      // 处理筛选选项
+      uni.showToast({
+        title: `选择了筛选: ${res.tapIndex}`,
+        icon: 'none'
+      });
+    }
+  });
+}
+
 </script>
 
 <style lang="scss">
 @import '../../static/iconfont.css';
 @import '../../static/animate.css';
-
-// 颜色变量
-$primary-color: #247ae4;
-$background-color: #f8fafc;
-$card-color: #ffffff;
-$text-color: #333333;
-$text-secondary: #6B7280;
-$text-muted: #344347;
-$shadow-sm: 0 2rpx 6rpx rgba(91, 51, 51, 0.05);
-$shadow-md: 0 4rpx 10rpx rgba(0, 0, 0, 0.1);
-$border-radius-lg: 16rpx;
-$border-radius-full: 100rpx;
+@import '../../config/theme.scss';
 
 // 动画
 @keyframes pulse {
@@ -434,15 +427,22 @@ page {
     width: 100%;
     white-space: nowrap;
     padding: 16rpx 20rpx;
+    overflow-x: auto;
+    /* 隐藏滚动条但保留滚动功能 */
+    &::-webkit-scrollbar {
+      display: none;
+    }
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
     
     .category-list {
       display: inline-flex;
+      flex-wrap: nowrap;
       gap: 16rpx;
-      padding: 0 10rpx;
       
       .category-item {
         display: inline-block;
-        padding: 13rpx 13rpx;
+      
         border-radius: $border-radius-full;
         background-color: #F3F4F6;
         font-size: 26rpx;

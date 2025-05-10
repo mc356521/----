@@ -55,6 +55,17 @@ const requestInterceptor = (config) => {
     config.header['Content-Type'] = 'application/json';
   }
   
+  // 输出完整请求信息用于调试
+  if (env.debug) {
+    console.log('完整请求配置:', {
+      url: config.url,
+      method: config.method,
+      headers: config.header,
+      data: config.data,
+      params: config.params
+    });
+  }
+  
   return config;
 };
 
@@ -70,7 +81,7 @@ const responseInterceptor = (response) => {
     if (response.config && response.config.url && 
         (response.config.url.includes('/users/login') || response.config.url.includes('/user/login'))) {
       // 登录接口直接返回data
-      if (response.data && response.data.data) {
+      if (response.data && response.data.data && typeof response.data.data === 'string') {
         setToken(response.data.data);
         if (env.debug) {
           console.log('已保存token:', response.data.data);
@@ -117,13 +128,29 @@ const responseInterceptor = (response) => {
 const request = (options) => {
   // 合并基础配置和请求参数
   const config = {
-    url: options.url.startsWith('http') ? options.url : env.baseUrl + options.url,
+    url: options.url || '',
     method: options.method || 'GET',
     data: options.data || {},
     params: options.params || {},
     header: options.header || {},
     timeout: options.timeout || env.timeout || 60000
   };
+
+  // 处理URL地址
+  // 如果URL已经包含完整的http/https前缀，则不添加baseUrl
+  if (!config.url.startsWith('http://') && !config.url.startsWith('https://')) {
+    // 检查URL是否已经包含baseUrl
+    if (!config.url.startsWith(env.baseUrl)) {
+      // 避免重复的斜杠
+      if (config.url.startsWith('/') && env.baseUrl.endsWith('/')) {
+        config.url = env.baseUrl + config.url.substring(1);
+      } else if (!config.url.startsWith('/') && !env.baseUrl.endsWith('/')) {
+        config.url = env.baseUrl + '/' + config.url;
+      } else {
+        config.url = env.baseUrl + config.url;
+      }
+    }
+  }
 
   // 将GET请求参数处理到URL
   if (config.method === 'GET' && Object.keys(config.params).length > 0) {

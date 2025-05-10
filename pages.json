@@ -15,6 +15,31 @@
 			}
 		},
 		{
+			"path": "pages/task-square/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "任务广场",
+				"enablePullDownRefresh": true,
+				"onReachBottomDistance": 50
+			}
+		},
+		{
+			"path": "pages/task-square/detail",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "任务详情",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/task-square/create",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "发布任务",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
 			"path": "pages/team/detail",
 			"style": {
 				"navigationStyle": "custom",
@@ -100,6 +125,10 @@
 			},
 			{
 				"pagePath": "pages/competition/index",
+				"text": " "
+			},
+			{
+				"pagePath": "pages/task-square/index",
 				"text": " "
 			},
 			{

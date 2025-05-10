@@ -1,5 +1,31 @@
 /* 水平间距 */
 /* 水平间距 */
+/* 导入主题变量 */
+.uni-popup[data-v-4dd3c44b] {
+  position: fixed;
+  z-index: 99;
+}
+.uni-popup.top[data-v-4dd3c44b], .uni-popup.left[data-v-4dd3c44b], .uni-popup.right[data-v-4dd3c44b] {
+  top: 0;
+}
+.uni-popup .uni-popup__wrapper[data-v-4dd3c44b] {
+  display: block;
+  position: relative;
+  /* iphonex 等安全区设置，底部安全区适配 */
+}
+.uni-popup .uni-popup__wrapper.left[data-v-4dd3c44b], .uni-popup .uni-popup__wrapper.right[data-v-4dd3c44b] {
+  padding-top: 0;
+  flex: 1;
+}
+.fixforpc-z-index[data-v-4dd3c44b] {
+  z-index: 999;
+}
+.fixforpc-top[data-v-4dd3c44b] {
+  top: 0;
+}
+/* 水平间距 */
+/* 水平间距 */
+/* 导入主题变量 */
 .uniui-cart-filled[data-v-d31e1c47]:before {
   content: "\e6d0";
 }
@@ -509,6 +535,7 @@
 }
 /* 水平间距 */
 /* 水平间距 */
+/* 导入主题变量 */
 .uni-calendar-item__weeks-box[data-v-3c762a01] {
   flex: 1;
   display: flex;
@@ -599,6 +626,7 @@
 }
 /* 水平间距 */
 /* 水平间距 */
+/* 导入主题变量 */
 .uni-datetime-picker[data-v-1d532b70] {
   /* width: 100%; */
 }
@@ -703,6 +731,7 @@
 }
 /* 水平间距 */
 /* 水平间距 */
+/* 导入主题变量 */
 .uni-calendar[data-v-1d379219] {
   display: flex;
   flex-direction: column;
@@ -931,6 +960,7 @@
 }
 /* 水平间距 */
 /* 水平间距 */
+/* 导入主题变量 */
 .uni-date[data-v-9802168a] {
   width: 100%;
   flex: 1;
@@ -1109,6 +1139,9 @@
   margin-left: -6px;
   border-bottom-color: #fff;
 }
+/* 水平间距 */
+/* 水平间距 */
+/* 导入主题变量 */
 @font-face {
   font-family: 'iconfont';
   src: url('iconfont/iconfont.ttf') format('truetype');
@@ -1165,7 +1198,6 @@
 .icon-graduation::before {
   content: '\e60a';
 }
-
 /* 新增图标 */
 .icon-spark::before {
   content: '\e842'; /* 使用火焰图标作为火花图标 */
@@ -1230,16 +1262,6 @@
 body {
   background-color: #f8fafc;
   font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif;
-  --primary-color: #4A90E2;
-  --secondary-color: #7ED321;
-  --accent-color: #FF6B6B;
-  --bg-color: #f8fafc;
-  --card-color: #ffffff;
-  --text-color: #333333;
-  --text-secondary: #6B7280;
-  --text-muted: #9CA3AF;
-  --border-color: #E5E7EB;
-  --border-radius: 0.375rem;
 }
 .container {
   display: flex;
@@ -1247,258 +1269,623 @@ body {
   min-height: 100vh;
   padding-bottom: 3.75rem;
 }
-
 /* 顶部导航栏 */
 .sticky-header {
   position: -webkit-sticky;
   position: sticky;
   top: 0;
   z-index: 10;
-  background-color: var(--primary-color);
-  box-shadow: 0 0.0625rem 0.25rem rgba(0, 0, 0, 0.1);
+  background-color: #4A90E2;
+  box-shadow: 0 0.0625rem 0.25rem rgba(0, 0, 0, 0.05);
 }
-.nav-bar {
+.sticky-header .nav-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0.625rem 0.9375rem;
   color: white;
 }
-.back-btn {
+.sticky-header .nav-bar .back-btn, .sticky-header .nav-bar .help-btn {
   width: 1.875rem;
   height: 1.875rem;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.page-title {
+.sticky-header .nav-bar .page-title {
   font-size: 1.125rem;
   font-weight: bold;
 }
-.help-btn {
-  width: 1.875rem;
-  height: 1.875rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 /* 表单内容 */
 .form-content {
   flex: 1;
-  padding: 0.9375rem;
 }
 .form-section {
-  background-color: var(--card-color);
-  border-radius: 0.5rem;
-  padding: 0.9375rem;
-  margin-bottom: 0.9375rem;
+  background-color: #ffffff;
+  border-radius: 0.375rem;
+  padding: 0.625rem;
+  margin-bottom: 0.625rem;
   box-shadow: 0 0.0625rem 0.25rem rgba(0, 0, 0, 0.05);
 }
-.section-header {
+.form-section .section-header {
   display: flex;
   align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.625rem;
 }
-.section-icon {
-  color: var(--primary-color);
+.form-section .section-header .section-icon {
+  color: #4A90E2;
   font-size: 1.25rem;
-  margin-right: 0.5rem;
+  margin-right: 0.375rem;
 }
-.section-title {
+.form-section .section-header .section-title {
   font-size: 1rem;
   font-weight: bold;
-  color: var(--text-color);
+  color: #333333;
 }
 .form-item {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.625rem;
 }
-.form-label {
-  display: block;
+.form-item .form-label {
+  display: flex;
+  align-items: center;
   font-size: 0.875rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.375rem;
+  color: #6B7280;
+  margin-bottom: 0.25rem;
 }
-.required {
-  color: var(--accent-color);
+.form-item .form-label .required {
+  color: #FF6B6B;
   margin-left: 0.1875rem;
+  font-size: 0.875rem;
 }
-.form-input {
+.form-item .form-input {
   width: 100%;
   height: 2.5rem;
   background-color: #f9fafb;
-  border: 0.03125rem solid var(--border-color);
-  border-radius: var(--border-radius);
+  border: 0.03125rem solid #E5E7EB;
+  border-radius: 0.375rem;
   padding: 0 0.75rem;
   font-size: 0.875rem;
-  color: var(--text-color);
+  color: #333333;
   box-sizing: border-box;
 }
-.form-textarea {
+.form-item .form-textarea {
   width: 100%;
   height: 5rem;
   background-color: #f9fafb;
-  border: 0.03125rem solid var(--border-color);
-  border-radius: var(--border-radius);
+  border: 0.03125rem solid #E5E7EB;
+  border-radius: 0.375rem;
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
-  color: var(--text-color);
+  color: #333333;
   box-sizing: border-box;
+}
+/* 教师与角色项目卡片样式 */
+.teacher-item, .role-item {
+  background-color: #f9fafb;
+  border-radius: 0.375rem;
+  padding: 0.625rem;
+  margin-bottom: 0.625rem;
+}
+.teacher-item .item-header, .role-item .item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.teacher-item .item-header .item-title, .role-item .item-header .item-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #333333;
+}
+.teacher-item .item-header .delete-btn, .role-item .item-header .delete-btn {
+  width: 1.5625rem;
+  height: 1.5625rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: rgba(255, 107, 107, 0.1);
+}
+.teacher-item .item-header .delete-btn .iconfont, .role-item .item-header .delete-btn .iconfont {
+  font-size: 0.9375rem;
+  color: #FF6B6B;
+}
+.teacher-item .item-header .delete-btn:active, .role-item .item-header .delete-btn:active {
+  background-color: rgba(255, 107, 107, 0.2);
 }
 .select-box {
   width: 100%;
   height: 2.5rem;
-  background-color: #f9fafb;
-  border: 0.03125rem solid var(--border-color);
-  border-radius: var(--border-radius);
+  background-color: #fff;
+  border: 0.03125rem solid #E5E7EB;
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 0 0.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  box-sizing: border-box;
 }
-.select-text {
+.select-box .select-text {
   font-size: 0.875rem;
-  color: var(--text-color);
+  color: #333333;
 }
-.placeholder-text {
+.select-box .placeholder-text {
   font-size: 0.875rem;
-  color: var(--text-muted);
+  color: #9CA3AF;
 }
-.select-arrow {
-  color: var(--text-muted);
+.select-box .select-arrow {
+  color: #9CA3AF;
   font-size: 1rem;
+  transform: rotate(-90deg);
 }
-.date-picker-box {
-  width: 100%;
-}
-.picker-view {
-  width: 100%;
-  height: 2.5rem;
-  background-color: #f9fafb;
-  border: 0.03125rem solid var(--border-color);
-  border-radius: var(--border-radius);
-  padding: 0 0.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.picker-icon {
-  color: var(--text-muted);
-  font-size: 1rem;
-}
-
-/* 指导老师和角色项目 */
-.teacher-item, .role-item {
-  background-color: #f9fafb;
-  border-radius: var(--border-radius);
-  padding: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-.item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-.item-title {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-color);
-}
-.delete-btn {
-  width: 1.875rem;
-  height: 1.875rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.delete-btn .iconfont {
-  color: var(--accent-color);
-  font-size: 1.125rem;
-}
+/* 添加按钮样式 */
 .add-item-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 2.5rem;
-  border: 0.03125rem dashed var(--border-color);
-  border-radius: var(--border-radius);
-  color: var(--primary-color);
+  padding: 0.625rem 0;
+  border: 0.03125rem dashed #E5E7EB;
+  border-radius: 0.375rem;
+  margin-bottom: 0.625rem;
+  color: #4A90E2;
   font-size: 0.875rem;
 }
 .add-item-btn .iconfont {
-  margin-right: 0.375rem;
+  margin-right: 0.25rem;
+  font-size: 1rem;
 }
-
-/* 技能标签 */
+.add-item-btn:active {
+  background-color: rgba(74, 144, 226, 0.05);
+}
+/* 竞赛选择弹窗样式 */
+.popup-container {
+  background-color: #ffffff;
+  border-radius: 0.75rem 0.75rem 0 0;
+  padding-bottom: 0.625rem;
+  height: 25rem;
+  display: flex;
+  flex-direction: column;
+}
+.popup-container .popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem 0.9375rem;
+  border-bottom: 0.03125rem solid #E5E7EB;
+}
+.popup-container .popup-header .popup-title {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #333333;
+}
+.popup-container .popup-header .popup-close {
+  font-size: 0.875rem;
+  color: #6B7280;
+}
+.popup-container .category-scroll {
+  height: 2.1875rem;
+  white-space: nowrap;
+  padding: 0.5rem;
+  border-bottom: 0.03125rem solid #E5E7EB;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.popup-container .category-scroll::-webkit-scrollbar {
+  display: none;
+}
+.popup-container .category-scroll .category-list {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  padding-right: 0.5rem;
+}
+.popup-container .category-scroll .category-list .category-tag {
+  display: inline-block;
+  padding: 0.3125rem 0.75rem;
+  min-width: 3.75rem;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  text-align: center;
+  background-color: #f3f4f6;
+  border-radius: 3.125rem;
+  font-size: 0.75rem;
+  color: #6B7280;
+  transition: all 0.3s ease;
+}
+.popup-container .category-scroll .category-list .category-tag.active-category {
+  background-color: #4A90E2;
+  color: white;
+}
+.popup-container .competitions-list {
+  flex: 1;
+  padding: 0.3125rem 0.625rem;
+  height: 15rem;
+  overflow-y: auto;
+}
+.popup-container .competitions-list .competition-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.625rem;
+  border-bottom: 0.03125rem solid #E5E7EB;
+  transition: background-color 0.3s ease;
+}
+.popup-container .competitions-list .competition-item:active {
+  background-color: #f9fafb;
+}
+.popup-container .competitions-list .competition-item.active-competition {
+  background-color: rgba(74, 144, 226, 0.1);
+}
+.popup-container .competitions-list .competition-item .competition-info {
+  flex: 1;
+}
+.popup-container .competitions-list .competition-item .competition-info .competition-title {
+  font-size: 0.8125rem;
+  color: #333333;
+  margin-bottom: 0.125rem;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 15.625rem;
+}
+.popup-container .competitions-list .competition-item .competition-info .competition-category {
+  font-size: 0.6875rem;
+  color: #6B7280;
+  display: block;
+}
+.popup-container .competitions-list .competition-item .hot-tag {
+  font-size: 0.625rem;
+  color: white;
+  background-color: #FF6B6B;
+  padding: 0.0625rem 0.3125rem;
+  border-radius: 3.125rem;
+  margin-right: 0.3125rem;
+}
+.popup-container .competitions-list .competition-item .icon-check {
+  color: #4A90E2;
+  font-size: 1.125rem;
+}
+.popup-container .competitions-list .empty-tip {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1.875rem 0;
+  color: #9CA3AF;
+  font-size: 0.875rem;
+}
+.popup-container .popup-footer {
+  padding: 0.625rem 0.9375rem;
+  border-top: 0.03125rem solid #E5E7EB;
+  background-color: #ffffff;
+}
+.popup-container .popup-footer .confirm-btn {
+  width: 100%;
+  height: 2.5rem;
+  line-height: 2.5rem;
+  background-color: #4A90E2;
+  color: white;
+  border-radius: 0.25rem;
+  text-align: center;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+/* 技能标签样式 */
 .skill-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  gap: 0.375rem;
+  margin-bottom: 0.375rem;
 }
-.skill-tag {
+.skill-tags .skill-tag {
   display: flex;
   align-items: center;
   padding: 0.25rem 0.5rem;
-  background-color: #EBF3FC;
-  color: var(--primary-color);
+  background-color: rgba(74, 144, 226, 0.1);
   border-radius: 3.125rem;
   font-size: 0.75rem;
+  color: #4A90E2;
 }
-.skill-tag .iconfont {
+.skill-tags .skill-tag .iconfont {
   margin-left: 0.25rem;
   font-size: 0.75rem;
+  color: #FF6B6B;
 }
 .skill-input-box {
   display: flex;
+  justify-content: space-between;
   align-items: center;
+  height: 2.1875rem;
+  border: 0.03125rem solid #E5E7EB;
+  border-radius: 0.375rem;
+  padding: 0 0.5rem;
+  background-color: #fff;
 }
-.skill-input {
+.skill-input-box .skill-input {
   flex: 1;
-  height: 2.5rem;
-  background-color: #f9fafb;
-  border: 0.03125rem solid var(--border-color);
-  border-top-left-radius: var(--border-radius);
-  border-bottom-left-radius: var(--border-radius);
-  padding: 0 0.75rem;
+  height: 100%;
   font-size: 0.875rem;
+  color: #333333;
 }
-.add-skill-btn {
-  width: 2.5rem;
-  height: 2.5rem;
-  background-color: var(--primary-color);
-  border-top-right-radius: var(--border-radius);
-  border-bottom-right-radius: var(--border-radius);
+.skill-input-box .add-skill-btn {
+  width: 1.5625rem;
+  height: 1.5625rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: rgba(74, 144, 226, 0.1);
+  border-radius: 50%;
 }
-.add-skill-btn .iconfont {
-  color: white;
-  font-size: 1.125rem;
+.skill-input-box .add-skill-btn .iconfont {
+  font-size: 0.8125rem;
+  color: #4A90E2;
 }
-
 /* 底部提交按钮 */
 .submit-bar {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: var(--card-color);
-  border-top: 0.03125rem solid var(--border-color);
-  padding: 0.75rem;
-  z-index: 10;
+  padding: 0.625rem 0.9375rem;
+  background-color: #ffffff;
+  box-shadow: 0 -0.0625rem 0.3125rem rgba(0, 0, 0, 0.05);
+  z-index: 9;
 }
-.submit-btn {
+.submit-bar .submit-btn {
   width: 100%;
-  height: 2.75rem;
-  line-height: 2.75rem;
-  background-color: var(--primary-color);
+  height: 2.8125rem;
+  line-height: 2.8125rem;
+  background-color: #4A90E2;
   color: white;
-  border-radius: 1.375rem;
+  border-radius: 0.375rem;
   text-align: center;
   font-size: 1rem;
   font-weight: 500;
-  box-shadow: 0 0.125rem 0.375rem rgba(74, 144, 226, 0.3);
+  letter-spacing: 0.0625rem;
+}
+/* 日期选择器样式 */
+.date-picker-box {
+  width: 100%;
+}
+.date-picker-box .picker-view {
+  width: 100%;
+  height: 2.5rem;
+  background-color: #fff;
+  border: 0.03125rem solid #E5E7EB;
+  border-radius: 0.375rem;
+  padding: 0 0.75rem;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.date-picker-box .picker-view .select-text {
+  font-size: 0.875rem;
+  color: #333333;
+}
+.date-picker-box .picker-view .placeholder-text {
+  font-size: 0.875rem;
+  color: #9CA3AF;
+}
+.date-picker-box .picker-view .picker-icon {
+  font-size: 1rem;
+  color: #9CA3AF;
+}
+/* 隐藏uni-datetime-picker自带的清除按钮 */
+ .uni-date-x {
+  display: none;
+}
+.category-programming {
+  color: #5a67d8 !important;
+}
+.category-math {
+  color: #38a169 !important;
+}
+.category-electronics {
+  color: #dd6b20 !important;
+}
+.category-robotics {
+  color: #805ad5 !important;
+}
+.category-innovation {
+  color: #e53e3e !important;
+}
+/* 教师选择器样式 */
+.teacher-item-select {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.625rem;
+  border-bottom: 0.03125rem solid #E5E7EB;
+  transition: background-color 0.3s ease;
+}
+.teacher-item-select:active {
+  background-color: #f9fafb;
+}
+.teacher-item-select.active-teacher {
+  background-color: rgba(74, 144, 226, 0.1);
+}
+.teacher-item-select.disabled-teacher {
+  opacity: 0.6;
+  background-color: #f3f4f6;
+}
+.teacher-item-select.disabled-teacher:active {
+  background-color: #f3f4f6;
+}
+.teacher-item-select .teacher-info {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+.teacher-item-select .teacher-info .teacher-avatar {
+  width: 2.1875rem;
+  height: 2.1875rem;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+  background-color: #f3f4f6;
+}
+.teacher-item-select .teacher-info .teacher-detail {
+  flex: 1;
+}
+.teacher-item-select .teacher-info .teacher-detail .teacher-name {
+  font-size: 0.8125rem;
+  color: #333333;
+  margin-bottom: 0.125rem;
+  display: block;
+}
+.teacher-item-select .teacher-info .teacher-detail .teacher-major {
+  font-size: 0.6875rem;
+  color: #6B7280;
+  display: block;
+}
+.teacher-item-select .teacher-status .selected-tag {
+  font-size: 0.625rem;
+  color: white;
+  background-color: #6B7280;
+  padding: 0.0625rem 0.3125rem;
+  border-radius: 3.125rem;
+}
+.teacher-item-select .teacher-status .icon-check {
+  color: #4A90E2;
+  font-size: 1.125rem;
+}
+/* 搜索框样式 */
+.search-box {
+  padding: 0.375rem 0.5rem;
+  border-bottom: 0.03125rem solid #E5E7EB;
+  background-color: #fff;
+}
+.search-box .search-input-wrapper {
+  display: flex;
+  align-items: center;
+  height: 1.875rem;
+  background-color: #f5f5f5;
+  border-radius: 0.9375rem;
+  padding: 0 0.625rem;
+}
+.search-box .search-input-wrapper .iconfont {
+  font-size: 0.875rem;
+  color: #9CA3AF;
+  margin-right: 0.3125rem;
+}
+.search-box .search-input-wrapper .search-input {
+  flex: 1;
+  height: 100%;
+  font-size: 0.8125rem;
+  color: #333333;
+  background-color: transparent;
+}
+.search-box .search-input-wrapper .clear-btn {
+  font-size: 0.875rem;
+  color: #9CA3AF;
+  padding: 0 0.3125rem;
+}
+/* 技能标签选择器样式 */
+.skill-item-select {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.625rem;
+  border-bottom: 0.03125rem solid #E5E7EB;
+  transition: background-color 0.3s ease;
+}
+.skill-item-select:active {
+  background-color: #f9fafb;
+}
+.skill-item-select.active-skill {
+  background-color: rgba(74, 144, 226, 0.1);
+}
+.skill-item-select.disabled-skill {
+  opacity: 0.6;
+  background-color: #f3f4f6;
+}
+.skill-item-select.disabled-skill:active {
+  background-color: #f3f4f6;
+}
+.skill-item-select .skill-info {
+  flex: 1;
+}
+.skill-item-select .skill-info .skill-name {
+  font-size: 0.8125rem;
+  color: #333333;
+  display: block;
+}
+.skill-item-select .skill-info .skill-desc {
+  font-size: 0.6875rem;
+  color: #6B7280;
+  display: block;
+  margin-top: 0.125rem;
+}
+.skill-item-select .skill-check .selection-indicator {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.9375rem;
+  font-size: 0.6875rem;
+  background-color: #f0f0f0;
+  color: #6B7280;
+}
+.skill-item-select .skill-check .selection-indicator.selected {
+  background-color: rgba(74, 144, 226, 0.2);
+  color: #4A90E2;
+  font-weight: 500;
+}
+.popup-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem 0.9375rem;
+  border-top: 0.03125rem solid #E5E7EB;
+  background-color: #ffffff;
+}
+.popup-footer .selected-count {
+  font-size: 0.8125rem;
+  color: #6B7280;
+}
+.popup-footer .selected-count .count-highlight {
+  color: #4A90E2;
+  font-weight: bold;
+  font-size: 0.875rem;
+}
+.popup-footer .confirm-btn {
+  width: 6.25rem;
+  height: 2.1875rem;
+  line-height: 2.1875rem;
+  background-color: #4A90E2;
+  color: white;
+  border-radius: 0.25rem;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.skill-select-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 2.5rem;
+  background-color: #f9fafb;
+  border: 0.03125rem solid #E5E7EB;
+  border-radius: 0.375rem;
+  padding: 0 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.skill-select-btn .iconfont {
+  color: #6B7280;
+}
+.skill-select-btn .iconfont.icon-tag {
+  margin-right: 0.375rem;
+  font-size: 0.875rem;
+}
+.skill-select-btn .iconfont.icon-arrow-right {
+  font-size: 0.75rem;
+}
+.skill-select-btn uni-text {
+  color: #6B7280;
+  font-size: 0.875rem;
+}
+.skill-select-btn uni-text:nth-child(2) {
+  flex: 1;
+}
+.skill-select-btn:active {
+  background-color: #f0f2f5;
 }

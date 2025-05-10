@@ -1,0 +1,521 @@
+/* 水平间距 */
+/* 水平间距 */
+/* 导入主题变量 */
+.uni-load-more[data-v-9245e42c] {
+  display: flex;
+  flex-direction: row;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+}
+.uni-load-more__text[data-v-9245e42c] {
+  font-size: 14px;
+  margin-left: 8px;
+}
+.uni-load-more__img[data-v-9245e42c] {
+  width: 24px;
+  height: 24px;
+}
+.uni-load-more__img--nvue[data-v-9245e42c] {
+  color: #666666;
+}
+.uni-load-more__img--android[data-v-9245e42c],
+.uni-load-more__img--ios[data-v-9245e42c] {
+  width: 24px;
+  height: 24px;
+  transform: rotate(0deg);
+}
+.uni-load-more__img--android[data-v-9245e42c] {
+  animation: loading-ios 1s 0s linear infinite;
+}
+@keyframes loading-android-9245e42c {
+0% {
+    transform: rotate(0deg);
+}
+100% {
+    transform: rotate(360deg);
+}
+}
+.uni-load-more__img--ios-H5[data-v-9245e42c] {
+  position: relative;
+  animation: loading-ios-H5-9245e42c 1s 0s step-end infinite;
+}
+.uni-load-more__img--ios-H5 uni-image[data-v-9245e42c] {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+}
+@keyframes loading-ios-H5-9245e42c {
+0% {
+    transform: rotate(0deg);
+}
+8% {
+    transform: rotate(30deg);
+}
+16% {
+    transform: rotate(60deg);
+}
+24% {
+    transform: rotate(90deg);
+}
+32% {
+    transform: rotate(120deg);
+}
+40% {
+    transform: rotate(150deg);
+}
+48% {
+    transform: rotate(180deg);
+}
+56% {
+    transform: rotate(210deg);
+}
+64% {
+    transform: rotate(240deg);
+}
+73% {
+    transform: rotate(270deg);
+}
+82% {
+    transform: rotate(300deg);
+}
+91% {
+    transform: rotate(330deg);
+}
+100% {
+    transform: rotate(360deg);
+}
+}
+.uni-load-more__img--android-MP[data-v-9245e42c] {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  transform: rotate(0deg);
+  animation: loading-ios 1s 0s ease infinite;
+}
+.uni-load-more__img--android-MP .uni-load-more__img-icon[data-v-9245e42c] {
+  position: absolute;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: solid 2px transparent;
+  border-top: solid 2px #777777;
+  transform-origin: center;
+}
+.uni-load-more__img--android-MP .uni-load-more__img-icon[data-v-9245e42c]:nth-child(1) {
+  animation: loading-android-MP-1-9245e42c 1s 0s linear infinite;
+}
+.uni-load-more__img--android-MP .uni-load-more__img-icon[data-v-9245e42c]:nth-child(2) {
+  animation: loading-android-MP-2-9245e42c 1s 0s linear infinite;
+}
+.uni-load-more__img--android-MP .uni-load-more__img-icon[data-v-9245e42c]:nth-child(3) {
+  animation: loading-android-MP-3-9245e42c 1s 0s linear infinite;
+}
+@keyframes loading-android-9245e42c {
+0% {
+    transform: rotate(0deg);
+}
+100% {
+    transform: rotate(360deg);
+}
+}
+@keyframes loading-android-MP-1-9245e42c {
+0% {
+    transform: rotate(0deg);
+}
+50% {
+    transform: rotate(90deg);
+}
+100% {
+    transform: rotate(360deg);
+}
+}
+@keyframes loading-android-MP-2-9245e42c {
+0% {
+    transform: rotate(0deg);
+}
+50% {
+    transform: rotate(180deg);
+}
+100% {
+    transform: rotate(360deg);
+}
+}
+@keyframes loading-android-MP-3-9245e42c {
+0% {
+    transform: rotate(0deg);
+}
+50% {
+    transform: rotate(270deg);
+}
+100% {
+    transform: rotate(360deg);
+}
+}
+/* 水平间距 */
+/* 水平间距 */
+/* 导入主题变量 */
+/* 使用项目色彩系统 */
+/* 全局容器样式 */
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+/* 顶部固定区域 */
+.header-fixed {
+  position: fixed;
+  width: 100%;
+  top: 0;
+  z-index: 999;
+  background-color: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* 顶部导航栏 */
+.header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+}
+.header-bar .back-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 10px;
+}
+.header-bar .back-btn .iconfont {
+  font-size: 20px;
+  color: #333333;
+}
+.header-bar .header-title {
+  flex: 1;
+  font-size: 18px;
+  font-weight: bold;
+  color: #333333;
+  text-align: center;
+}
+.header-bar .header-actions {
+  display: flex;
+  gap: 12px;
+}
+.header-bar .header-actions .action-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.header-bar .header-actions .action-btn .iconfont {
+  font-size: 20px;
+  color: #666666;
+}
+
+/* 分类标签栏 */
+.category-scroll {
+  width: 100%;
+  white-space: nowrap;
+  padding: 10px 12px 4px;
+}
+.category-scroll .category-container {
+  display: flex;
+  padding-right: 20px;
+}
+.category-scroll .category-container .category-tag {
+  display: inline-block;
+  padding: 6px 16px;
+  margin-right: 8px;
+  border-radius: 20px;
+  font-size: 14px;
+  background-color: #f5f5f5;
+  color: #666666;
+  transition: all 0.3s;
+}
+.category-scroll .category-container .category-tag-active {
+  background-color: #4A90E2;
+  color: #ffffff;
+}
+
+/* 状态筛选标签 */
+.status-scroll {
+  width: 100%;
+  white-space: nowrap;
+  padding: 4px 12px 10px;
+}
+.status-scroll .status-container {
+  display: flex;
+  padding-right: 20px;
+}
+.status-scroll .status-container .status-filter-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  margin-right: 8px;
+  border-radius: 16px;
+  font-size: 12px;
+  background-color: #f5f5f5;
+  color: #666666;
+  transition: all 0.3s;
+}
+.status-scroll .status-container .status-filter-active {
+  background-color: #7ED321;
+  color: #ffffff;
+}
+
+/* 任务列表 */
+.tasks-scroll {
+  margin-top: 142px;
+  /* 顶部固定区域的高度 */
+  flex: 1;
+  padding-bottom: 80px;
+  /* 底部安全区域 */
+}
+.tasks-container {
+  padding: 12px;
+}
+
+/* 任务卡片 */
+.task-card {
+  margin-bottom: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+.task-card .task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.task-card .task-header .task-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333333;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+.task-card .task-header .task-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.task-card .task-header .task-tags .task-tag, .task-card .task-header .task-tags .task-status-tag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.task-card .task-header .task-tags .task-deadline {
+  font-size: 12px;
+  color: #999999;
+}
+.task-card .task-header .task-reward {
+  font-weight: bold;
+  font-size: 16px;
+}
+.task-card .task-header .reward-orange {
+  color: #FF6B6B;
+}
+.task-card .task-header .reward-gray {
+  color: #666666;
+}
+.task-card .task-desc {
+  margin: 10px 0;
+  font-size: 14px;
+  color: #666666;
+  line-height: 1.5;
+}
+.task-card .task-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+.task-card .task-footer .task-publisher {
+  display: flex;
+  align-items: center;
+}
+.task-card .task-footer .task-publisher .publisher-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+.task-card .task-footer .task-publisher .publisher-info {
+  font-size: 12px;
+  color: #999999;
+}
+.task-card .task-footer .task-stats {
+  display: flex;
+  gap: 12px;
+}
+.task-card .task-footer .task-stats .stat-item {
+  font-size: 12px;
+  color: #999999;
+}
+.task-card .task-footer .task-stats .stat-item .iconfont {
+  margin-right: 4px;
+}
+
+/* 任务标签颜色 */
+.tag-blue {
+  background-color: rgba(74, 144, 226, 0.1);
+  color: #4A90E2;
+}
+.tag-green {
+  background-color: rgba(126, 211, 33, 0.1);
+  color: #7ED321;
+}
+.tag-orange {
+  background-color: rgba(255, 107, 107, 0.1);
+  color: #FF6B6B;
+}
+.tag-purple {
+  background-color: rgba(156, 39, 176, 0.1);
+  color: #9C27B0;
+}
+.tag-pink {
+  background-color: rgba(233, 30, 99, 0.1);
+  color: #E91E63;
+}
+.tag-yellow {
+  background-color: rgba(255, 193, 7, 0.1);
+  color: #FFC107;
+}
+
+/* 任务状态标签 */
+.status-recruiting {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+.status-ongoing {
+  background-color: rgba(74, 144, 226, 0.1);
+  color: #4A90E2;
+}
+.status-ended {
+  background-color: rgba(153, 153, 153, 0.1);
+  color: #999999;
+}
+.status-canceled {
+  background-color: rgba(244, 67, 54, 0.1);
+  color: #F44336;
+}
+
+/* 奖励类型颜色 */
+.reward-orange {
+  color: #FF6B6B;
+}
+.reward-blue {
+  color: #4A90E2;
+}
+.reward-green {
+  color: #7ED321;
+}
+.reward-yellow {
+  color: #FFC107;
+}
+.reward-purple {
+  color: #9C27B0;
+}
+.reward-gray {
+  color: #666666;
+}
+
+/* 任务位置 */
+.task-location {
+  display: flex;
+  align-items: center;
+  margin: 8px 0;
+}
+.task-location .iconfont {
+  font-size: 14px;
+  color: #999999;
+  margin-right: 4px;
+}
+.task-location .location-text {
+  font-size: 12px;
+  color: #999999;
+}
+
+/* 悬浮按钮 */
+.float-btn {
+  position: fixed;
+  right: 20px;
+  bottom: 80px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #4A90E2;
+  color: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 16px rgba(74, 144, 226, 0.3);
+}
+.float-btn .iconfont {
+  font-size: 24px;
+}
+
+/* 加载更多 */
+.loading-more, .no-more {
+  padding: 16px 0;
+  text-align: center;
+  color: #999999;
+}
+
+/* 空数据状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+}
+.empty-state .empty-image {
+  width: 120px;
+  height: 120px;
+  opacity: 0.5;
+  margin-bottom: 16px;
+}
+.empty-state .empty-text {
+  font-size: 14px;
+  color: #999999;
+}
+
+/* 顶部刷新提示 */
+.refresh-tip {
+  padding: 16px 0;
+  text-align: center;
+}
+.refresh-text {
+  font-size: 14px;
+  color: #666666;
+}
+
+/* 底部安全区域 */
+.safe-area-bottom {
+  height: 30px;
+  /* 适配底部安全区域 */
+}
+
+/* 在iOS设备上增大底部安全区域 */
+@supports (padding-bottom: constant(safe-area-inset-bottom)) {
+.safe-area-bottom {
+    padding-bottom: constant(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-bottom);
+    height: calc(30px + constant(safe-area-inset-bottom));
+    height: calc(30px + env(safe-area-inset-bottom));
+}
+}

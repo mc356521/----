@@ -168,20 +168,25 @@
       <!-- 参赛队伍内容 -->
       <view v-if="currentTab === 'teams'" class="bg-white p-4 mt-2 shadow-sm">
         <!-- 搜索和筛选 -->
-        <view class="flex-row items-center mb-4">
-          <view class="relative flex-1">
-            <input type="text" placeholder="搜索队伍" class="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-lg text-sm" />
+        <view class="search-filter-container">
+          <view class="search-box">
             <text class="iconfont icon-search search-icon"></text>
+            <input type="text" placeholder="搜索队伍" class="search-input" v-model="searchText" />
+            <text v-if="searchText" class="iconfont icon-close-circle clear-icon" @click="clearSearch"></text>
           </view>
-          <view class="ml-2 px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-700">
-            <text class="iconfont icon-filter mr-1"></text>
-            <text>筛选</text>
+          <view class="filter-btn" @click="toggleFilter">
+            <text class="iconfont icon-filter filter-icon"></text>
+            <text class="filter-text">筛选</text>
           </view>
         </view>
         
         <!-- 队伍列表 -->
-        <view class="space-y-4">
-          <view v-for="(team, index) in teams" :key="index" class="team-card">
+        <view v-if="teams.length > 0" class="space-y-4">
+          <view 
+            v-for="team in teams" 
+            :key="team.id" 
+            class="team-card"
+            @click="viewTeamDetail(team.id)">
             <view class="flex-row justify-between items-start">
               <view>
                 <text class="font-bold text-gray-800">{{ team.name }}</text>
@@ -190,12 +195,29 @@
                   <text class="text-xs text-gray-500">{{ team.memberCount }}人团队</text>
                 </view>
               </view>
-              <view class="team-status" :style="{ backgroundColor: team.statusColor + '20', color: team.statusColor }">{{ team.status }}</view>
+              <view class="team-status" :style="{ backgroundColor: team.statusColor + '20', color: team.statusColor }">{{ team.statusText }}</view>
             </view>
             <text class="text-sm text-gray-600 mt-3">项目简介：{{ team.description }}</text>
+            
+            <!-- 角色标签 -->
+            <view v-if="team.roles && team.roles.length > 0" class="role-tags mt-3">
+              <view 
+                v-for="(role, roleIndex) in team.roles" 
+                :key="roleIndex" 
+                :class="['role-tag', role.isFilled ? 'role-filled' : 'role-recruiting']">
+                <text class="role-name">{{ role.name }}</text>
+                <text class="role-count">{{ role.currentCount || 0 }}/{{ role.requiredCount || 1 }}</text>
+              </view>
+            </view>
+            
             <view class="flex-row items-center justify-between mt-3">
               <view class="flex-row member-avatars">
-                <image v-for="(avatar, idx) in team.avatars" :key="idx" :src="avatar" class="member-avatar"></image>
+                <image 
+                  v-for="(avatar, idx) in team.avatars" 
+                  :key="idx" 
+                  :src="avatar || '/static/images/default-avatar.png'" 
+                  class="member-avatar">
+                </image>
                 <view v-if="team.remainingCount > 0" class="member-avatar-more">+{{ team.remainingCount }}</view>
               </view>
               <text class="text-blue-500 text-sm">{{ team.actionText }}</text>
@@ -203,9 +225,20 @@
           </view>
         </view>
         
+        <!-- 空状态 -->
+        <view v-else-if="!teamsLoading" class="empty-state">
+          <text class="text-gray-500">暂无参赛队伍</text>
+        </view>
+        
+        <!-- 加载状态 -->
+        <view v-if="teamsLoading" class="loading-state">
+          <view class="spinner-sm"></view>
+          <text class="text-sm text-gray-500 ml-2">加载中...</text>
+        </view>
+        
         <!-- 加载更多 -->
-        <view class="text-center mt-6">
-          <button class="load-more-btn">加载更多</button>
+        <view v-if="teams.length > 0 && teamsHasMore" class="text-center mt-6">
+          <button class="load-more-btn" @click="loadMoreTeams">加载更多</button>
         </view>
       </view>
       
@@ -318,6 +351,14 @@ const relatedCompetitions = ref([
     deadline: '7月5日'
   }
 ]);
+
+// 参赛队伍数据
+const teams = ref([]);
+const teamsLoading = ref(false);
+const teamsCurrentPage = ref(1);
+const teamsPageSize = ref(10);
+const teamsHasMore = ref(true);
+const searchText = ref('');
 
 // 获取竞赛详情数据
 async function getCompetitionDetail(id) {
@@ -443,6 +484,169 @@ function updateCompetitionStages(data) {
   }
 }
 
+// 获取竞赛相关队伍列表
+async function getCompetitionTeams(refresh = true) {
+  if (refresh) {
+    teamsCurrentPage.value = 1;
+    teams.value = [];
+  }
+  
+  if (!teamsHasMore.value && !refresh) return;
+  
+  teamsLoading.value = true;
+  try {
+    // 调用队伍列表API，传入竞赛ID作为筛选条件
+    const res = await api.team.getTeamList({
+      pageNum: teamsCurrentPage.value,
+      pageSize: teamsPageSize.value,
+      competitionId: competitionId.value
+    });
+    
+    if (res.code === 200 && res.data) {
+      const teamList = res.data.list || [];
+      
+      // 处理队伍数据，添加UI需要的状态颜色和展示数据
+      const processedTeams = teamList.map(team => {
+        // 处理头像数据
+        let avatars = [];
+        if (team.teamMemberAvatars) {
+          if (typeof team.teamMemberAvatars === 'string') {
+            avatars = team.teamMemberAvatars.split(',').filter(avatar => avatar);
+          } else if (Array.isArray(team.teamMemberAvatars)) {
+            avatars = team.teamMemberAvatars.filter(avatar => avatar);
+          }
+        }
+        
+        // 设置状态颜色
+        let statusColor = '#6B7280'; // 默认灰色
+        if (team.status === '0' || team.statusText === '招募中') {
+          statusColor = '#2563EB'; // 蓝色 - 招募中
+        } else if (team.status === '1' || team.statusText === '进行中') {
+          statusColor = '#10B981'; // 绿色 - 进行中
+        } else if (team.status === '2' || team.statusText === '已完成') {
+          statusColor = '#059669'; // 深绿色 - 已完成
+        }
+        
+        // 计算成员人数和剩余席位
+        const memberCount = team.memberCount || team.currentMemberCount || 0;
+        const maxMemberCount = team.maxMemberCount || 0;
+        const remainingCount = Math.max(0, maxMemberCount - memberCount);
+        
+        // 处理队伍所属院系/专业颜色
+        const facultyColor = getRandomColor(team.faculty || team.direction || '');
+        
+        // 处理角色信息
+        let roles = [];
+        if (team.roles && team.roles.length > 0) {
+          // 标准化角色数据格式，确保有统一的字段名
+          roles = team.roles.map(role => ({
+            id: role.id || 0,
+            name: role.name || '未知角色',
+            description: role.description || '',
+            currentCount: role.currentCount || 0,
+            requiredCount: role.requiredCount || 1,
+            isFilled: (role.currentCount || 0) >= (role.requiredCount || 1)
+          }));
+        }
+        
+        return {
+          ...team,
+          avatars: avatars.slice(0, 3), // 最多显示3个头像
+          statusColor,
+          memberCount,
+          remainingCount,
+          actionText: team.status === '0' ? '申请加入' : '查看详情',
+          facultyColor,
+          faculty: team.direction || '未知方向',  // 使用研究方向作为院系显示
+          roles
+        };
+      });
+      
+      // 更新队伍列表数据
+      if (refresh) {
+        teams.value = processedTeams;
+      } else {
+        teams.value = [...teams.value, ...processedTeams];
+      }
+      
+      // 更新分页信息
+      teamsHasMore.value = res.data.hasNext || false;
+      
+      if (teams.value.length === 0 && !refresh) {
+        uni.showToast({
+          title: '没有更多团队了',
+          icon: 'none'
+        });
+      }
+    } else {
+      if (refresh) {
+        uni.showToast({
+          title: '暂无参赛队伍',
+          icon: 'none'
+        });
+      }
+    }
+  } catch (error) {
+    console.error('获取竞赛队伍列表失败:', error);
+    uni.showToast({
+      title: '获取队伍列表失败',
+      icon: 'none'
+    });
+  } finally {
+    teamsLoading.value = false;
+  }
+}
+
+// 生成一致的随机颜色（基于字符串）
+function getRandomColor(str) {
+  // 使用固定的颜色集
+  const colors = [
+    '#2563EB', // 蓝色
+    '#10B981', // 绿色
+    '#8B5CF6', // 紫色
+    '#EC4899', // 粉色
+    '#F59E0B', // 橙色
+    '#EF4444'  // 红色
+  ];
+  
+  // 简单的哈希算法，将字符串映射到颜色数组的索引
+  let hash = 0;
+  if (str.length === 0) return colors[0];
+  
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    hash = hash & hash;
+  }
+  
+  hash = Math.abs(hash) % colors.length;
+  return colors[hash];
+}
+
+// 加载更多队伍
+function loadMoreTeams() {
+  if (teamsLoading.value || !teamsHasMore.value) return;
+  
+  teamsCurrentPage.value++;
+  getCompetitionTeams(false);
+}
+
+// 切换标签页
+function switchTab(tab) {
+  currentTab.value = tab;
+  
+  // 当切换到队伍标签页时，自动加载队伍数据
+  if (tab === 'teams' && teams.value.length === 0) {
+    getCompetitionTeams();
+  }
+}
+
+// 前往队伍详情页
+function viewTeamDetail(teamId) {
+  uni.navigateTo({
+    url: `/pages/team/detail?id=${teamId}`
+  });
+}
+
 // 获取页面参数并请求数据
 onMounted(() => {
   const pages = getCurrentPages();
@@ -531,14 +735,19 @@ function getRegistrationDeadline() {
   return '暂无截止日期';
 }
 
-// 切换标签页
-function switchTab(tab) {
-  currentTab.value = tab;
-}
-
 // 返回上一页
 function goBack() {
   uni.navigateBack();
+}
+
+function clearSearch() {
+  searchText.value = '';
+  // 这里可以添加搜索逻辑
+}
+
+function toggleFilter() {
+  // 这里可以添加筛选逻辑
+  console.log('打开筛选选项');
 }
 </script>
 
@@ -914,12 +1123,68 @@ page {
 }
 
 /* 参赛队伍 */
+.search-filter-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24rpx;
+  border-radius: 16rpx;
+  background-color: #F9FAFB;
+  padding: 16rpx;
+}
+
+.search-box {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  position: relative;
+  background-color: #ffffff;
+  border-radius: 12rpx;
+  padding: 12rpx 20rpx;
+  border: 1rpx solid #E5E7EB;
+  box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.05);
+}
+
 .search-icon {
-  position: absolute;
-  left: 24rpx;
-  top: 18rpx;
-  color: #9ca3af;
+  color: #9CA3AF;
   font-size: 32rpx;
+  margin-right: 12rpx;
+}
+
+.search-input {
+  flex: 1;
+  height: 64rpx;
+  font-size: 28rpx;
+  color: #1F2937;
+  border: none;
+  background: transparent;
+}
+
+.clear-icon {
+  color: #9CA3AF;
+  font-size: 32rpx;
+  padding: 10rpx;
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 16rpx;
+  padding: 12rpx 20rpx;
+  background-color: #2679CC;
+  border-radius: 12rpx;
+  box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
+}
+
+.filter-icon {
+  color: #ffffff;
+  font-size: 28rpx;
+  margin-right: 8rpx;
+}
+
+.filter-text {
+  color: #ffffff;
+  font-size: 28rpx;
 }
 
 .mr-1 {
@@ -1095,5 +1360,78 @@ page {
   margin-top: 20rpx;
   font-size: 28rpx;
   color: #6b7280;
+}
+
+/* 加载状态 */
+.loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40rpx 0;
+}
+
+.spinner-sm {
+  width: 40rpx;
+  height: 40rpx;
+  border: 3rpx solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: #2679cc;
+  animation: spin 0.8s linear infinite;
+}
+
+.ml-2 {
+  margin-left: 16rpx;
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 80rpx 0;
+  flex-direction: column;
+}
+
+/* 角色标签样式 */
+.role-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 12rpx;
+}
+
+.role-tag {
+  display: flex;
+  align-items: center;
+  padding: 6rpx 16rpx;
+  border-radius: 8rpx;
+}
+
+.role-recruiting {
+  background-color: #FFEDD5;
+}
+
+.role-recruiting .role-name,
+.role-recruiting .role-count {
+  color: #EA580C;
+}
+
+.role-filled {
+  background-color: #E5E7EB;
+}
+
+.role-filled .role-name,
+.role-filled .role-count {
+  color: #6B7280;
+}
+
+.role-name {
+  font-size: 22rpx;
+  margin-right: 8rpx;
+}
+
+.role-count {
+  font-size: 22rpx;
+  opacity: 0.8;
 }
 </style> 

@@ -1,4 +1,7 @@
 
+.research-direction{
+  margin-bottom: 0.15625rem;
+}
 .container {
   background-color: #f8fafc;
   min-height: 100vh;
@@ -107,13 +110,23 @@
   flex-direction: column;
 }
 .leader-name {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: bold;
-  color: #333;
+  color: #1E293B;
+  text-shadow: 0 0.03125rem 0.0625rem rgba(0,0,0,0.1);
+  letter-spacing: 0.03125rem;
 }
 .leader-major {
-  font-size: 0.75rem;
-  color: #9CA3AF;
+  font-size: 0.6875rem;
+  color: #2563EB;
+  text-align: center;
+  padding: 0.125rem 0.3125rem;
+  margin-top: 0.1875rem;
+  background-color: #DBEAFE;
+  border-radius: 0.3125rem;
+  max-width: 100%;
+  word-wrap: break-word;
+  white-space: normal;
 }
 .team-desc-section {
   margin-bottom: 0.75rem;
@@ -266,21 +279,31 @@
   padding: 0.0625rem;
 }
 .member-name {
-  font-size: 0.75rem;
-  color: #6B7280;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
   margin-top: 0.3125rem;
   width: 100%;
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  letter-spacing: 0.03125rem;
 }
 .leader-label {
   color: #3B82F6;
 }
-.member-role {
-  color: #9CA3AF;
-  font-size: 0.75rem;
+.member-role, .teacher-role {
+  font-size: 0.6875rem;
+  color: #EA580C;
+  text-align: center;
+  padding: 0.125rem 0;
+  margin-top: 0.1875rem;
+  background-color: #FFEDD5;
+  border-radius: 0.3125rem;
+  max-width: 100%;
+  word-wrap: break-word;
+  white-space: normal;
 }
 
 /* 联系方式样式 */
@@ -364,4 +387,42 @@
 .disabled-btn {
   background-color: #E5E7EB;
   color: #9CA3AF;
+}
+
+/* 添加专业显示样式 */
+.member-major {
+  font-size: 0.6875rem;
+  color: #2563EB;
+  text-align: center;
+  padding: 0.125rem 0.3125rem;
+  margin-top: 0.1875rem;
+  background-color: #DBEAFE;
+  border-radius: 0.3125rem;
+  max-width: 100%;
+  word-wrap: break-word;
+  white-space: normal;
+}
+.teacher-major {
+  font-size: 0.6875rem;
+  color: #2563EB;
+  text-align: center;
+  padding: 0.125rem 0.3125rem;
+  margin-top: 0.1875rem;
+  background-color: #DBEAFE;
+  border-radius: 0.3125rem;
+  max-width: 100%;
+  word-wrap: break-word;
+  white-space: normal;
+}
+.teacher-role {
+  font-size: 0.6875rem;
+  color: #EA580C;
+  text-align: center;
+  padding: 0.125rem 0;
+  margin-top: 0.1875rem;
+  background-color: #FFEDD5;
+  border-radius: 0.3125rem;
+  max-width: 100%;
+  word-wrap: break-word;
+  white-space: normal;
 }

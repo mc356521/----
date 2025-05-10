@@ -3,7 +3,7 @@
  */
 export default {
   // API基础路径
-  baseUrl: 'https://test-api.example.com',
+  baseUrl: 'http://localhost:8080',
   // 超时时间
   timeout: 45000,
   // 上传接口

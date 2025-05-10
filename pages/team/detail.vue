@@ -38,10 +38,15 @@
 				</view>
       </view>
 
+      <view class="research-direction" v-if="teamInfo.direction">
+        <text class="section-title">队伍方向</text>
+        <text class="desc-text">{{teamInfo.direction}}</text>
+      </view>
       <view class="team-desc-section">
         <text class="section-title">队伍描述</text>
         <text class="desc-text">{{teamInfo.description}}</text>
       </view>
+
 
       <view class="team-meta">
         <text class="meta-item">组队截止：{{teamInfo.recruitmentDeadlineFormatted}}</text>
@@ -112,6 +117,8 @@
             <view v-if="member.roleName" class="member-role">({{member.roleName}})</view>
             <view class="leader-label" v-if="member.isLeader">(队长)</view>
           </text>
+          
+          <text v-if="member.userMajor" class="member-major">{{member.userMajor}}</text>
         </view>
       </view>
     </view>
@@ -123,6 +130,7 @@
         <view class="member-item" v-for="(teacher, index) in teamInfo.teachers" :key="index">
           <image class="member-avatar" :src="teacher.avatarUrl || defaultAvatar"></image>
           <text class="member-name">{{teacher.name}}</text>
+          <text v-if="teacher.major" class="teacher-major">{{teacher.major}}</text>
         </view>
       </view>
     </view>
@@ -149,45 +157,7 @@
       </view>
     </view>
 
-    <!-- 底部操作栏 -->
-    <view class="footer-bar">
-      <!-- 情况1: 访客视角 & 队伍招募中 & 有可申请角色 -->
-      <button 
-        class="full-btn primary-btn" 
-        v-if="!isTeamMember && teamInfo.status === '0' && hasAvailableRoles"
-        @click="showApplyOptions"
-      >
-        <text class="iconfont icon-user-plus"></text> 申请加入队伍
-      </button>
 
-      <!-- 情况2: 访客视角 & 队伍已满员/已解散 -->
-      <button 
-        class="full-btn disabled-btn" 
-        v-if="!isTeamMember && (teamInfo.status === '1' || teamInfo.status === '2')" 
-        disabled
-      >
-        {{teamInfo.status === '1' ? '队伍已满员' : '队伍已解散'}}
-      </button>
-
-      <!-- 情况3: 队长视角 -->
-      <view class="btn-group" v-if="isTeamLeader">
-        <button class="half-btn primary-btn" @click="editTeam">
-          <text class="iconfont icon-edit"></text> 编辑队伍
-        </button>
-        <button class="half-btn danger-btn" @click="disbandTeam">
-          <text class="iconfont icon-trash"></text> 解散队伍
-        </button>
-      </view>
-
-      <!-- 情况4: 普通成员视角 -->
-      <button 
-        class="full-btn danger-btn" 
-        v-if="isTeamMember && !isTeamLeader"
-        @click="leaveTeam"
-      >
-        <text class="iconfont icon-signout"></text> 退出队伍
-      </button>
-    </view>
   </view>
 </template>
 
@@ -330,8 +300,8 @@ export default {
       
       // 弹窗让用户输入申请留言
       uni.showModal({
-        title: '申请加入',
-        content: '请输入您的申请理由',
+        title: '申请加入理由',
+        content: '',
         editable: true,
         placeholderText: '我希望加入团队参与...',
         success: async (res) => {
@@ -573,6 +543,9 @@ export default {
 </script>
 
 <style>
+.research-direction{
+  margin-bottom: 5rpx;
+}
 .container {
   background-color: #f8fafc;
   min-height: 100vh;
@@ -698,14 +671,24 @@ export default {
 }
 
 .leader-name {
-  font-size: 28rpx;
+  font-size: 30rpx;
   font-weight: bold;
-  color: #333;
+  color: #1E293B;
+  text-shadow: 0 1rpx 2rpx rgba(0,0,0,0.1);
+  letter-spacing: 1rpx;
 }
 
 .leader-major {
-  font-size: 24rpx;
-  color: #9CA3AF;
+  font-size: 22rpx;
+  color: #2563EB;
+  text-align: center;
+  padding: 4rpx 10rpx;
+  margin-top: 6rpx;
+  background-color: #DBEAFE;
+  border-radius: 10rpx;
+  max-width: 100%;
+  word-wrap: break-word;
+  white-space: normal;
 }
 
 .team-desc-section {
@@ -885,23 +868,33 @@ export default {
 }
 
 .member-name {
-  font-size: 24rpx;
-  color: #6B7280;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #334155;
   margin-top: 10rpx;
   width: 100%;
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  letter-spacing: 1rpx;
 }
 
 .leader-label {
   color: #3B82F6;
 }
 
-.member-role {
-  color: #9CA3AF;
-  font-size: 24rpx;
+.member-role, .teacher-role {
+  font-size: 22rpx;
+  color: #EA580C;
+  text-align: center;
+  padding: 4rpx 0rpx;
+  margin-top: 6rpx;
+  background-color: #FFEDD5;
+  border-radius: 10rpx;
+  max-width: 100%;
+  word-wrap: break-word;
+  white-space: normal;
 }
 
 /* 联系方式样式 */
@@ -998,5 +991,45 @@ export default {
 .disabled-btn {
   background-color: #E5E7EB;
   color: #9CA3AF;
+}
+
+/* 添加专业显示样式 */
+.member-major {
+  font-size: 22rpx;
+  color: #2563EB;
+  text-align: center;
+  padding: 4rpx 10rpx;
+  margin-top: 6rpx;
+  background-color: #DBEAFE;
+  border-radius: 10rpx;
+  max-width: 100%;
+  word-wrap: break-word;
+  white-space: normal;
+}
+
+.teacher-major {
+  font-size: 22rpx;
+  color: #2563EB;
+  text-align: center;
+  padding: 4rpx 10rpx;
+  margin-top: 6rpx;
+  background-color: #DBEAFE;
+  border-radius: 10rpx;
+  max-width: 100%;
+  word-wrap: break-word;
+  white-space: normal;
+}
+
+.teacher-role {
+  font-size: 22rpx;
+  color: #EA580C;
+  text-align: center;
+  padding: 4rpx 0rpx;
+  margin-top: 6rpx;
+  background-color: #FFEDD5;
+  border-radius: 10rpx;
+  max-width: 100%;
+  word-wrap: break-word;
+  white-space: normal;
 }
 </style> 

@@ -1,17 +1,10 @@
 <template>
   <view class="container">
-    <!-- 顶部导航栏 - 已经自动适配安全区域 -->
-    <view class="custom-nav-bar">
-      <view class="title-section">
-        <text class="page-title">校园任务与组队平台</text>
-      </view>
-      <view class="search-section" @click="goToSearch">
-        <view class="search-box">
-          <text class="iconfont icon-search"></text>
-          <text class="search-placeholder">搜索竞赛/队伍</text>
-        </view>
-      </view>
-    </view>
+    <!-- 顶部导航栏 -->
+    <header-bar
+      title="校园任务与组队平台"
+      @search="goToSearch"
+    ></header-bar>
     
     <!-- 页面内容 -->
     <scroll-view scroll-y class="content-scroll">
@@ -19,12 +12,12 @@
       <view class="swiper-container">
         <swiper class="swiper animate__animated animate__fadeIn" 
                 circular autoplay interval="3000" duration="500"
-                indicator-dots indicator-active-color="#3B82F6" indicator-color="rgba(0, 0, 0, 0.2)">
+                indicator-dots indicator-active-color="#247ae4" indicator-color="rgba(0, 0, 0, 0.2)">
           <swiper-item>
             <view class="swiper-item">
               <image src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800" mode="aspectFill"></image>
               <view class="swiper-overlay">
-                <text class="swiper-title">互联网+创新创业大赛</text>
+                <text class="swiper-title">中国大学生计算机设计大赛(第18届)</text>
                 <view class="swiper-date">
                   <text class="iconfont icon-calendar date-icon"></text>
                   <text class="date-text">报名截止：5月15日</text>
@@ -62,11 +55,11 @@
       <!-- 功能图标入口 -->
       <view class="menu-container">
         <view class="menu-grid">
-          <view class="menu-item animate__animated animate__fadeInUp" style="animation-delay: 0.1s" @click="navigateTo('competition')">
+          <view class="menu-item animate__animated animate__fadeInUp" style="animation-delay: 0.1s" @click="navigateTo('task-square')">
             <view class="menu-icon blue">
               <text class="iconfont icon-trophy"></text>
             </view>
-            <text class="menu-text">竞赛活动</text>
+            <text class="menu-text">校园委托</text>
           </view>
           <view class="menu-item animate__animated animate__fadeInUp" style="animation-delay: 0.2s" @click="navigateTo('findPartner')">
             <view class="menu-icon green">
@@ -97,18 +90,20 @@
         </view>
         <view class="competition-list">
           
-          <view class="competition-item card-hover animate__animated animate__fadeInUp" style="animation-delay: 0.1s" @click="viewDetail('competition', 2)" v-for="competition in competitionsList" :key="competition.id">
+          <view class="competition-item card-hover animate__animated animate__fadeInUp" style="animation-delay: 0.1s" @click="viewDetail('competition', competition.id)" v-for="competition in competitionsList" :key="competition.id">
             <view class="competition-flex">
               <view class="competition-image-container">
-                <image class="competition-image" src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800" mode="aspectFill"></image>
+                <image class="competition-image" :src="competition.coverImageUrl || 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800'" mode="aspectFill"></image>
               </view>
               <view class="competition-content">
                 <view class="flex-between">
                   <text class="competition-title">{{ competition.title }}</text>
-                  <text class="status-tag pulse">{{ competition.status }}</text>
+                  <view class="status-wrapper">
+                    <text class="status-tag pulse" :class="getStatusClass(competition.status)">{{ competition.statusText }}</text>
+                  </view>
                 </view>
                 <view class="tag-row">
-                  <text class="tag green-tag">{{ competition.category }}</text>
+                  <text class="tag green-tag" v-if="competition.categoryNames && competition.categoryNames.length > 0">{{ competition.categoryNames[0] }}</text>
                   <text class="tag gray-tag">{{ competition.level }}</text>
                 </view>
                 <view class="competition-info">
@@ -118,7 +113,7 @@
                   </view>
                   <view class="info-item">
                     <text class="iconfont icon-team"></text>
-                    <text class="info-text">3-6人/队</text>
+                    <text class="info-text">{{ competition.teamSize }}-{{ competition.teamMax }}人/队</text>
                   </view>
                 </view>
               </view>
@@ -154,27 +149,84 @@
     
     <!-- 底部TabBar - 由自定义组件处理 -->
     <TabBar activeTab="home" />
+
+    <!-- 申请加入弹窗 -->
+    <uni-popup ref="applyPopup" type="center" :show="showApplyModal" @change="(e) => { if (!e.show) resetApplyForm(); }">
+      <view class="apply-popup">
+        <view class="popup-header">
+          <text class="popup-title">申请加入团队</text>
+          <text class="close-icon" @click="showApplyModal = false">×</text>
+        </view>
+        
+        <view class="popup-content">
+          <view class="form-item">
+            <text class="form-label">申请角色</text>
+            <view class="role-select">
+              <view 
+                v-for="role in availableRoles" 
+                :key="role.id"
+                :class="['role-option', selectedRoleId === role.id ? 'role-selected' : '']"
+                @click="selectedRoleId = role.id"
+              >
+                <text class="role-name">{{ role.name }}</text>
+                <text class="role-count">{{ role.filled }}/{{ role.count }}人</text>
+              </view>
+            </view>
+          </view>
+          
+          <view class="form-item">
+            <text class="form-label">申请留言 <text class="required">*</text></text>
+            <textarea 
+              class="message-input" 
+              v-model="applyMessage"
+              placeholder="请输入申请留言"
+              maxlength="100"
+            />
+            <text class="char-count">{{ applyMessage.length }}/100</text>
+          </view>
+        </view>
+        
+        <view class="popup-footer">
+          <button class="cancel-btn" @click="showApplyModal = false">取消</button>
+          <button class="submit-btn" @click="submitApplication" :disabled="!applyMessage">提交申请</button>
+        </view>
+      </view>
+    </uni-popup>
   </view>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch, getCurrentInstance } from 'vue';
 import teamApi from '@/api/modules/team';
 import competitionsApi from '@/api/modules/competitions';
 import TeamCard from '@/components/team/TeamCard.vue';
 import TabBar from '@/components/TabBar.vue';
+import HeaderBar from '@/components/HeaderBar.vue';
 
 // 热门队伍数据
 const teamList = ref([]);
 // 热门竞赛数据
 const competitionsList = ref([]);
 
+// 在script部分添加申请弹窗相关的状态变量
+const showApplyModal = ref(false);
+const applyTeamId = ref(null);
+const applyMessage = ref('希望加入您的团队，请审核');
+const selectedRoleId = ref(null);
+const availableRoles = ref([]);
+const loadingRoles = ref(false);
+
 // 获取热门竞赛数据
 async function getCompetitionsList() {
   try {
-    const res = await competitionsApi.getCompetitionsList();
+    // 请求热门竞赛数据，添加isHot参数
+    const res = await competitionsApi.getCompetitionsList({
+      isHot: true,
+      pageSize: 3 // 只获取3个热门竞赛
+    });
+    
     if (res.code === 200 && res.data && res.data.list) {
-      competitionsList.value = res.data.list.slice(0, 3);
+      competitionsList.value = res.data.list;
       console.log('获取到热门竞赛数据:', competitionsList.value);
     }
   } catch (error) {
@@ -200,6 +252,10 @@ function navigateTo(page) {
   if (page === 'competition') {
     uni.navigateTo({
       url: '/pages/competition/index'
+    });
+  } else if (page === 'task-square') {
+    uni.switchTab({
+      url: '/pages/task-square/index'
     });
   } else {
     uni.showToast({
@@ -237,19 +293,149 @@ function viewDetail(type, id) {
 }
 
 // 申请加入队伍
-function joinTeam(id) {
-  uni.showModal({
-    title: '申请确认',
-    content: '确定要申请加入该团队吗？',
-    success: function (res) {
-      if (res.confirm) {
+async function joinTeam(id) {
+  try {
+    loadingRoles.value = true;
+    applyTeamId.value = id;
+    
+    // 先检查是否已经申请过该队伍
+    const checkRes = await teamApi.checkTeamStatus(id);
+    if (checkRes.code === 200 && checkRes.data) {
+      if (checkRes.data.isApplied) {
         uni.showToast({
-          title: '申请已发送',
-          icon: 'success'
+          title: '您已经申请过该队伍',
+          icon: 'none'
         });
+        return;
+      }
+      if (checkRes.data.isMember) {
+        uni.showToast({
+          title: '您已经是该队伍成员',
+          icon: 'none'
+        });
+        return;
       }
     }
-  });
+    
+    // 获取队伍可选角色
+    const teamDetail = await teamApi.getTeamDetail(id);
+    if (teamDetail.code !== 200 || !teamDetail.data) {
+      uni.showToast({
+        title: '获取队伍信息失败',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    // 获取可选角色列表
+    availableRoles.value = teamDetail.data.roles || [];
+    if (availableRoles.value.length === 0) {
+      uni.showToast({
+        title: '该队伍暂无可申请的角色',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    // 默认选中第一个角色
+    if (availableRoles.value[0]) {
+      selectedRoleId.value = availableRoles.value[0].id;
+    }
+    
+    // 显示申请弹窗
+    showApplyModal.value = true;
+    
+  } catch (error) {
+    uni.showToast({
+      title: '操作失败，请稍后重试',
+      icon: 'none'
+    });
+    console.error('获取队伍角色失败:', error);
+  } finally {
+    loadingRoles.value = false;
+  }
+}
+
+// 提交申请
+async function submitApplication() {
+  if (!selectedRoleId.value) {
+    uni.showToast({
+      title: '请选择申请角色',
+      icon: 'none'
+    });
+    return;
+  }
+  
+  if (!applyMessage.value.trim()) {
+    uni.showToast({
+      title: '请输入申请留言',
+      icon: 'none'
+    });
+    return;
+  }
+  
+  try {
+    uni.showLoading({
+      title: '提交中...'
+    });
+    
+    const selectedRole = availableRoles.value.find(role => role.id === selectedRoleId.value);
+    
+    // 检查所选角色是否已满员
+    if (selectedRole && selectedRole.count <= selectedRole.filled) {
+      uni.hideLoading();
+      uni.showToast({
+        title: '该角色已满员',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    // 准备请求数据，确保符合接口要求
+    const applyData = {
+      teamId: Number(applyTeamId.value), // 确保是数字类型
+      roleId: Number(selectedRoleId.value), // 确保是数字类型
+      message: applyMessage.value.trim()
+    };
+    
+    console.log('申请加入队伍:', applyData);
+    
+    // 调用申请加入接口
+    const applyRes = await teamApi.applyTeam(applyData);
+    
+    uni.hideLoading();
+    
+    if (applyRes.code === 200) {
+      uni.showToast({
+        title: '申请已发送',
+        icon: 'success'
+      });
+      // 重置表单并关闭弹窗
+      resetApplyForm();
+      showApplyModal.value = false;
+    } else {
+      uni.showToast({
+        title: applyRes.message || '申请失败',
+        icon: 'none'
+      });
+    }
+  } catch (error) {
+    uni.hideLoading();
+    console.error('申请加入队伍失败:', error);
+    uni.showToast({
+      title: error.message || '申请提交失败，请稍后重试',
+      icon: 'none'
+    });
+  }
+}
+
+// 重置申请表单
+function resetApplyForm() {
+  showApplyModal.value = false;
+  applyTeamId.value = null;
+  selectedRoleId.value = null;
+  applyMessage.value = '希望加入您的团队，请审核';
+  availableRoles.value = [];
 }
 
 // 跳转到搜索页
@@ -258,6 +444,42 @@ function goToSearch() {
     url: '/pages/search/index'
   });
 }
+
+// 根据竞赛状态获取样式类
+function getStatusClass(status) {
+  switch(status) {
+    case '0':
+      return 'status-not-started';
+    case '1':
+      return 'status-recruiting';
+    case '2':
+      return 'status-ongoing';
+    case '3':
+      return 'status-ended';
+    default:
+      return '';
+  }
+}
+
+// 监听弹窗状态
+watch(showApplyModal, (newVal) => {
+  const popup = uni.createSelectorQuery().in(getCurrentInstance()).select('.uni-popup');
+  if (popup) {
+    setTimeout(() => {
+      popup.node((res) => {
+        if (res && res.node) {
+          if (newVal) {
+            // 显示弹窗
+            res.node.open && res.node.open();
+          } else {
+            // 隐藏弹窗
+            res.node.close && res.node.close();
+          }
+        }
+      }).exec();
+    }, 0);
+  }
+});
 
 onMounted(() => {
   // 获取状态栏高度
@@ -271,16 +493,7 @@ onMounted(() => {
 <style lang="scss">
 @import '../../static/iconfont.css';
 @import '../../static/animate.css';
-
-// 颜色变量
-$primary-color: #3B82F6;
-$background-color: #f8fafc;
-$card-color: #ffffff;
-$text-color: #333333;
-$text-secondary: #6B7280;
-$text-muted: #9CA3AF;
-$success-color: #10B981;
-$warning-color: #F59E0B;
+@import '@/config/theme.scss';
 
 // 动画
 @keyframes pulse {
@@ -313,12 +526,12 @@ $warning-color: #F59E0B;
 }
 
 @mixin card-shadow {
-  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+  box-shadow: $shadow-sm;
 }
 
 @mixin card-active {
   transform: translateY(-10rpx);
-  box-shadow: 0 10rpx 20rpx rgba(0, 0, 0, 0.1);
+  box-shadow: $shadow-lg;
 }
 
 page {
@@ -335,44 +548,6 @@ page {
 
 .flex-between {
   @include flex-between;
-}
-
-/* 导航栏样式 */
-.custom-nav-bar {
-  background-color: #ffffff;
-  box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.05);
-  width: 100%;
-  z-index: 100;
-  padding: 0 30rpx;
-}
-
-.title-section {
-  margin-bottom: 16rpx;
-}
-
-.page-title {
-  font-size: 34rpx;
-  font-weight: bold;
-  color: #333333;
-}
-
-.search-section {
-  padding-bottom: 16rpx;
-}
-
-.search-box {
-  display: flex;
-  align-items: center;
-  background-color: #f5f5f5;
-  border-radius: 36rpx;
-  height: 72rpx;
-  padding: 0 30rpx;
-}
-
-.search-placeholder {
-  color: #999999;
-  font-size: 28rpx;
-  margin-left: 10rpx;
 }
 
 /* 内容区域 */
@@ -572,27 +747,52 @@ page {
         padding: 20rpx;
         
         .competition-title {
-          font-size: 28rpx;
+         width: 300rpx;
+          font-size: 30rpx;
           font-weight: bold;
           color: $text-color;
+        }
+        
+        .status-wrapper {
+          margin-left: 50rpx;
         }
         
         .status-tag {
           font-size: 20rpx;
           padding: 6rpx 30rpx;
-          margin-left: 50rpx;
           border-radius: 20rpx;
           background-color: #dbeafe;
-          color: #2563eb;
+          color: #247ae4;
           
           &.pulse {
             animation: pulse 2s infinite;
+          }
+          
+          &.status-not-started {
+            background-color: #E5E7EB;
+            color: #6B7280;
+          }
+          
+          &.status-recruiting {
+            background-color: #DBEAFE;
+            color: #2563EB;
+            animation: pulse 2s infinite;
+          }
+          
+          &.status-ongoing {
+            background-color: #DEF7EC;
+            color: #10B981;
+          }
+          
+          &.status-ended {
+            background-color: #FEE2E2;
+            color: #EF4444;
           }
         }
         
         .tag-row {
           display: flex;
-          justify-content: flex-end;
+          justify-content: flex-start;
           margin-top: 12rpx;
           
           .tag {
@@ -669,6 +869,177 @@ page {
   &:active {
     @include card-active;
   }
+}
+
+// 顶部导航栏
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: $card-color;
+  box-shadow: $shadow-sm;
+  
+  .header-title {
+    @include flex-between;
+    padding: 20rpx 30rpx;
+    
+    .section-title {
+      font-size: 36rpx;
+      font-weight: bold;
+      color: $text-color;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 20rpx;
+      
+      .action-btn {
+        width: 70rpx;
+        height: 70rpx;
+        border-radius: 50%;
+        background-color: #F3F4F6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      
+        .iconfont {
+          font-size: 36rpx;
+          color: $text-secondary;
+        }
+      }
+    }
+  }
+}
+
+/* 申请弹窗样式 */
+.apply-popup {
+  width: 650rpx;
+  background-color: #fff;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.popup-header {
+  padding: 30rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1rpx solid #eee;
+}
+
+.popup-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: $text-color;
+}
+
+.close-icon {
+  font-size: 40rpx;
+  color: #999;
+  padding: 0 10rpx;
+}
+
+.popup-content {
+  padding: 30rpx;
+}
+
+.form-item {
+  margin-bottom: 30rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: 28rpx;
+  color: $text-secondary;
+  margin-bottom: 16rpx;
+}
+
+.role-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+}
+
+.role-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 180rpx;
+  height: 100rpx;
+  background-color: #f5f5f5;
+  border-radius: 12rpx;
+  padding: 10rpx;
+  border: 2rpx solid transparent;
+}
+
+.role-selected {
+  border-color: $primary-color;
+  background-color: rgba($primary-color, 0.1);
+}
+
+.role-name {
+  font-size: 28rpx;
+  color: $text-color;
+  margin-bottom: 8rpx;
+}
+
+.role-count {
+  font-size: 24rpx;
+  color: $text-secondary;
+}
+
+.message-input {
+  width: 100%;
+  height: 200rpx;
+  background-color: #f5f5f5;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  box-sizing: border-box;
+  font-size: 28rpx;
+}
+
+.char-count {
+  font-size: 24rpx;
+  color: $text-secondary;
+  text-align: right;
+  margin-top: 10rpx;
+  display: block;
+}
+
+.popup-footer {
+  padding: 20rpx 30rpx;
+  display: flex;
+  justify-content: space-between;
+  border-top: 1rpx solid #eee;
+}
+
+.cancel-btn, .submit-btn {
+  width: 280rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  text-align: center;
+}
+
+.cancel-btn {
+  background-color: #f5f5f5;
+  color: $text-secondary;
+}
+
+.submit-btn {
+  background-color: $primary-color;
+  color: #fff;
+}
+
+.required {
+  color: #ff4757;
+}
+
+.submit-btn[disabled] {
+  background-color: #cccccc;
+  color: #ffffff;
 }
 </style>
 

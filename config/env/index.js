@@ -1,36 +1,46 @@
 /**
- * 环境配置文件
- * 根据不同环境导出不同配置
+ * 环境配置加载器
  */
-import devConfig from './dev';
-import testConfig from './test';
-import prodConfig from './prod';
+import test from './test';
+import dev from './dev';
+import prod from './prod';
 
-// 当前环境
-// 可以通过 process.env.NODE_ENV 区分不同环境
-// 也可以通过编译时注入的环境变量区分
-const ENV = process.env.NODE_ENV || 'development';
+// 环境配置映射
+const envConfigs = {
+  development: dev,
+  test: test,
+  production: prod
+};
+
+// 默认开发环境
+const defaultEnv = 'test';
 
 /**
  * 获取当前环境配置
  * @returns {Object} 环境配置对象
  */
-export const getEnv = () => {
-  switch (ENV) {
-    case 'development':
-      return devConfig;
-    case 'test':
-      return testConfig;
-    case 'production':
-      return prodConfig;
-    default:
-      return devConfig;
+export function getEnv() {
+  // 获取当前环境
+  let currentEnv = process.env.NODE_ENV || defaultEnv;
+  
+  // 如果是uniapp环境，使用process.env.UNI_PLATFORM获取平台
+  if (process.env.UNI_PLATFORM) {
+    console.log("当前平台:", process.env.UNI_PLATFORM);
   }
-};
+  
+  // 获取对应环境配置
+  const envConfig = envConfigs[currentEnv] || envConfigs[defaultEnv];
+  
+  // 添加一些运行时信息
+  envConfig.runtimePlatform = process.env.UNI_PLATFORM || 'unknown';
+  envConfig.actualBaseUrl = envConfig.baseUrl;
+  
+  // 返回最终配置
+  return envConfig;
+}
 
-export default {
-  getEnv
-};
+// 导出默认环境配置
+export default getEnv();
 
 // 导出当前环境的配置项
 const config = getEnv();

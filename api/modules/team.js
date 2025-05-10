@@ -56,27 +56,28 @@ const teamApi = {
    * @returns {Promise} 申请结果的Promise对象
    */
   applyTeam(data) {
+    // 确保必要字段存在
+    if (!data.teamId || !data.roleId || !data.message) {
+      console.error('申请加入团队缺少必要参数', data);
+      return Promise.reject(new Error('申请加入团队缺少必要参数'));
+    }
+    
+    // 确保类型正确
+    const requestData = {
+      teamId: Number(data.teamId),
+      roleId: Number(data.roleId),
+      message: String(data.message)
+    };
+    
+    console.log('申请加入团队，请求数据:', requestData);
+    
     return request({
-      url: '/team-applications',
+      url: 'http://localhost:8080/team-applications',
       method: 'POST',
-      data
-    });
-  },
-
-  
-  /**
-   * 申请加入团队
-   * @param {Object} data - 申请数据
-   * @param {Number} data.teamId - 要申请的队伍ID
-   * @param {Number} data.roleId - 要申请的角色ID
-   * @param {String} data.message - 申请留言
-   * @returns {Promise} 申请结果的Promise对象
-   */
-  applyTeam(data) {
-    return request({
-      url: '/team-applications',
-      method: 'POST',
-      data
+      data: requestData,
+      header: {
+        'Content-Type': 'application/json'
+      }
     });
   },
   
@@ -174,6 +175,28 @@ const teamApi = {
     return request({
       url: `/team-members/teams/${teamId}`,
       method: 'DELETE'
+    });
+  },
+  
+  /**
+   * 创建团队
+   * @param {Object} data - 团队数据
+   * @param {Number} data.competitionId - 关联竞赛ID
+   * @param {String} data.name - 团队名称
+   * @param {String} data.description - 团队描述
+   * @param {String} data.direction - 研究方向
+   * @param {String} data.recruitmentDeadline - 招募截止日期
+   * @param {Object} data.contactInfo - 联系方式
+   * @param {Array} data.teacherIds - 指导老师ID列表
+   * @param {Array} data.teacherRoles - 指导老师角色列表
+   * @param {Array} data.roles - 招募角色列表
+   * @returns {Promise} 创建结果的Promise对象
+   */
+  createTeam(data) {
+    return request({
+      url: '/teams',
+      method: 'POST',
+      data
     });
   },
   

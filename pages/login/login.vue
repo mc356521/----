@@ -168,6 +168,9 @@ async function handleLogin() {
     return;
   }
   
+  // 清除可能存在的无效token
+  uni.removeStorageSync('token');
+  
   // 显示加载指示器
   uni.showLoading({
     title: '正在登录...',
@@ -265,6 +268,9 @@ async function handleRegister() {
   }
   
   try {
+    // 清除可能存在的无效token
+    uni.removeStorageSync('token');
+    
     const res = await api.user.register(registerForm);
     
     uni.showToast({
