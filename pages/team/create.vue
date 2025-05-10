@@ -1219,7 +1219,7 @@ page {
 
 .section-header {
   display: flex;
-  align-items: center;
+
   margin-bottom: 20rpx;
 
 .section-icon {

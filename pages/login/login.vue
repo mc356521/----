@@ -50,7 +50,7 @@
         <view class="input-field">
           <view class="input-content">
             <text class="iconfont icon-mobile"></text>
-            <input type="text" placeholder="手机号" class="form-input" v-model="registerForm.phone" />
+            <input type="text" placeholder="手机号" class="form-input" v-model="registerForm.phoneNumber" />
           </view>
         </view>
         
@@ -69,6 +69,19 @@
           </view>
         </view>
         
+        <!-- 学校选择 -->
+        <view class="input-field">
+          <view class="input-content">
+            <text class="iconfont icon-graduation"></text>
+            <picker mode="multiSelector" @change="onSchoolChange" @columnchange="onSchoolColumnChange" :value="schoolMultiIndex" :range="schoolMultiArray" range-key="name" class="school-picker">
+              <view class="picker-content">
+                <text class="picker-text">{{selectedSchoolName || '请选择学校（省份-学校）'}}</text>
+                <text class="iconfont icon-arrow-left picker-arrow"></text>
+              </view>
+            </picker>
+          </view>
+        </view>
+        
         <view class="input-field">
           <view class="input-content">
             <text class="iconfont icon-graduation"></text>
@@ -78,7 +91,7 @@
         
         <view class="input-field">
           <view class="input-content">
-            <text class="iconfont icon-idcard"></text>
+            <text class="iconfont icon-graduation"></text>
             <input type="text" placeholder="学号" class="form-input" v-model="registerForm.studentTeacherId" />
           </view>
         </view>
@@ -120,13 +133,132 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import api from '@/api';
 
 // 响应式状态
 const isRemember = ref(false);
 const showPassword = ref(true);
 const isRegistering = ref(false);
+
+// 学校相关
+const schools = ref([]);
+const schoolMultiArray = ref([[], []]);  // 第一列为省份，第二列为学校
+const schoolMultiIndex = ref([0, 0]);    // 当前选中的省份索引和学校索引
+const provinces = ref([]);               // 所有省份列表
+const schoolsByProvince = ref({});       // 按省份分组的学校列表
+
+// 选中的学校名称
+const selectedSchoolName = computed(() => {
+  if (schoolMultiArray.value[0].length === 0 || schoolMultiArray.value[1].length === 0) {
+    return '';
+  }
+  
+  const provinceIndex = schoolMultiIndex.value[0];
+  const schoolIndex = schoolMultiIndex.value[1];
+  
+  if (!schoolMultiArray.value[0][provinceIndex] || !schoolMultiArray.value[1][schoolIndex]) {
+    return '';
+  }
+  
+  const provinceName = schoolMultiArray.value[0][provinceIndex].name;
+  const schoolName = schoolMultiArray.value[1][schoolIndex].name;
+  return `${provinceName} - ${schoolName}`;
+});
+
+// 在组件挂载时获取学校列表
+onMounted(async () => {
+  try {
+    const result = await api.user.getSchools();
+    if (result && result.data) {
+      schools.value = result.data;
+      
+      // 按省份分组学校
+      const provinceMap = {};
+      const schoolMap = {};
+      
+      // 提取所有不同的省份
+      result.data.forEach(school => {
+        if (!provinceMap[school.province]) {
+          provinceMap[school.province] = {
+            id: school.province,
+            name: school.province
+          };
+          schoolMap[school.province] = [];
+        }
+        
+        schoolMap[school.province].push(school);
+      });
+      
+      // 转换为数组
+      provinces.value = Object.values(provinceMap);
+      schoolsByProvince.value = schoolMap;
+      
+      // 初始化多列选择器数据
+      schoolMultiArray.value[0] = provinces.value;
+      
+      // 如果有省份，则初始化第二列为第一个省份的学校
+      if (provinces.value.length > 0) {
+        const firstProvince = provinces.value[0].name;
+        schoolMultiArray.value[1] = schoolsByProvince.value[firstProvince] || [];
+      }
+      
+      // 如果已经有默认学校ID，则查找对应的省份和学校索引
+      if (registerForm.schoolId) {
+        const selectedSchool = schools.value.find(school => school.id === registerForm.schoolId);
+        if (selectedSchool) {
+          const provinceIndex = provinces.value.findIndex(p => p.name === selectedSchool.province);
+          if (provinceIndex !== -1) {
+            schoolMultiIndex.value[0] = provinceIndex;
+            const schoolsInProvince = schoolsByProvince.value[selectedSchool.province] || [];
+            const schoolIndex = schoolsInProvince.findIndex(s => s.id === selectedSchool.id);
+            if (schoolIndex !== -1) {
+              schoolMultiArray.value[1] = schoolsInProvince;
+              schoolMultiIndex.value[1] = schoolIndex;
+            }
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('获取学校列表失败:', error);
+    uni.showToast({
+      title: '获取学校列表失败',
+      icon: 'none'
+    });
+  }
+});
+
+// 学校列选择变化处理
+function onSchoolColumnChange(e) {
+  const { column, value } = e.detail;
+  
+  // 如果是第一列（省份）变化
+  if (column === 0) {
+    // 更新省份索引
+    schoolMultiIndex.value[0] = value;
+    // 重置学校索引
+    schoolMultiIndex.value[1] = 0;
+    
+    // 更新第二列（学校）数据
+    const selectedProvince = schoolMultiArray.value[0][value].name;
+    schoolMultiArray.value[1] = schoolsByProvince.value[selectedProvince] || [];
+  } else {
+    // 第二列（学校）变化，只更新学校索引
+    schoolMultiIndex.value[1] = value;
+  }
+}
+
+// 学校选择变化处理
+function onSchoolChange(e) {
+  const [provinceIndex, schoolIndex] = e.detail.value;
+  schoolMultiIndex.value = [provinceIndex, schoolIndex];
+  
+  // 更新注册表单中的学校ID
+  if (schoolMultiArray.value[1] && schoolMultiArray.value[1][schoolIndex]) {
+    registerForm.schoolId = schoolMultiArray.value[1][schoolIndex].id;
+  }
+}
 
 // 表单数据
 const loginForm = reactive({
@@ -135,7 +267,7 @@ const loginForm = reactive({
 });
 
 const registerForm = reactive({
-  phone: '',
+  phoneNumber: '',
   password: '',
   realName: '',
   schoolId: 1,
@@ -227,7 +359,7 @@ async function handleLogin() {
 // 注册
 async function handleRegister() {
   // 表单验证
-  if (!registerForm.phone) {
+  if (!registerForm.phoneNumber) {
     uni.showToast({
       title: '请输入手机号',
       icon: 'none'
@@ -246,6 +378,14 @@ async function handleRegister() {
   if (!registerForm.realName) {
     uni.showToast({
       title: '请输入姓名',
+      icon: 'none'
+    });
+    return;
+  }
+  
+  if (!registerForm.schoolId) {
+    uni.showToast({
+      title: '请选择学校',
       icon: 'none'
     });
     return;
@@ -271,6 +411,8 @@ async function handleRegister() {
     // 清除可能存在的无效token
     uni.removeStorageSync('token');
     
+    console.log('发送的注册数据:', JSON.stringify(registerForm));
+    
     const res = await api.user.register(registerForm);
     
     uni.showToast({
@@ -283,8 +425,10 @@ async function handleRegister() {
   } catch (error) {
     uni.showToast({
       title: error.message || '注册失败',
-      icon: 'none'
+      icon: 'none',
+      duration: 3000
     });
+    console.error('注册失败:', error);
   }
 }
 
@@ -319,6 +463,12 @@ function openPrivacy() {
 
 <style>
 @import '../../static/iconfont.css';
+
+/* 自定义样式 */
+.picker-arrow {
+  transform: rotate(-90deg);
+  display: inline-block;
+}
 
 page {
   background-color: #F8FAFC;
@@ -544,5 +694,37 @@ page {
 
 .link-text {
   color: #4A90E2;
+}
+
+.school-picker {
+  flex: 1;
+  height: 80rpx;
+}
+
+.picker-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 80rpx;
+}
+
+.picker-text {
+  font-size: 28rpx;
+  color: #333333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90%;
+}
+
+.picker-content .iconfont {
+  color: #999999;
+  font-size: 24rpx;
+  margin-left: 10rpx;
+}
+
+.picker-arrow {
+  transform: rotate(-90deg);
+  display: inline-block;
 }
 </style> 

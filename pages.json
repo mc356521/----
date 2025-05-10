@@ -95,6 +95,21 @@
 				"navigationBarTitleText": "个人中心",
 				"enablePullDownRefresh": false
 			}
+		},
+		{
+			"path" : "pages/Xiaoxi/Xiaoxi",
+			"style" : 
+			{
+				"navigationBarTitleText" : "消息通知"
+			}
+		},
+		{
+			"path" : "pages/application/application",
+			"style" : 
+			{
+				"navigationBarTitleText" : "申请管理",
+				"navigationStyle": "custom"
+			}
 		}
 	],
 	"globalStyle": {

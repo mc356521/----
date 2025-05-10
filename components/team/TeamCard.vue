@@ -69,7 +69,7 @@
         v-if="canJoin"
         class="join-btn blue-join" 
         @click.stop="onApplyJoin">
-        查看详情
+        招募中
       </view>
       <view 
         v-else

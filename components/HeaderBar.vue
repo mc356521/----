@@ -32,7 +32,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 // 组件属性
 const props = defineProps({
@@ -61,6 +61,21 @@ const props = defineProps({
 // 当前选中的分类
 const currentCategory = ref(props.defaultCategory);
 
+// 计算HeaderBar的高度
+const headerHeight = computed(() => {
+  // 基础高度（标题栏）
+  let height = 90; //   
+  
+  // 如果有分类标签，添加分类标签高度
+  if (props.categories && props.categories.length > 0) {
+    height += 70; // rpx，包含分类标签高度和上下padding
+  }
+  
+
+  
+  return height;
+});
+
 // 定义事件
 const emit = defineEmits(['search', 'filter', 'category-change']);
 
@@ -71,7 +86,9 @@ function onSearch() {
 
 // 筛选按钮点击事件
 function onFilter() {
-  emit('filter');
+  uni.navigateTo({
+    url: '/pages/Xiaoxi/Xiaoxi'
+  });
 }
 
 // 选择分类事件
@@ -81,6 +98,24 @@ function selectCategory(index) {
   currentCategory.value = index;
   emit('category-change', index);
 }
+
+// 对外暴露高度属性
+defineExpose({
+  headerHeight
+});
+
+// 获取实际的安全区域高度
+let safeAreaHeight = ref(0);
+onMounted(() => {
+  // 在不同平台上获取顶部安全区域高度
+  uni.getSystemInfo({
+    success: (res) => {
+      if (res.safeArea && res.safeArea.top) {
+        safeAreaHeight.value = res.safeArea.top;
+      }
+    }
+  });
+});
 </script>
 
 <style lang="scss">
@@ -95,11 +130,19 @@ function selectCategory(index) {
 
 // 顶部导航栏
 .sticky-header {
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 10;
+  left: 0;
+  right: 0;
+  z-index: 1000;
   background-color: $card-color;
   box-shadow: $shadow-sm;
+  /* 确保iOS设备上也能正常固定 */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  /* 添加安全区域适配 */
+  padding-top: env(safe-area-inset-top); // 适配刘海屏
+  width: 100%;
   
   .header-title {
     @include flex-between;

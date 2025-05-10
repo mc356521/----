@@ -323,6 +323,23 @@ export default {
                   icon: 'success'
                 });
                 this.hasApplied = true;
+                
+                // 询问用户是否查看申请状态
+                setTimeout(() => {
+                  uni.showModal({
+                    title: '申请已提交',
+                    content: '您可以在申请管理中查看申请状态',
+                    confirmText: '查看申请',
+                    cancelText: '稍后再看',
+                    success: (res) => {
+                      if (res.confirm) {
+                        uni.navigateTo({
+                          url: '/pages/team/applications'
+                        });
+                      }
+                    }
+                  });
+                }, 1500);
               } else {
                 uni.showToast({
                   title: result.message || '申请提交失败',
@@ -633,7 +650,7 @@ export default {
   padding: 6rpx 40rpx;
   border-radius: 30rpx;
   font-size: 24rpx;
-  margin-left: 100px;
+  margin-left: 90px;
 }
 
 .status-recruiting {

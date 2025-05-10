@@ -2,6 +2,7 @@
   <view class="container">
     <!-- 顶部导航栏 -->
     <header-bar
+      ref="headerBarRef"
       title="组队广场"
       :categories="categories"
       :default-category="currentCategory"
@@ -10,9 +11,16 @@
       @filter="showFilterOptions"
       @category-change="selectCategory"
     ></header-bar>
+    
+    <!-- 导航栏占位 -->
+    <view class="header-placeholder" :style="{ height: headerPlaceholderHeight }"></view>
 
     <!-- 组队列表 -->
-    <scroll-view scroll-y="true" class="team-list" @scrolltolower="loadMore">
+    <scroll-view 
+      scroll-y="true" 
+      class="team-list" 
+      @scrolltolower="loadMore"
+    >
       <!-- 使用团队卡片组件 -->
       <template v-if="teamData.list && teamData.list.length > 0">
         <team-card
@@ -54,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import TeamCard from '@/components/team/TeamCard.vue';
 import TabBar from '@/components/TabBar.vue';
 import HeaderBar from '@/components/HeaderBar.vue';
@@ -63,6 +71,23 @@ import teamApi from '@/api/modules/team';
 // 分类数据
 const categories = ref(['全部队伍', '学科竞赛', '创新创业', '体育竞赛', '文艺比赛']);
 const currentCategory = ref(0);
+
+// HeaderBar引用
+const headerBarRef = ref(null);
+
+// 计算HeaderBar占位高度
+const headerPlaceholderHeight = computed(() => {
+  // 默认高度，保守估计
+  let height = 120;
+  
+  if (headerBarRef.value && headerBarRef.value.headerHeight) {
+    // 如果能获取到组件暴露的高度，使用组件高度
+    return headerBarRef.value.headerHeight + 'rpx';
+  }
+  
+  // 根据是否有分类决定高度
+  return (categories.value && categories.value.length > 0) ? '200rpx' : '120rpx';
+});
 
 // 团队列表数据
 const teamData = reactive({
@@ -346,7 +371,6 @@ function showFilterOptions() {
     }
   });
 }
-
 </script>
 
 <style lang="scss">
@@ -376,6 +400,12 @@ page {
   min-height: 100vh;
 }
 
+// HeaderBar占位区域
+.header-placeholder {
+  width: 100%;
+  flex-shrink: 0;
+}
+
 // 混合器
 @mixin flex-between {
   display: flex;
@@ -383,85 +413,10 @@ page {
   align-items: center;
 }
 
-// 顶部导航栏
-.sticky-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background-color: $card-color;
-  box-shadow: $shadow-sm;
-  
-  .header-title {
-    @include flex-between;
-    padding: 20rpx 30rpx;
-    
-    .section-title {
-      font-size: 36rpx;
-      font-weight: bold;
-      color: $text-color;
-    }
-    
-    .header-actions {
-      display: flex;
-      gap: 20rpx;
-      
-      .action-btn {
-        width: 70rpx;
-        height: 70rpx;
-        border-radius: 50%;
-        background-color: #F3F4F6;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      
-      .iconfont {
-          font-size: 36rpx;
-          color: $text-secondary;
-        }
-      }
-    }
-  }
-  
-  // 分类标签
-  .category-scroll {
-    width: 100%;
-    white-space: nowrap;
-    padding: 16rpx 20rpx;
-    overflow-x: auto;
-    /* 隐藏滚动条但保留滚动功能 */
-    &::-webkit-scrollbar {
-      display: none;
-    }
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE and Edge */
-    
-    .category-list {
-      display: inline-flex;
-      flex-wrap: nowrap;
-      gap: 16rpx;
-      
-      .category-item {
-        display: inline-block;
-      
-        border-radius: $border-radius-full;
-        background-color: #F3F4F6;
-        font-size: 26rpx;
-        color: $text-secondary;
-        transition: all 0.3s;
-        
-        &.active-category {
-          background-color: $primary-color;
-          color: $card-color;
-        }
-      }
-    }
-  }
-}
-
 // 组队列表
 .team-list {
   flex: 1;
-  padding: 30rpx 30rpx 120rpx 30rpx;
+  padding: 10rpx 30rpx 150rpx 30rpx;
   box-sizing: border-box;
   width: 100%;
 }

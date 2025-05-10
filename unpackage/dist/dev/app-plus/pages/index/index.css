@@ -361,12 +361,18 @@
 /* 水平间距 */
 /* 导入主题变量 */
 .sticky-header[data-v-965d9a70] {
-  position: -webkit-sticky;
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 10;
+  left: 0;
+  right: 0;
+  z-index: 1000;
   background-color: #ffffff;
   box-shadow: 0 0.0625rem 0.1875rem rgba(91, 51, 51, 0.05);
+  /* 确保iOS设备上也能正常固定 */
+  transform: translateZ(0);
+  /* 添加安全区域适配 */
+  padding-top: env(safe-area-inset-top);
+  width: 100%;
 }
 .sticky-header .header-title[data-v-965d9a70] {
   display: flex;
@@ -665,6 +671,9 @@ body {
 /* 内容区域 */
 .content-scroll {
   flex: 1;
+  /* 添加顶部外边距，为固定的顶部导航栏腾出空间 */
+  margin-top: 3.75rem;
+  /* 根据实际HeaderBar高度调整 */
 }
 .content-section {
   background-color: #ffffff;
@@ -906,7 +915,7 @@ body {
   font-size: 0.6875rem;
 }
 .team-list {
-  padding: 0 0.9375rem;
+  padding: 0 0.9375rem 3.75rem 0.9375rem;
 }
 .empty-state {
   display: flex;
@@ -924,42 +933,6 @@ body {
 .card-hover:active {
   transform: translateY(-0.3125rem);
   box-shadow: 0 0.25rem 0.9375rem rgba(0, 0, 0, 0.1);
-}
-.sticky-header {
-  position: -webkit-sticky;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background-color: #ffffff;
-  box-shadow: 0 0.0625rem 0.1875rem rgba(91, 51, 51, 0.05);
-}
-.sticky-header .header-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.625rem 0.9375rem;
-}
-.sticky-header .header-title .section-title {
-  font-size: 1.125rem;
-  font-weight: bold;
-  color: #333333;
-}
-.sticky-header .header-title .header-actions {
-  display: flex;
-  gap: 0.625rem;
-}
-.sticky-header .header-title .header-actions .action-btn {
-  width: 2.1875rem;
-  height: 2.1875rem;
-  border-radius: 50%;
-  background-color: #F3F4F6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.sticky-header .header-title .header-actions .action-btn .iconfont {
-  font-size: 1.125rem;
-  color: #6B7280;
 }
 /* 申请弹窗样式 */
 .apply-popup {
@@ -1071,4 +1044,8 @@ body {
 .submit-btn[disabled] {
   background-color: #cccccc;
   color: #ffffff;
+}
+.header-placeholder {
+  width: 100%;
+  flex-shrink: 0;
 }

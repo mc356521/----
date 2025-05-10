@@ -116,6 +116,12 @@
 .icon-info-circle:before {
   content: "\e7dc";
 }
+
+/* 自定义样式 */
+.picker-arrow {
+  transform: rotate(-90deg);
+  display: inline-block;
+}
 body {
   background-color: #F8FAFC;
   width: 100%;
@@ -305,4 +311,31 @@ body {
 }
 .link-text {
   color: #4A90E2;
+}
+.school-picker {
+  flex: 1;
+  height: 2.5rem;
+}
+.picker-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 2.5rem;
+}
+.picker-text {
+  font-size: 0.875rem;
+  color: #333333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90%;
+}
+.picker-content .iconfont {
+  color: #999999;
+  font-size: 0.75rem;
+  margin-left: 0.3125rem;
+}
+.picker-arrow {
+  transform: rotate(-90deg);
+  display: inline-block;
 }

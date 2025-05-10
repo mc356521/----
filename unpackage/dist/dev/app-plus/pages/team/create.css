@@ -1309,7 +1309,6 @@ body {
 }
 .form-section .section-header {
   display: flex;
-  align-items: center;
   margin-bottom: 0.625rem;
 }
 .form-section .section-header .section-icon {

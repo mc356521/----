@@ -131,6 +131,7 @@
 <script setup>
 import { ref, computed, onMounted, reactive } from 'vue';
 import request from '@/utils/request';
+import api from '@/api';
 
 // 默认头像
 const defaultAvatar = 'https://via.placeholder.com/100';
@@ -140,6 +141,7 @@ const taskId = ref(null);
 const isFavorite = ref(false);
 const viewCounted = ref(false);
 const favoriteCount = ref(0);
+const isAlreadyApplied = ref(false); // 是否已申请
 
 // 任务详情数据
 const taskDetail = ref({
@@ -195,6 +197,11 @@ const validContacts = computed(() => {
 
 // 判断当前用户是否已申请或不能申请
 const isApplyDisabled = computed(() => {
+  // 如果已申请，则禁用申请按钮
+  if (isAlreadyApplied.value) {
+    return true;
+  }
+  
   // 如果任务状态不是招募中，则禁用申请按钮
   if (taskDetail.value.status !== 'recruiting') {
     return true;
@@ -204,8 +211,6 @@ const isApplyDisabled = computed(() => {
   if (taskDetail.value.currentParticipants >= taskDetail.value.maxParticipants) {
     return true;
   }
-  
-  // TODO: 检查用户是否已申请，这需要实际接口支持
   
   return false;
 });
@@ -223,16 +228,65 @@ onMounted(() => {
     // 尝试从URL参数获取
     const pages = getCurrentPages();
     const currentPage = pages[pages.length - 1];
-    const options = currentPage.options || {};
     
-    if (options.id) {
-      taskId.value = options.id;
-      getTaskDetail(options.id);
+    // 兼容不同平台的参数获取方式
+    let id;
+    
+    // 方法1：通过options获取（H5端常用）
+    if (currentPage.options && currentPage.options.id) {
+      id = currentPage.options.id;
+    } 
+    // 方法2：通过$page获取（某些平台可能用这种方式）
+    else if (currentPage.$page && currentPage.$page.fullPath) {
+      const query = currentPage.$page.fullPath.split('?')[1];
+      if (query) {
+        const params = new URLSearchParams(query);
+        id = params.get('id');
+      }
+    }
+    // 方法3：直接从route中获取（小程序常用）
+    else if (currentPage.route && currentPage.__displayReporter && currentPage.__displayReporter.query) {
+      id = currentPage.__displayReporter.query.id;
+    }
+    // 方法4：通过onLoad传入的参数获取（兼容方案）
+    else {
+      // 可以在页面加载时通过钩子函数捕获参数
+      // 此处使用uni.$on临时保存参数，另设onLoad捕获
+      uni.$once('task-detail-params', (params) => {
+        if (params && params.id) {
+          taskId.value = params.id;
+          getTaskDetail(params.id);
+        }
+      });
+      // 添加小延迟，防止uni.$on尚未准备好
+      setTimeout(() => {
+        if (!taskId.value) {
+          uni.showToast({
+            title: '任务ID无效，请返回重试',
+            icon: 'none'
+          });
+        }
+      }, 300);
+      return; // 后续逻辑由事件触发
+    }
+    
+    if (id) {
+      taskId.value = id;
+      getTaskDetail(id);
     } else {
       uni.showToast({
         title: '任务ID无效',
         icon: 'none'
       });
+    }
+  }
+});
+
+// 添加onLoad钩子函数，兼容方案，在组件外使用
+defineExpose({
+  onLoad(options) {
+    if (options && options.id) {
+      uni.$emit('task-detail-params', options);
     }
   }
 });
@@ -262,6 +316,8 @@ async function getTaskDetail(id) {
       taskDetail.value = res.data;
       // 如果API返回了attachments字段，但我们当前不处理它
 
+      // 检查用户是否已申请
+      checkIfAlreadyApplied(id);
     } else {
       console.error('获取任务详情失败:', res);
       uni.showToast({
@@ -308,9 +364,6 @@ async function getTaskDetail(id) {
     uni.hideLoading();
   }
 }
-
-
-
 
 // 格式化日期
 function formatDeadline(dateStr) {
@@ -475,6 +528,10 @@ function copyContactInfo(value) {
 
 // 获取申请按钮文本
 function getApplyButtonText() {
+  if (isAlreadyApplied.value) {
+    return '已申请';
+  }
+  
   if (taskDetail.value.status === 'recruiting') {
     if (taskDetail.value.currentParticipants >= taskDetail.value.maxParticipants) {
       return '名额已满';
@@ -542,20 +599,45 @@ async function toggleFavorite() {
   }
 }
 
+// 检查用户是否已申请
+async function checkIfAlreadyApplied(taskId) {
+  try {
+    const response = await api.taskApplications.checkTaskApplication(taskId);
+    
+    if (response.code === 200 && response.data) {
+      isAlreadyApplied.value = response.data.participated || false;
+    }
+  } catch (error) {
+    console.error('检查申请状态失败:', error);
+    // 默认设为未申请，让用户能够尝试申请
+    isAlreadyApplied.value = false;
+  }
+}
+
 // 申请任务
 async function applyTask() {
   if (isApplyDisabled.value) return;
   
+  // 打开申请窗口，让用户输入申请理由
   uni.showModal({
     title: '申请任务',
     content: '确定要申请该任务吗？',
+    editable: true,
+    placeholderText: '可选择填写申请理由（如有特长、经验等）',
     success: async (res) => {
       if (res.confirm) {
         try {
-          const response = await request({
-            url: `/api/tasks/${taskId.value}/apply`,
-            method: 'POST'
+          uni.showLoading({
+            title: '提交申请中...'
           });
+          
+          const response = await api.taskApplications.createTaskApplication({
+            taskId: taskId.value,
+            message: res.content || '我对这个任务很感兴趣，希望能参与。',
+            status: 'pending' // 添加状态字段，表示申请待处理
+          });
+          
+          uni.hideLoading();
           
           if (response.code === 200) {
             uni.showToast({
@@ -563,8 +645,15 @@ async function applyTask() {
               icon: 'success'
             });
             
-            // 更新当前参与人数
-            taskDetail.value.currentParticipants += 1;
+            // 更新已申请状态
+            isAlreadyApplied.value = true;
+            
+            // 跳转到申请列表页面
+            setTimeout(() => {
+              uni.navigateTo({
+                url: '/pages/application/application'
+              });
+            }, 1500);
           } else {
             uni.showToast({
               title: response.message || '申请失败',
@@ -572,20 +661,103 @@ async function applyTask() {
             });
           }
         } catch (error) {
+          uni.hideLoading();
           console.error('申请任务失败:', error);
           
-          // 开发测试使用
           uni.showToast({
-            title: '申请成功，等待审核',
-            icon: 'success'
+            title: '申请失败，请稍后重试',
+            icon: 'none'
           });
-          
-          // 更新当前参与人数
-          taskDetail.value.currentParticipants += 1;
         }
       }
     }
   });
+}
+
+// 更新任务状态
+async function updateTaskStatus(status, cancelReason = '') {
+  if (!taskId.value) return;
+  
+  // 如果是取消状态但没有提供取消原因，则要求用户填写
+  if (status === 'canceled' && !cancelReason) {
+    uni.showModal({
+      title: '取消任务',
+      content: '确定要取消该任务吗？',
+      editable: true,
+      placeholderText: '请填写取消原因',
+      success: async (res) => {
+        if (res.confirm && res.content) {
+          doUpdateTaskStatus(status, res.content);
+        } else if (res.confirm) {
+          uni.showToast({
+            title: '取消原因不能为空',
+            icon: 'none'
+          });
+        }
+      }
+    });
+    return;
+  }
+  
+  // 其他状态的确认
+  const statusTextMap = {
+    recruiting: '招募中',
+    ongoing: '进行中',
+    completed: '已完成',
+    ended: '已结束',
+    canceled: '已取消'
+  };
+  
+  uni.showModal({
+    title: `更改状态为"${statusTextMap[status] || status}"`,
+    content: `确定要将任务状态更改为"${statusTextMap[status] || status}"吗？`,
+    success: async (res) => {
+      if (res.confirm) {
+        doUpdateTaskStatus(status, cancelReason);
+      }
+    }
+  });
+}
+
+// 执行更新状态的API请求
+async function doUpdateTaskStatus(status, cancelReason = '') {
+  try {
+    uni.showLoading({
+      title: '更新中...'
+    });
+    
+    const data = { status };
+    if (status === 'canceled') {
+      data.cancelReason = cancelReason;
+    }
+    
+    const response = await api.tasks.updateTaskStatus(taskId.value, data);
+    
+    uni.hideLoading();
+    
+    if (response.code === 200) {
+      uni.showToast({
+        title: '状态更新成功',
+        icon: 'success'
+      });
+      
+      // 刷新任务详情
+      getTaskDetail(taskId.value);
+    } else {
+      uni.showToast({
+        title: response.message || '更新失败',
+        icon: 'none'
+      });
+    }
+  } catch (error) {
+    uni.hideLoading();
+    console.error('更新任务状态失败:', error);
+    
+    uni.showToast({
+      title: '网络异常，请稍后重试',
+      icon: 'none'
+    });
+  }
 }
 </script>
 

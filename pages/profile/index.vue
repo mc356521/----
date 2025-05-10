@@ -8,7 +8,7 @@
           <text class="user-name">李明</text>
           <text class="user-id">学号: 2023114514</text>
         </view>
-        <view class="edit-btn">
+        <view class="edit-btn" @click="goToNotification">
           <text class="iconfont icon-edit"></text>
         </view>
       </view>
@@ -44,6 +44,11 @@
         <view class="menu-item" @click="navigateTo('myAwards')">
           <text class="iconfont icon-star menu-icon"></text>
           <text class="menu-text">我的获奖</text>
+          <text class="iconfont icon-arrow-left menu-arrow"></text>
+        </view>
+        <view class="menu-item" @click="navigateTo('applications')">
+          <text class="iconfont icon-paper-plane menu-icon"></text>
+          <text class="menu-text">申请管理</text>
           <text class="iconfont icon-arrow-left menu-arrow"></text>
         </view>
       </view>
@@ -87,6 +92,13 @@ import TabBar from '@/components/TabBar.vue';
 
 // 导航到对应页面
 function navigateTo(page) {
+  if (page === 'applications') {
+    uni.navigateTo({
+      url: '/pages/application/application'
+    });
+    return;
+  }
+  
   uni.showToast({
     title: `跳转到${page}`,
     icon: 'none'
@@ -113,6 +125,13 @@ function logout() {
         });
       }
     }
+  });
+}
+ 
+// 跳转到消息
+function goToNotification() {
+  uni.navigateTo({
+    url: '/pages/Xiaoxi/Xiaoxi'
   });
 }
 
@@ -300,4 +319,4 @@ page {
   font-size: 30rpx;
   font-weight: 500;
 }
-</style> 
+</style>

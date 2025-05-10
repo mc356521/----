@@ -21,22 +21,22 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 44px;
-  padding: 0 16px;
+  height: 2.75rem;
+  padding: 0 1rem;
 }
 .header .navbar .back-btn {
-  width: 32px;
-  height: 32px;
+  width: 2rem;
+  height: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .header .navbar .back-btn .iconfont {
-  font-size: 24px;
+  font-size: 1.5rem;
   color: #fff;
 }
 .header .navbar .title {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: bold;
   color: #fff;
 }
@@ -44,22 +44,22 @@
   display: flex;
 }
 .header .navbar .right-btns .action-btn {
-  width: 32px;
-  height: 32px;
+  width: 2rem;
+  height: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .header .navbar .right-btns .action-btn .iconfont {
-  font-size: 20px;
+  font-size: 1.25rem;
   color: #fff;
 }
 
 /* 内容区 */
 .content-scroll {
   flex: 1;
-  padding: 16px 0px;
-  padding-bottom: 80px;
+  padding: 1rem 0;
+  padding-bottom: 5rem;
   /* 为底部操作栏留出空间 */
 }
 
@@ -67,28 +67,28 @@
 .top-info-card {
   background-color: #fff;
   border-radius: 0;
-  padding: 18px;
-  margin-bottom: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 1.125rem;
+  margin-bottom: 0.625rem;
+  box-shadow: 0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.05);
 }
 .top-info-card .title-status-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 .top-info-card .title-status-row .task-title {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: bold;
   color: #333333;
   flex: 1;
-  margin-right: 16px;
+  margin-right: 1rem;
   line-height: 1.4;
 }
 .top-info-card .title-status-row .task-status-tag {
-  padding: 4px 10px;
-  border-radius: 50px;
-  font-size: 12px;
+  padding: 0.25rem 0.625rem;
+  border-radius: 3.125rem;
+  font-size: 0.75rem;
   white-space: nowrap;
 }
 .top-info-card .publisher-info-row {
@@ -96,55 +96,55 @@
   align-items: center;
 }
 .top-info-card .publisher-info-row .publisher-avatar {
-  width: 32px;
-  height: 32px;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
-  margin-right: 10px;
+  margin-right: 0.625rem;
 }
 .top-info-card .publisher-info-row .publisher-text {
   display: flex;
   flex-direction: column;
 }
 .top-info-card .publisher-info-row .publisher-text .publisher-name {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: #333333;
   font-weight: 500;
 }
 .top-info-card .publisher-info-row .publisher-text .publisher-extra {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #999999;
-  margin-top: 2px;
+  margin-top: 0.125rem;
 }
 
 /* 详情卡片 */
 .detail-card {
   background-color: #fff;
   border-radius: 0;
-  padding: 18px;
-  margin-bottom: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 1.125rem;
+  margin-bottom: 0.625rem;
+  box-shadow: 0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.05);
 }
 .detail-card .card-title {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: bold;
   color: #333333;
-  margin-bottom: 12px;
+  margin-bottom: 0.75rem;
 }
 .detail-card .card-content {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: #666666;
   line-height: 1.6;
 }
 .detail-card .description-content {
   background-color: rgba(74, 144, 226, 0.05);
-  padding: 14px 18px;
-  border-radius: 8px;
+  padding: 0.875rem 1.125rem;
+  border-radius: 0.5rem;
 }
 .detail-card .description-content .description-text {
   color: #666666;
   word-break: break-all;
   white-space: pre-wrap;
-  padding-right: 6px;
+  padding-right: 0.375rem;
   line-height: 1.6;
 }
 
@@ -153,16 +153,16 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 0;
-  margin-bottom: 10px;
+  margin-bottom: 0.625rem;
   background-color: #fff;
 }
 .info-grid .info-grid-item {
   background-color: #fff;
   border-radius: 0;
-  padding: 16px;
+  padding: 1rem;
   box-shadow: none;
-  border-bottom: 1px solid #eeeeee;
-  border-right: 1px solid #eeeeee;
+  border-bottom: 0.0625rem solid #eeeeee;
+  border-right: 0.0625rem solid #eeeeee;
 }
 .info-grid .info-grid-item:nth-child(2n) {
   border-right: none;
@@ -171,9 +171,9 @@
   border-bottom: none;
 }
 .info-grid .info-grid-item .grid-item-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #999999;
-  margin-bottom: 8px;
+  margin-bottom: 0.5rem;
   display: block;
 }
 .info-grid .info-grid-item .grid-item-content {
@@ -181,12 +181,12 @@
   align-items: center;
 }
 .info-grid .info-grid-item .grid-item-content .iconfont {
-  font-size: 16px;
+  font-size: 1rem;
   color: #4A90E2;
-  margin-right: 8px;
+  margin-right: 0.5rem;
 }
 .info-grid .info-grid-item .grid-item-content .grid-item-value {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 500;
   color: #333333;
 }
@@ -208,14 +208,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 8px;
-  border-bottom: 1px solid #eeeeee;
+  padding: 0.875rem 0.5rem;
+  border-bottom: 0.0625rem solid #eeeeee;
 }
 .contact-list .contact-item:last-child {
   border-bottom: none;
 }
 .contact-list .contact-item .contact-type {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: #666666;
   font-weight: 500;
 }
@@ -224,19 +224,19 @@
   align-items: center;
 }
 .contact-list .contact-item .contact-value-container .contact-value {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: #4A90E2;
-  margin-right: 10px;
-  max-width: 150px;
+  margin-right: 0.625rem;
+  max-width: 9.375rem;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .contact-list .contact-item .contact-value-container .copy-hint {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #999999;
   background-color: rgba(153, 153, 153, 0.1);
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
 }
 
 /* 底部操作栏 */
@@ -246,36 +246,36 @@
   left: 0;
   right: 0;
   display: flex;
-  padding: 10px 16px;
+  padding: 0.625rem 1rem;
   background-color: #fff;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 -0.125rem 0.625rem rgba(0, 0, 0, 0.05);
 }
 .bottom-actions .action-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 0 16px;
-  height: 44px;
-  border-radius: 8px;
-  font-size: 14px;
+  gap: 0.25rem;
+  padding: 0 1rem;
+  height: 2.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
 }
 .bottom-actions .action-btn.favorite {
   color: #666666;
-  margin-right: 12px;
+  margin-right: 0.75rem;
 }
 .bottom-actions .action-btn.favorite .iconfont {
-  font-size: 18px;
+  font-size: 1.125rem;
   color: #FFC107;
 }
 .bottom-actions .apply-btn {
   flex: 1;
-  height: 44px;
+  height: 2.75rem;
   background-color: #4A90E2;
   color: #fff;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: bold;
-  border-radius: 8px;
+  border-radius: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;

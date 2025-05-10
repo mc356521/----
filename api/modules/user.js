@@ -7,6 +7,17 @@ import { getToken, setToken } from '@/utils/request';
 
 const userApi = {
   /**
+   * 获取学校列表
+   * @returns {Promise} 请求结果Promise对象
+   */
+  getSchools() {
+    return request({
+      url: '/api/schools',
+      method: 'GET'
+    });
+  },
+
+  /**
    * 用户登录
    * @param {Object} data - 登录参数，包含phone和password
    * @returns {Promise} 请求结果Promise对象
@@ -54,13 +65,47 @@ const userApi = {
    * @returns {Promise} 请求结果Promise对象
    */
   register(data) {
-    console.log('注册请求参数:', data);
-    console.log('注册请求URL:', '/users/register (将通过代理转发)');
+    console.log('注册请求参数 (原始):', data);
+    
+    // 创建符合接口规范的请求数据
+    const requestData = {
+      phoneNumber: data.phoneNumber || data.phone, // 兼容处理，优先使用phoneNumber，如果没有则使用phone
+      password: data.password,
+      realName: data.realName,
+      schoolId: data.schoolId || 1, // 确保有默认值
+      role: data.role || 'student', // 确保有默认值
+      major: data.major,
+      studentTeacherId: data.studentTeacherId
+    };
+    
+    // 确保数据格式符合要求
+    if (typeof requestData.studentTeacherId === 'number') {
+      requestData.studentTeacherId = String(requestData.studentTeacherId);
+    }
+    
+    if (typeof requestData.schoolId !== 'number') {
+      requestData.schoolId = Number(requestData.schoolId) || 1;
+    }
+    
+    console.log('注册请求数据 (转换后):', requestData);
+    console.log('注册请求URL:', '/users/register');
     
     return request({
       url: '/users/register',
       method: 'POST',
-      data
+      data: requestData,
+      header: {
+        'Content-Type': 'application/json'
+      }
+    }).then(response => {
+      console.log('注册响应:', response);
+      return response;
+    }).catch(error => {
+      console.error('注册请求错误:', error);
+      if (error.response && error.response.data) {
+        console.error('服务器错误详情:', error.response.data);
+      }
+      throw error;
     });
   },
 

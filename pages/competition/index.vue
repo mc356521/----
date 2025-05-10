@@ -1,136 +1,125 @@
 <template>
   <view class="container" ref="instance">
     <!-- 顶部导航栏 -->
-    <view class="sticky-header">
-      <view class="header-inner">
-        <text class="page-title">竞赛广场</text>
-        <view class="action-buttons">
-          <view class="action-btn">
-            <text class="iconfont icon-search"></text>
-          </view>
-          <view class="action-btn">
-            <text class="iconfont icon-filter"></text>
-          </view>
+    <header-bar
+      ref="headerBarRef"
+      title="竞赛广场"
+      :categories="categories"
+      :default-category="currentCategory"
+      show-filter="true"
+      @search="goToSearch"
+      @filter="goToNotification"
+      @category-change="selectCategory"
+    ></header-bar>
+    
+    <!-- 导航栏占位 -->
+    <view class="header-placeholder" :style="{ height: headerPlaceholderHeight }"></view>
+
+    <!-- 竞赛内容区域 -->
+    <scroll-view scroll-y="true" class="competition-content" @scrolltolower="loadMore">
+      <!-- 热门竞赛 -->
+      <view class="section" v-if="hotCompetitions && hotCompetitions.length > 0">
+        <view class="section-header">
+          <text class="section-title">热门竞赛</text>
         </view>
-      </view>
-      
-      <!-- 分类标签 -->
-      <scroll-view scroll-x="true" class="category-scroll">
-        <view class="category-list">
+        <swiper 
+          class="hot-swiper" 
+          :indicator="false" 
+          :autoplay="true" 
+          :interval="3000" 
+          :duration="500"
+          :circular="true"
+          :current="currentHotIndex"
+          @change="onSwiperChange">
+          <swiper-item 
+            v-for="(item, index) in hotCompetitions" 
+            :key="index"
+            class="hot-swiper-item">
+            <view 
+              class="hot-item" 
+              @click="viewDetail(item.id)">
+              <image class="hot-img" :src="item.coverImageUrl" mode="aspectFill"></image>
+              <view class="hot-overlay">
+                <text class="hot-title">{{ item.title }}</text>
+                <text class="hot-desc">{{ item.shortDescription }}</text>
+                <view class="hot-info">
+                  <view class="hot-info-item">
+                    <text class="iconfont icon-calendar"></text>
+                    <text class="hot-date">报名截止: {{ formatDate(item.registrationDeadline) }}</text>
+                  </view>
+                  <view class="hot-info-item">
+                    <text class="iconfont icon-team"></text>
+                    <text class="hot-team">{{ item.teamSize }}~{{ item.teamMax }}人</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </swiper-item>
+        </swiper>
+        <view class="dots-container">
           <view 
-            v-for="(category, index) in categories" 
+            v-for="(item, index) in hotCompetitions" 
             :key="index" 
-            class="category-item"
-            :class="currentCategory === index ? 'active-category' : ''"
-            @click="selectCategory(index)">
-            <text>{{ category }}</text>
+            class="dot"
+            :class="{ 'active-dot': currentHotIndex === index }"
+            @click="switchToSlide(index)">
           </view>
         </view>
-      </scroll-view>
-    </view>
-
-    <!-- 热门竞赛 -->
-    <view class="section" v-if="hotCompetitions && hotCompetitions.length > 0">
-      <view class="section-header">
-        <text class="section-title">热门竞赛</text>
       </view>
-      <swiper 
-        class="hot-swiper" 
-        :indicator="false" 
-        :autoplay="true" 
-        :interval="3000" 
-        :duration="500"
-        :circular="true"
-        :current="currentHotIndex"
-        @change="onSwiperChange">
-        <swiper-item 
-          v-for="(item, index) in hotCompetitions" 
-          :key="index"
-          class="hot-swiper-item">
+
+      <!-- 竞赛列表 -->
+      <view class="section">
+        <view class="section-header">
+          <text class="section-title">最新竞赛</text>
+        </view>
+        <view class="competition-list">
           <view 
-            class="hot-item" 
+            class="competition-card" 
+            v-for="(item, index) in competitionList" 
+            :key="index"
             @click="viewDetail(item.id)">
-            <image class="hot-img" :src="item.coverImageUrl" mode="aspectFill"></image>
-            <view class="hot-overlay">
-              <text class="hot-title">{{ item.title }}</text>
-              <text class="hot-desc">{{ item.shortDescription }}</text>
-              <view class="hot-info">
-                <view class="hot-info-item">
+            <view class="card-image-wrapper">
+              <image class="card-image" :src="item.coverImageUrl" mode="aspectFill"></image>
+              <view class="status-badge" :class="getStatusClass(item.status)">
+                {{ item.statusText }}
+              </view>
+            </view>
+            <view class="card-content">
+              <text class="card-title">{{ item.title }}</text>
+              <text class="card-desc">{{ item.shortDescription }}</text>
+              <view class="card-tags">
+                <text class="category-tag" :class="getCategoryClass(item.categoryName)">{{ item.categoryName }}</text>
+                <text class="level-tag">{{ item.level }}</text>
+                <text class="team-tag">
+                  <text class="iconfont icon-team"></text> {{ item.teamSize }}~{{ item.teamMax }}人
+                </text>
+              </view>
+              <view class="card-footer">
+                <view class="date-info">
                   <text class="iconfont icon-calendar"></text>
-                  <text class="hot-date">报名截止: {{ formatDate(item.registrationDeadline) }}</text>
+                  <text class="date-text">{{ isUpcoming(item) ? '报名开始' : '报名截止' }}: {{ formatDate(isUpcoming(item) ? item.registrationStart : item.registrationDeadline) }}</text>
                 </view>
-                <view class="hot-info-item">
-                  <text class="iconfont icon-team"></text>
-                  <text class="hot-team">{{ item.teamSize }}~{{ item.teamMax }}人</text>
+                <view class="action-btn" :class="{'disabled-btn': item.status === '0' || item.status === '3'}">
+                  {{ getActionText(item.status) }}
                 </view>
               </view>
             </view>
           </view>
-        </swiper-item>
-      </swiper>
-      <view class="dots-container">
-        <view 
-          v-for="(item, index) in hotCompetitions" 
-          :key="index" 
-          class="dot"
-          :class="{ 'active-dot': currentHotIndex === index }"
-          @click="switchToSlide(index)">
-        </view>
-      </view>
-    </view>
-
-    <!-- 竞赛列表 -->
-    <view class="section">
-      <view class="section-header">
-        <text class="section-title">最新竞赛</text>
-      </view>
-      <view class="competition-list">
-        <view 
-          class="competition-card" 
-          v-for="(item, index) in competitionList" 
-          :key="index"
-          @click="viewDetail(item.id)">
-          <view class="card-image-wrapper">
-            <image class="card-image" :src="item.coverImageUrl" mode="aspectFill"></image>
-            <view class="status-badge" :class="getStatusClass(item.status)">
-              {{ item.statusText }}
-            </view>
+          
+          <!-- 加载更多提示 -->
+          <view class="loading-more" v-if="competitionList.length > 0">
+            <text v-if="loading">加载中...</text>
+            <text v-else-if="hasMore" @click="loadMore">点击加载更多</text>
+            <text v-else>没有更多竞赛了</text>
           </view>
-          <view class="card-content">
-            <text class="card-title">{{ item.title }}</text>
-            <text class="card-desc">{{ item.shortDescription }}</text>
-            <view class="card-tags">
-              <text class="category-tag" :class="getCategoryClass(item.categoryName)">{{ item.categoryName }}</text>
-              <text class="level-tag">{{ item.level }}</text>
-              <text class="team-tag">
-                <text class="iconfont icon-team"></text> {{ item.teamSize }}~{{ item.teamMax }}人
-              </text>
-            </view>
-            <view class="card-footer">
-              <view class="date-info">
-                <text class="iconfont icon-calendar"></text>
-                <text class="date-text">{{ isUpcoming(item) ? '报名开始' : '报名截止' }}: {{ formatDate(isUpcoming(item) ? item.registrationStart : item.registrationDeadline) }}</text>
-              </view>
-              <view class="action-btn" :class="{'disabled-btn': item.status === '0' || item.status === '3'}">
-                {{ getActionText(item.status) }}
-              </view>
-            </view>
+          
+          <!-- 空状态 -->
+          <view class="empty-state" v-if="competitionList.length === 0 && !loading">
+            <text class="empty-text">暂无竞赛数据</text>
           </view>
         </view>
-        
-        <!-- 加载更多提示 -->
-        <view class="loading-more" v-if="competitionList.length > 0">
-          <text v-if="loading">加载中...</text>
-          <text v-else-if="hasMore" @click="loadMore">点击加载更多</text>
-          <text v-else>没有更多竞赛了</text>
-        </view>
-        
-        <!-- 空状态 -->
-        <view class="empty-state" v-if="competitionList.length === 0 && !loading">
-          <text class="empty-text">暂无竞赛数据</text>
-        </view>
       </view>
-    </view>
+    </scroll-view>
     
     <!-- 底部导航栏 -->
     <tab-bar 
@@ -144,10 +133,12 @@
 <script>
 import TabBar from '@/components/TabBar.vue';
 import api from '@/api';
+import HeaderBar from '@/components/HeaderBar.vue';
 
 export default {
   components: {
-    TabBar
+    TabBar,
+    HeaderBar
   },
   data() {
     return {
@@ -166,7 +157,10 @@ export default {
       competitionList: [],
       
       // 热门竞赛轮播控制
-      currentHotIndex: 0
+      currentHotIndex: 0,
+      
+      // HeaderBar占位高度
+      headerPlaceholderHeight: '200rpx'
     }
   },
   
@@ -175,6 +169,15 @@ export default {
     this.getHotCompetitions();
     // 获取最新竞赛列表
     this.getCompetitionList();
+    // 计算HeaderBar高度
+    this.updateHeaderHeight();
+  },
+  
+  mounted() {
+    // 获取HeaderBar组件引用
+    setTimeout(() => {
+      this.updateHeaderHeight();
+    }, 300);
   },
   
   // 页面相关生命周期函数
@@ -187,6 +190,17 @@ export default {
   },
   
   methods: {
+    // 更新HeaderBar占位高度
+    updateHeaderHeight() {
+      const headerBarRef = this.$refs.headerBarRef;
+      if (headerBarRef && headerBarRef.headerHeight) {
+        this.headerPlaceholderHeight = headerBarRef.headerHeight + 'rpx';
+      } else {
+        // 根据是否有分类决定高度
+        this.headerPlaceholderHeight = this.categories.length > 0 ? '200rpx' : '120rpx';
+      }
+    },
+    
     // 轮播切换事件
     onSwiperChange(e) {
       this.currentHotIndex = e.detail.current;
@@ -376,7 +390,17 @@ export default {
         });
       }
     },
-    
+    goToNotification() {
+      uni.navigateTo({
+        url: '/pages/Xiaoxi/Xiaoxi'
+      });
+    },
+    // 跳转到搜索页面
+    goToSearch() {
+      uni.navigateTo({
+        url: '/pages/search/index'
+      });
+    },
     // 显示发布选项
     showPublishOptions() {
       uni.showActionSheet({
@@ -463,82 +487,29 @@ page {
 .container {
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
 }
 
-// 顶部导航栏
-.sticky-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background-color: $card-color;
-  box-shadow: $shadow-sm;
-  
-  .header-inner {
-    @include flex-between;
-    padding: 20rpx 30rpx;
-    
-    .page-title {
-      font-size: 36rpx;
-      font-weight: bold;
-      color: $text-color;
-    }
-    
-    .action-buttons {
-      display: flex;
-      gap: 20rpx;
-      
-      .action-btn {
-        width: 70rpx;
-        height: 70rpx;
-        border-radius: 50%;
-        background-color: #F3F4F6;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        
-        .iconfont {
-          font-size: 36rpx;
-          color: $text-secondary;
-        }
-      }
-    }
-  }
-  
-  // 分类标签滚动区域
-  .category-scroll {
-    width: 100%;
-    white-space: nowrap;
-    padding: 16rpx 20rpx;
-    
-    .category-list {
-      display: inline-flex;
-      gap: 16rpx;
-      padding: 0 10rpx;
-      
-      .category-item {
-        display: inline-block;
-        padding: 13rpx 13rpx;
-        border-radius: $border-radius-full;
-        background-color: #F3F4F6;
-        font-size: 26rpx;
-        color: $text-secondary;
-        transition: all 0.3s;
-        
-        &.active-category {
-          background-color: $primary-color;
-          color: $card-color;
-        }
-      }
-    }
-  }
+// HeaderBar占位区域
+.header-placeholder {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+// 竞赛内容区域
+.competition-content {
+  flex: 1;
+  padding: 10rpx 30rpx 150rpx 30rpx;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 // 热门竞赛滚动区域
 .section {
-  padding: 30rpx 0;
+  padding-bottom: 30rpx;
   
   .section-header {
-    padding: 0 30rpx 20rpx;
+    padding: 0 0 20rpx 0;
     
     .section-title {
       font-size: 32rpx;
@@ -637,8 +608,6 @@ page {
     justify-content: center;
     align-items: center;
     gap: 12rpx;
-    margin-top: 20rpx;
-    
     .dot {
       width: 12rpx;
       height: 12rpx;
@@ -660,7 +629,7 @@ page {
 
 // 竞赛列表
 .competition-list {
-  padding: 0 30rpx;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 20rpx;

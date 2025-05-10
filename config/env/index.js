@@ -37,7 +37,7 @@ export function getEnv() {
   
   // 返回最终配置
   return envConfig;
-}
+  }
 
 // 导出默认环境配置
 export default getEnv();

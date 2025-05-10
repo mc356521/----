@@ -72,7 +72,7 @@ const teamApi = {
     console.log('申请加入团队，请求数据:', requestData);
     
     return request({
-      url: 'http://localhost:8080/team-applications',
+      url: '/team-applications',
       method: 'POST',
       data: requestData,
       header: {

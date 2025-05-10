@@ -57,6 +57,27 @@ export function updateTask(id, data) {
 }
 
 /**
+ * 更新任务状态
+ * @param {Number} id - 任务ID
+ * @param {Object} data - 包含status和可选的cancelReason
+ * @returns {Promise} 返回请求结果
+ * 
+ * status可能的值:
+ * - 'recruiting': 招募中
+ * - 'ongoing': 进行中
+ * - 'ended': 已结束
+ * - 'completed': 已完成
+ * - 'canceled': 已取消（需要提供cancelReason）
+ */
+export function updateTaskStatus(id, data) {
+  return request({
+    url: `${baseApiUrl}/tasks/${id}/status`,
+    method: 'PUT',
+    data
+  });
+}
+
+/**
  * 删除任务
  * @param {Number} id - 任务ID
  * @returns {Promise} 返回请求结果
@@ -114,3 +135,16 @@ export function getRewardTypes() {
     method: 'GET'
   });
 }
+
+export default {
+  getTaskList,
+  getTaskDetail,
+  createTask,
+  updateTask,
+  updateTaskStatus,
+  deleteTask,
+  toggleFavoriteTask,
+  applyTask,
+  getTaskCategories,
+  getRewardTypes
+};

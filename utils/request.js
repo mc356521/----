@@ -64,6 +64,12 @@ const requestInterceptor = (config) => {
       data: config.data,
       params: config.params
     });
+    
+    // 针对特定接口添加额外日志
+    if (config.url.includes('/users/register')) {
+      console.log('注册请求完整数据:', JSON.stringify(config.data));
+      console.log('注册请求Content-Type:', config.header['Content-Type']);
+    }
   }
   
   return config;
@@ -96,6 +102,22 @@ const responseInterceptor = (response) => {
   // HTTP 状态码错误
   else {
     const errorMsg = `请求失败: ${response.statusCode}`;
+    
+    // 打印更多错误信息
+    if (env.debug) {
+      console.error('请求失败状态码:', response.statusCode);
+      console.error('请求地址:', response.config.url);
+      console.error('请求方法:', response.config.method);
+      console.error('请求头:', response.config.header);
+      console.error('请求数据:', response.config.data);
+      console.error('响应数据:', response.data);
+    }
+    
+    // 针对400错误，记录更详细的信息
+    if (response.statusCode === 400) {
+      console.error('400错误详情:', response.data);
+      console.error('请求的原始数据:', response.config.data);
+    }
     
     // 显示错误提示
     uni.showToast({

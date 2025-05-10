@@ -2,9 +2,12 @@
   <view class="container">
     <!-- 顶部导航栏 -->
     <header-bar
+      ref="headerBarRef"
       title="校园任务与组队平台"
       @search="goToSearch"
     ></header-bar>
+    
+  
     
     <!-- 页面内容 -->
     <scroll-view scroll-y class="content-scroll">
@@ -196,12 +199,27 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, getCurrentInstance } from 'vue';
+import { ref, onMounted, watch, getCurrentInstance, computed } from 'vue';
 import teamApi from '@/api/modules/team';
 import competitionsApi from '@/api/modules/competitions';
 import TeamCard from '@/components/team/TeamCard.vue';
 import TabBar from '@/components/TabBar.vue';
 import HeaderBar from '@/components/HeaderBar.vue';
+import api from '@/api';
+
+// HeaderBar引用
+const headerBarRef = ref(null);
+
+// 计算HeaderBar占位高度
+const headerPlaceholderHeight = computed(() => {
+  if (headerBarRef.value && headerBarRef.value.headerHeight) {
+    // 使用组件暴露的高度
+    return headerBarRef.value.headerHeight + 'rpx';
+  }
+  
+  // 首页没有分类，所以只使用基础高度
+  return '120rpx';
+});
 
 // 热门队伍数据
 const teamList = ref([]);
@@ -406,10 +424,10 @@ async function submitApplication() {
     uni.hideLoading();
     
     if (applyRes.code === 200) {
-      uni.showToast({
-        title: '申请已发送',
-        icon: 'success'
-      });
+        uni.showToast({
+          title: '申请已发送',
+          icon: 'success'
+        });
       // 重置表单并关闭弹窗
       resetApplyForm();
       showApplyModal.value = false;
@@ -553,6 +571,8 @@ page {
 /* 内容区域 */
 .content-scroll {
   flex: 1;
+  /* 添加顶部外边距，为固定的顶部导航栏腾出空间 */
+  margin-top: 120rpx; /* 根据实际HeaderBar高度调整 */
 }
 
 .content-section {
@@ -846,7 +866,7 @@ page {
 
 // 推荐队伍样式
 .team-list {
-  padding: 0 30rpx;
+  padding: 0 30rpx 120rpx 30rpx;
 }
 
 // 空状态样式
@@ -868,46 +888,6 @@ page {
   
   &:active {
     @include card-active;
-  }
-}
-
-// 顶部导航栏
-.sticky-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background-color: $card-color;
-  box-shadow: $shadow-sm;
-  
-  .header-title {
-    @include flex-between;
-    padding: 20rpx 30rpx;
-    
-    .section-title {
-      font-size: 36rpx;
-      font-weight: bold;
-      color: $text-color;
-    }
-    
-    .header-actions {
-      display: flex;
-      gap: 20rpx;
-      
-      .action-btn {
-        width: 70rpx;
-        height: 70rpx;
-        border-radius: 50%;
-        background-color: #F3F4F6;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      
-        .iconfont {
-          font-size: 36rpx;
-          color: $text-secondary;
-        }
-      }
-    }
   }
 }
 
@@ -1040,6 +1020,12 @@ page {
 .submit-btn[disabled] {
   background-color: #cccccc;
   color: #ffffff;
+}
+
+// HeaderBar占位区域
+.header-placeholder {
+  width: 100%;
+  flex-shrink: 0;
 }
 </style>
 
