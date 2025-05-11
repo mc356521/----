@@ -735,7 +735,7 @@ body {
 }
 .team-list {
   flex: 1;
-  padding: 0.3125rem 0.9375rem 4.6875rem 0.9375rem;
+  padding: 2.5rem 0.9375rem 4.6875rem 0.9375rem;
   box-sizing: border-box;
   width: 100%;
 }

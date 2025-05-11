@@ -499,7 +499,7 @@ page {
 // 竞赛内容区域
 .competition-content {
   flex: 1;
-  padding: 10rpx 30rpx 150rpx 30rpx;
+  padding: 80rpx 30rpx 150rpx 30rpx;
   box-sizing: border-box;
   width: 100%;
 }

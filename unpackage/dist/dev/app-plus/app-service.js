@@ -14958,56 +14958,111 @@ if (uni.restoreGlobal) {
   const PagesTeamCreate = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["render", _sfc_render$d], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/team/create.vue"]]);
   const _imports_0$2 = "/static/images/empty-data.png";
   const _sfc_main$d = {
-    __name: "recommended",
-    setup(__props, { expose: __expose }) {
-      __expose();
-      const loading = vue.ref(true);
-      const recommendedTeams = vue.ref([]);
-      const aiSummary = vue.ref("");
-      const headerBarRef = vue.ref(null);
-      const headerPlaceholderHeight = vue.computed(() => {
-        if (headerBarRef.value && headerBarRef.value.headerHeight) {
-          return headerBarRef.value.headerHeight + "rpx";
+    components: {
+      HeaderBar,
+      TeamCard,
+      TabBar
+    },
+    data() {
+      return {
+        // 页面状态
+        loading: true,
+        recommendedTeams: [],
+        aiSummary: "",
+        // HeaderBar占位高度
+        headerPlaceholderHeight: "120rpx"
+      };
+    },
+    // 生命周期钩子 - 页面加载
+    onLoad() {
+      const cacheLoaded = this.checkCacheAndLoad();
+      if (!cacheLoaded) {
+        this.getRecommendedTeams();
+      }
+    },
+    // 页面显示时触发
+    onShow() {
+      if (this.$refs.headerBarRef) {
+        this.updateHeaderHeight();
+      }
+    },
+    methods: {
+      // 更新HeaderBar占位高度
+      updateHeaderHeight() {
+        if (this.$refs.headerBarRef && this.$refs.headerBarRef.headerHeight) {
+          this.headerPlaceholderHeight = this.$refs.headerBarRef.headerHeight + "rpx";
         }
-        return "120rpx";
-      });
-      async function getRecommendedTeams(forceRefresh = false) {
-        loading.value = true;
+      },
+      // 检查缓存数据并立即加载
+      checkCacheAndLoad() {
         try {
-          formatAppLog("log", "at pages/team/recommended.vue:88", "开始获取AI推荐队伍数据，强制刷新:", forceRefresh);
-          let cachedTeams = null;
-          let cachedSummary = null;
-          let cacheTime = null;
-          try {
-            cachedTeams = uni.getStorageSync("ai_recommended_teams");
-            cachedSummary = uni.getStorageSync("ai_summary");
-            cacheTime = uni.getStorageSync("ai_recommend_cache_time");
-            formatAppLog("log", "at pages/team/recommended.vue:101", "缓存状态检查:");
-            formatAppLog("log", "at pages/team/recommended.vue:102", "- 缓存数据存在:", !!cachedTeams);
-            formatAppLog("log", "at pages/team/recommended.vue:103", "- 缓存时间:", cacheTime ? new Date(parseInt(cacheTime)).toLocaleString() : "无");
-          } catch (e) {
-            formatAppLog("error", "at pages/team/recommended.vue:105", "读取缓存出错:", e);
-          }
-          const currentTime = (/* @__PURE__ */ new Date()).getTime();
-          const cacheExpired = !cacheTime || isNaN(parseInt(cacheTime)) || currentTime - parseInt(cacheTime) > 24 * 60 * 60 * 1e3;
-          formatAppLog("log", "at pages/team/recommended.vue:112", "缓存是否过期:", cacheExpired);
-          if (cachedTeams && !cacheExpired && !forceRefresh) {
-            formatAppLog("log", "at pages/team/recommended.vue:116", "使用缓存的AI推荐数据");
+          const cachedTeams = uni.getStorageSync("ai_recommended_teams");
+          const cachedSummary = uni.getStorageSync("ai_summary");
+          if (cachedTeams) {
             try {
-              recommendedTeams.value = JSON.parse(cachedTeams);
-              aiSummary.value = cachedSummary || "根据您的专业、技能和兴趣，我们为您推荐了以下最匹配的团队";
-              formatAppLog("log", "at pages/team/recommended.vue:120", "成功加载缓存数据，推荐队伍数量:", recommendedTeams.value.length);
-              loading.value = false;
-              return;
+              const parsedTeams = JSON.parse(cachedTeams);
+              if (Array.isArray(parsedTeams) && parsedTeams.length > 0) {
+                this.recommendedTeams = parsedTeams;
+                this.aiSummary = cachedSummary || "根据您的专业、技能和兴趣，我们为您推荐了以下最匹配的团队";
+                this.loading = false;
+                formatAppLog("log", "at pages/team/recommended.vue:127", "组件初始化时使用缓存数据:", parsedTeams.length, "个推荐队伍");
+                return true;
+              }
             } catch (e) {
-              formatAppLog("error", "at pages/team/recommended.vue:124", "解析缓存数据失败:", e);
+              formatAppLog("error", "at pages/team/recommended.vue:131", "初始化时解析缓存失败:", e);
+            }
+          } else {
+            formatAppLog("log", "at pages/team/recommended.vue:134", "没有可用的缓存数据");
+          }
+        } catch (e) {
+          formatAppLog("error", "at pages/team/recommended.vue:137", "初始检查缓存出错:", e);
+        }
+        return false;
+      },
+      // 获取AI智能推荐的队伍
+      async getRecommendedTeams(forceRefresh = false) {
+        if (!forceRefresh && this.recommendedTeams.length > 0) {
+          formatAppLog("log", "at pages/team/recommended.vue:147", "已有推荐数据，不再重复加载");
+          this.loading = false;
+          return;
+        }
+        this.loading = true;
+        try {
+          formatAppLog("log", "at pages/team/recommended.vue:155", "开始获取AI推荐队伍数据，强制刷新:", forceRefresh);
+          if (!forceRefresh) {
+            let cachedTeams = null;
+            let cachedSummary = null;
+            try {
+              cachedTeams = uni.getStorageSync("ai_recommended_teams");
+              cachedSummary = uni.getStorageSync("ai_summary");
+              formatAppLog("log", "at pages/team/recommended.vue:168", "缓存状态检查:");
+              formatAppLog("log", "at pages/team/recommended.vue:169", "- 缓存数据存在:", !!cachedTeams);
+            } catch (e) {
+              formatAppLog("error", "at pages/team/recommended.vue:171", "读取缓存出错:", e);
+            }
+            if (cachedTeams) {
+              formatAppLog("log", "at pages/team/recommended.vue:176", "使用缓存的AI推荐数据");
+              try {
+                const parsedTeams = JSON.parse(cachedTeams);
+                if (Array.isArray(parsedTeams) && parsedTeams.length > 0) {
+                  this.recommendedTeams = parsedTeams;
+                  this.aiSummary = cachedSummary || "根据您的专业、技能和兴趣，我们为您推荐了以下最匹配的团队";
+                  formatAppLog("log", "at pages/team/recommended.vue:183", "成功加载缓存数据，推荐队伍数量:", this.recommendedTeams.length);
+                  this.loading = false;
+                  return;
+                } else {
+                  formatAppLog("log", "at pages/team/recommended.vue:187", "缓存数据格式无效，需要重新获取");
+                }
+              } catch (e) {
+                formatAppLog("error", "at pages/team/recommended.vue:190", "解析缓存数据失败:", e);
+              }
             }
           }
-          formatAppLog("log", "at pages/team/recommended.vue:130", "请求新的AI推荐数据");
+          formatAppLog("log", "at pages/team/recommended.vue:197", "请求新的AI推荐数据");
           const res = await teamApi.getRecommendedTeams();
           if (res.code === 200 && res.data) {
             const teams = res.data.recommendedTeams || [];
-            recommendedTeams.value = teams.map((team) => {
+            this.recommendedTeams = teams.map((team) => {
               return {
                 ...team,
                 matchScore: team.matchScore || Math.floor(Math.random() * 30) + 70,
@@ -15016,41 +15071,51 @@ if (uni.restoreGlobal) {
                 recommendedRole: team.recommendedRole || ""
               };
             });
-            aiSummary.value = res.data.aiSummary || "根据您的专业、技能和兴趣，我们为您推荐了以下最匹配的团队";
-            formatAppLog("log", "at pages/team/recommended.vue:146", "获取到新的AI推荐队伍数据:", recommendedTeams.value.length, "个队伍");
+            this.aiSummary = res.data.aiSummary || "根据您的专业、技能和兴趣，我们为您推荐了以下最匹配的团队";
+            formatAppLog("log", "at pages/team/recommended.vue:213", "获取到新的AI推荐队伍数据:", this.recommendedTeams.length, "个队伍");
             try {
-              uni.setStorageSync("ai_recommended_teams", JSON.stringify(recommendedTeams.value));
-              uni.setStorageSync("ai_summary", aiSummary.value);
-              uni.setStorageSync("ai_recommend_cache_time", currentTime.toString());
-              formatAppLog("log", "at pages/team/recommended.vue:153", "AI推荐数据缓存成功");
+              uni.setStorageSync("ai_recommended_teams", JSON.stringify(this.recommendedTeams));
+              uni.setStorageSync("ai_summary", this.aiSummary);
+              formatAppLog("log", "at pages/team/recommended.vue:219", "AI推荐数据缓存成功");
             } catch (e) {
-              formatAppLog("error", "at pages/team/recommended.vue:155", "缓存AI推荐数据失败:", e);
+              formatAppLog("error", "at pages/team/recommended.vue:221", "缓存AI推荐数据失败:", e);
             }
           } else {
-            formatAppLog("error", "at pages/team/recommended.vue:158", "获取推荐数据失败:", res.message || "未知错误");
-            if (cachedTeams) {
+            formatAppLog("error", "at pages/team/recommended.vue:224", "获取推荐数据失败:", res.message || "未知错误");
+            if (!forceRefresh) {
               try {
-                recommendedTeams.value = JSON.parse(cachedTeams);
-                aiSummary.value = cachedSummary || "根据您的专业、技能和兴趣，我们为您推荐了以下最匹配的团队";
-                formatAppLog("log", "at pages/team/recommended.vue:164", "使用过期缓存作为备用数据");
+                const cachedTeams = uni.getStorageSync("ai_recommended_teams");
+                if (cachedTeams) {
+                  const parsedTeams = JSON.parse(cachedTeams);
+                  if (Array.isArray(parsedTeams) && parsedTeams.length > 0) {
+                    this.recommendedTeams = parsedTeams;
+                    this.aiSummary = uni.getStorageSync("ai_summary") || "根据您的专业、技能和兴趣，我们为您推荐了以下最匹配的团队";
+                    formatAppLog("log", "at pages/team/recommended.vue:234", "使用缓存作为备用数据");
+                  }
+                }
               } catch (e) {
-                formatAppLog("error", "at pages/team/recommended.vue:166", "解析旧缓存失败:", e);
+                formatAppLog("error", "at pages/team/recommended.vue:238", "解析缓存失败:", e);
               }
             }
           }
         } catch (error) {
-          formatAppLog("error", "at pages/team/recommended.vue:171", "获取AI推荐队伍失败:", error);
-          try {
-            const cachedTeams = uni.getStorageSync("ai_recommended_teams");
-            if (cachedTeams) {
-              recommendedTeams.value = JSON.parse(cachedTeams);
-              aiSummary.value = uni.getStorageSync("ai_summary") || "";
-              formatAppLog("log", "at pages/team/recommended.vue:179", "由于请求失败，使用缓存作为备用数据");
+          formatAppLog("error", "at pages/team/recommended.vue:243", "获取AI推荐队伍失败:", error);
+          if (!forceRefresh) {
+            try {
+              const cachedTeams = uni.getStorageSync("ai_recommended_teams");
+              if (cachedTeams) {
+                const parsedTeams = JSON.parse(cachedTeams);
+                if (Array.isArray(parsedTeams) && parsedTeams.length > 0) {
+                  this.recommendedTeams = parsedTeams;
+                  this.aiSummary = uni.getStorageSync("ai_summary") || "";
+                  formatAppLog("log", "at pages/team/recommended.vue:254", "由于请求失败，使用缓存作为备用数据");
+                }
+              }
+            } catch (e) {
+              formatAppLog("error", "at pages/team/recommended.vue:258", "加载备用缓存失败:", e);
             }
-          } catch (e) {
-            formatAppLog("error", "at pages/team/recommended.vue:182", "加载备用缓存失败:", e);
           }
-          if (recommendedTeams.value.length === 0) {
+          if (this.recommendedTeams.length === 0) {
             uni.showToast({
               title: "获取推荐失败，请稍后再试",
               icon: "none",
@@ -15058,26 +15123,26 @@ if (uni.restoreGlobal) {
             });
           }
         } finally {
-          loading.value = false;
-          formatAppLog("log", "at pages/team/recommended.vue:196", "AI推荐数据加载完成，显示状态更新");
+          this.loading = false;
+          formatAppLog("log", "at pages/team/recommended.vue:273", "AI推荐数据加载完成，显示状态更新");
         }
-      }
-      function refreshRecommendations() {
+      },
+      // 刷新推荐
+      refreshRecommendations() {
         uni.showLoading({
           title: "刷新推荐中..."
         });
         try {
           uni.removeStorageSync("ai_recommended_teams");
           uni.removeStorageSync("ai_summary");
-          uni.removeStorageSync("ai_recommend_cache_time");
-          formatAppLog("log", "at pages/team/recommended.vue:212", "已清除AI推荐缓存，准备获取新数据");
+          formatAppLog("log", "at pages/team/recommended.vue:287", "已清除AI推荐缓存，准备获取新数据");
         } catch (e) {
-          formatAppLog("error", "at pages/team/recommended.vue:214", "清除缓存失败:", e);
+          formatAppLog("error", "at pages/team/recommended.vue:289", "清除缓存失败:", e);
         }
-        getRecommendedTeams(true).then(() => {
-          formatAppLog("log", "at pages/team/recommended.vue:220", "推荐刷新完成");
+        this.getRecommendedTeams(true).then(() => {
+          formatAppLog("log", "at pages/team/recommended.vue:295", "推荐刷新完成");
         }).catch((err) => {
-          formatAppLog("error", "at pages/team/recommended.vue:223", "推荐刷新出错:", err);
+          formatAppLog("error", "at pages/team/recommended.vue:298", "推荐刷新出错:", err);
         }).finally(() => {
           uni.hideLoading();
           uni.showToast({
@@ -15085,32 +15150,28 @@ if (uni.restoreGlobal) {
             icon: "success"
           });
         });
-      }
-      function viewTeamDetail(id) {
+      },
+      // 查看团队详情
+      viewTeamDetail(id) {
         uni.navigateTo({
           url: `/pages/team/detail?id=${id}`
         });
-      }
-      function goToProfile() {
+      },
+      // 跳转到个人资料页
+      goToProfile() {
         uni.switchTab({
           url: "/pages/profile/index"
         });
       }
-      vue.onMounted(() => {
-        getRecommendedTeams();
-      });
-      const __returned__ = { loading, recommendedTeams, aiSummary, headerBarRef, headerPlaceholderHeight, getRecommendedTeams, refreshRecommendations, viewTeamDetail, goToProfile, ref: vue.ref, onMounted: vue.onMounted, computed: vue.computed, HeaderBar, TeamCard, TabBar, get teamApi() {
-        return teamApi;
-      } };
-      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
-      return __returned__;
     }
   };
   function _sfc_render$c(_ctx, _cache, $props, $setup, $data, $options) {
+    const _component_header_bar = vue.resolveComponent("header-bar");
+    const _component_team_card = vue.resolveComponent("team-card");
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createVNode(
-        $setup["HeaderBar"],
+        _component_header_bar,
         {
           ref: "headerBarRef",
           title: "AI智能推荐",
@@ -15128,11 +15189,11 @@ if (uni.restoreGlobal) {
         {
           "scroll-y": "",
           class: "content-scroll",
-          style: vue.normalizeStyle({ paddingTop: $setup.headerPlaceholderHeight })
+          style: vue.normalizeStyle({ paddingTop: $data.headerPlaceholderHeight })
         },
         [
           vue.createCommentVNode(" AI分析摘要 "),
-          $setup.aiSummary ? (vue.openBlock(), vue.createElementBlock("view", {
+          $data.aiSummary ? (vue.openBlock(), vue.createElementBlock("view", {
             key: 0,
             class: "ai-summary"
           }, [
@@ -15142,7 +15203,7 @@ if (uni.restoreGlobal) {
             vue.createElementVNode(
               "text",
               { class: "summary-content" },
-              vue.toDisplayString($setup.aiSummary),
+              vue.toDisplayString($data.aiSummary),
               1
               /* TEXT */
             )
@@ -15153,32 +15214,32 @@ if (uni.restoreGlobal) {
               vue.createElementVNode("text", { class: "section-title" }, "为您推荐的队伍"),
               vue.createElementVNode("view", {
                 class: "refresh-btn",
-                onClick: $setup.refreshRecommendations
+                onClick: _cache[0] || (_cache[0] = (...args) => $options.refreshRecommendations && $options.refreshRecommendations(...args))
               }, [
                 vue.createElementVNode("text", { class: "iconfont icon-refresh" })
               ])
             ]),
-            $setup.loading ? (vue.openBlock(), vue.createElementBlock("view", {
+            $data.loading ? (vue.openBlock(), vue.createElementBlock("view", {
               key: 0,
               class: "loading-container"
             }, [
               vue.createElementVNode("view", { class: "loading-circle" }),
               vue.createElementVNode("text", { class: "loading-text" }, "正在加载推荐...")
-            ])) : $setup.recommendedTeams.length > 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+            ])) : $data.recommendedTeams.length > 0 ? (vue.openBlock(), vue.createElementBlock("view", {
               key: 1,
               class: "team-list"
             }, [
               (vue.openBlock(true), vue.createElementBlock(
                 vue.Fragment,
                 null,
-                vue.renderList($setup.recommendedTeams, (team, index) => {
-                  return vue.openBlock(), vue.createBlock($setup["TeamCard"], {
+                vue.renderList($data.recommendedTeams, (team, index) => {
+                  return vue.openBlock(), vue.createBlock(_component_team_card, {
                     key: team.id,
                     team,
                     index,
                     "show-match": true,
-                    onDetail: $setup.viewTeamDetail
-                  }, null, 8, ["team", "index"]);
+                    onDetail: $options.viewTeamDetail
+                  }, null, 8, ["team", "index", "onDetail"]);
                 }),
                 128
                 /* KEYED_FRAGMENT */
@@ -15195,7 +15256,7 @@ if (uni.restoreGlobal) {
               vue.createElementVNode("text", { class: "empty-text" }, "暂无推荐，请完善个人资料后再试"),
               vue.createElementVNode("button", {
                 class: "primary-btn",
-                onClick: $setup.goToProfile
+                onClick: _cache[1] || (_cache[1] = (...args) => $options.goToProfile && $options.goToProfile(...args))
               }, "完善资料")
             ]))
           ])
