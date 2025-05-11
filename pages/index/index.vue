@@ -4,7 +4,9 @@
     <header-bar
       ref="headerBarRef"
       title="校园任务与组队平台"
+      :show-ai-recommend="true"
       @search="goToSearch"
+      @ai-recommend="navigateToAiRecommend"
     ></header-bar>
     
   
@@ -82,6 +84,7 @@
             </view>
             <text class="menu-text">日程安排</text>
           </view>
+ 
         </view>
       </view>
 
@@ -129,7 +132,10 @@
       <view class="section">
         <view class="section-header">
           <text class="section-title animate__animated animate__fadeInLeft">热门队伍</text>
-          <text class="view-all animate__animated animate__fadeInRight" @click="viewAll('team')">查看全部</text>
+          <view class="ai-recommend-btn" @click="showAiRecommendPopup" @longpress="resetAiRecommendForTesting">
+            <text class="iconfont icon-ai"></text>
+            <text class="ai-text">AI智能推荐</text>
+          </view>
         </view>
         <view class="team-list">
           <!-- 使用团队卡片组件 -->
@@ -195,17 +201,75 @@
         </view>
       </view>
     </uni-popup>
+
+    <!-- 添加AI推荐弹窗 -->
+    <uni-popup ref="aiRecommendPopup" type="center">
+      <view class="ai-popup">
+        <view class="popup-header">
+          <text class="popup-title">AI智能推荐</text>
+          <text class="close-icon" @click="closeAiRecommendPopup">×</text>
+        </view>
+        
+        <view class="popup-content">
+          <!-- 分析中动画 -->
+          <view v-if="aiAnalyzing" class="ai-analyzing">
+            <view class="ai-icon-container">
+              <text class="iconfont icon-ai ai-icon"></text>
+            </view>
+            <view class="analyzing-text">
+              <text>{{ aiAnalyzingTexts[currentTextIndex] }}</text>
+            </view>
+            <view class="loading-dots">
+              <view class="dot"></view>
+              <view class="dot"></view>
+              <view class="dot"></view>
+            </view>
+          </view>
+          
+          <!-- 推荐结果 -->
+          <view v-else>
+            <!-- AI分析摘要 -->
+            <view class="ai-summary" v-if="aiSummary">
+              <view class="summary-header">
+                <text class="summary-title">✨ AI分析结果</text>
+              </view>
+              <text class="summary-content">{{ aiSummary }}</text>
+            </view>
+            
+            <!-- 推荐队伍列表 -->
+            <scroll-view class="recommend-teams-scroll" scroll-y>
+              <view v-if="recommendedTeams.length > 0" class="recommend-teams">
+                <team-card
+                  v-for="(team, index) in recommendedTeams.slice(0, 3)" 
+                  :key="team.id"
+                  :team="team"
+                  :index="index"
+                  :show-match="true"
+                  @detail="viewRecommendedTeam"
+                  @apply="joinTeam"
+                ></team-card>
+              </view>
+              
+              <view v-else class="empty-recommend">
+                <text>暂无推荐结果，请完善个人资料后再试</text>
+              </view>
+            </scroll-view>
+          </view>
+        </view>
+      </view>
+    </uni-popup>
   </view>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, getCurrentInstance, computed } from 'vue';
+import { ref, onMounted, watch, getCurrentInstance, computed, nextTick } from 'vue';
 import teamApi from '@/api/modules/team';
 import competitionsApi from '@/api/modules/competitions';
 import TeamCard from '@/components/team/TeamCard.vue';
 import TabBar from '@/components/TabBar.vue';
 import HeaderBar from '@/components/HeaderBar.vue';
 import api from '@/api';
+import store from '@/store';
 
 // HeaderBar引用
 const headerBarRef = ref(null);
@@ -225,6 +289,9 @@ const headerPlaceholderHeight = computed(() => {
 const teamList = ref([]);
 // 热门竞赛数据
 const competitionsList = ref([]);
+// AI智能推荐数据
+const recommendedTeams = ref([]);
+const aiSummary = ref('');
 
 // 在script部分添加申请弹窗相关的状态变量
 const showApplyModal = ref(false);
@@ -233,6 +300,18 @@ const applyMessage = ref('希望加入您的团队，请审核');
 const selectedRoleId = ref(null);
 const availableRoles = ref([]);
 const loadingRoles = ref(false);
+
+// AI推荐弹窗状态
+const aiRecommendPopup = ref(null);
+const aiAnalyzing = ref(false);
+const aiAnalyzingTexts = [
+  '正在分析您的个人资料...',
+  '正在匹配与您技能相符的队伍...',
+  '正在计算兴趣匹配度...',
+  '正在生成个性化推荐...'
+];
+let aiAnalyzingTimer = null;
+const currentTextIndex = ref(0);
 
 // 获取热门竞赛数据
 async function getCompetitionsList() {
@@ -257,11 +336,62 @@ async function getTeamList() {
   try {
     const res = await teamApi.getTeamList();
     if (res.code === 200 && res.data && res.data.list) {
-      teamList.value = res.data.list.slice(0,10); // 只显示前3个
+      teamList.value = res.data.list.slice(0,10); // 只显示前10个
       console.log('获取到队伍列表数据:', teamList.value);
     }
+	
   } catch (error) {
     console.error('获取队伍数据失败:', error);
+  }
+}
+
+// 获取AI智能推荐的队伍
+async function getRecommendedTeams() {
+  try {
+    // 检查是否已有缓存数据
+    if (recommendedTeams.value && recommendedTeams.value.length > 0) {
+      console.log('使用缓存的AI推荐队伍数据:', recommendedTeams.value);
+      return;
+    }
+    
+    const res = await teamApi.getRecommendedTeams();
+    if (res.code === 200 && res.data) {
+      // 为每个队伍添加匹配度信息
+      const teams = res.data.recommendedTeams || [];
+      recommendedTeams.value = teams.map(team => {
+        return {
+          ...team,
+          matchScore: team.matchScore || Math.floor(Math.random() * 30) + 70, // 如果没有匹配度，随机生成70-100之间的分数
+          matchReason: team.matchReason || team.recommendReason || '根据您的技能和兴趣推荐',
+          recommendedRole: team.recommendedRole || ''
+        };
+      });
+      
+      aiSummary.value = res.data.aiSummary || '根据您的专业、技能和兴趣，我们为您推荐了以下最匹配的团队';
+      console.log('获取到AI推荐队伍数据:', recommendedTeams.value);
+      
+      // 将数据存入本地缓存
+      try {
+        uni.setStorageSync('ai_recommended_teams', JSON.stringify(recommendedTeams.value));
+        uni.setStorageSync('ai_summary', aiSummary.value);
+      } catch (e) {
+        console.error('缓存AI推荐数据失败:', e);
+      }
+    }
+  } catch (error) {
+    console.error('获取AI推荐队伍失败:', error);
+    // 尝试从缓存加载
+    try {
+      const cachedTeams = uni.getStorageSync('ai_recommended_teams');
+      const cachedSummary = uni.getStorageSync('ai_summary');
+      if (cachedTeams) {
+        recommendedTeams.value = JSON.parse(cachedTeams);
+        aiSummary.value = cachedSummary || '';
+        console.log('从缓存加载AI推荐队伍数据:', recommendedTeams.value);
+      }
+    } catch (e) {
+      console.error('读取缓存AI推荐数据失败:', e);
+    }
   }
 }
 
@@ -275,6 +405,9 @@ function navigateTo(page) {
     uni.switchTab({
       url: '/pages/task-square/index'
     });
+  } else if (page === 'recommend') {
+    // 打开AI智能推荐页面
+    navigateToAiRecommend();
   } else {
     uni.showToast({
       title: `导航到${page}页面`,
@@ -283,16 +416,26 @@ function navigateTo(page) {
   }
 }
 
+// AI推荐页面跳转
+function navigateToAiRecommend() {
+  uni.navigateTo({
+    url: '/pages/team/recommended'
+  });
+}
+
 // 查看全部
 function viewAll(type) {
   if (type === 'competition') {
     uni.navigateTo({
       url: '/pages/competition/index'
     });
+  } else if (type === 'recommend') {
+    uni.navigateTo({
+      url: '/pages/team/recommended' // 假设有个推荐队伍页面
+    });
   } else {
-    uni.showToast({
-      title: `查看所有${type}`,
-      icon: 'none'
+    uni.navigateTo({
+      url: '/pages/team/list'
     });
   }
 }
@@ -499,12 +642,211 @@ watch(showApplyModal, (newVal) => {
   }
 });
 
+// 显示AI推荐弹窗
+function showAiRecommendPopup() {
+  // 获取用户是否已点击过AI推荐的状态
+  const hasClickedAiRecommend = store.getState('hasClickedAiRecommend');
+  
+  // 如果已经点击过，直接跳转到推荐页面
+  if (hasClickedAiRecommend) {
+    console.log('用户已点击过AI推荐，直接跳转到推荐页面');
+    navigateToAiRecommend();
+    return;
+  }
+  
+  console.log('用户首次点击AI推荐，显示分析动画');
+  
+  // 显示分析动画
+  aiAnalyzing.value = true;
+  currentTextIndex.value = 0;
+  
+  try {
+    // 显示弹窗
+    if (aiRecommendPopup.value) {
+      aiRecommendPopup.value.open();
+    } else {
+      console.error('AI推荐弹窗引用获取失败');
+      uni.showToast({
+        title: '正在分析中...',
+        icon: 'loading',
+        mask: true,
+        duration: 2000
+      });
+    }
+  } catch (error) {
+    console.error('打开AI弹窗失败:', error);
+    uni.showLoading({
+      title: aiAnalyzingTexts[0],
+      mask: true
+    });
+  }
+  
+  // 清除现有定时器
+  if (aiAnalyzingTimer) {
+    clearInterval(aiAnalyzingTimer);
+    aiAnalyzingTimer = null;
+  }
+  
+  // 设置定时器切换文本并更新loading提示
+  aiAnalyzingTimer = setInterval(() => {
+    currentTextIndex.value = (currentTextIndex.value + 1) % aiAnalyzingTexts.length;
+    
+    // 如果没有成功显示弹窗，则使用loading提示
+    if (!aiRecommendPopup.value || !aiRecommendPopup.value.showPopup) {
+      uni.showLoading({
+        title: aiAnalyzingTexts[currentTextIndex.value],
+        mask: true
+      });
+    }
+    
+    // 最后一个文本时停止动画，显示结果
+    if (currentTextIndex.value === aiAnalyzingTexts.length - 1) {
+      setTimeout(() => {
+        clearInterval(aiAnalyzingTimer);
+        aiAnalyzingTimer = null;
+        
+        // 隐藏loading和弹窗
+        uni.hideLoading();
+        try {
+          if (aiRecommendPopup.value) {
+            aiRecommendPopup.value.close();
+          }
+        } catch (error) {
+          console.error('关闭AI弹窗失败:', error);
+        }
+        
+        // 标记用户已经点击过AI推荐
+        store.updateState('hasClickedAiRecommend', true);
+        
+        // 显示分析完成提示
+        uni.showToast({
+          title: '分析完成',
+          icon: 'success',
+          duration: 1000
+        });
+        
+        // 延迟后导航到推荐页面
+        setTimeout(() => {
+          navigateToAiRecommend();
+        }, 1000);
+      }, 1500);
+    }
+  }, 1500);
+}
+
+// 关闭AI推荐弹窗
+function closeAiRecommendPopup() {
+  console.log('关闭AI推荐弹窗');
+  
+  // 清除定时器
+  if (aiAnalyzingTimer) {
+    clearInterval(aiAnalyzingTimer);
+    aiAnalyzingTimer = null;
+  }
+  
+  // 隐藏loading
+  uni.hideLoading();
+  
+  // 重置分析状态
+  aiAnalyzing.value = false;
+  currentTextIndex.value = 0;
+  
+  // 如果是首次分析中被手动关闭，不设置已点击标记
+  // 这样下次点击仍然会显示分析动画
+}
+
+// 查看推荐队伍详情
+function viewRecommendedTeam(id) {
+  closeAiRecommendPopup();
+  viewDetail('team', id);
+}
+
+
+
+// 重置AI推荐状态（开发测试用）
+function resetAiRecommendForTesting() {
+  console.log('重置AI推荐状态（开发测试用）');
+  // 调用store中的重置方法
+  store.resetAiRecommendState();
+  
+  // 重置本地状态
+  aiAnalyzing.value = false;
+  currentTextIndex.value = 0;
+  
+  // 清除定时器
+  if (aiAnalyzingTimer) {
+    clearInterval(aiAnalyzingTimer);
+    aiAnalyzingTimer = null;
+  }
+  
+  // 显示提示
+  uni.showToast({
+    title: '已重置AI推荐状态',
+    icon: 'success',
+    duration: 1500
+  });
+}
+
 onMounted(() => {
   // 获取状态栏高度
   const statusBarHeight = uni.getSystemInfoSync().statusBarHeight;
   console.log('状态栏高度:', statusBarHeight);
-  getTeamList();
-  getCompetitionsList();
+  
+  // 获取弹窗引用
+  nextTick(() => {
+    try {
+      const instance = getCurrentInstance();
+      if (instance && instance.proxy) {
+        // 通过proxy获取refs
+        aiRecommendPopup.value = instance.proxy.$refs.aiRecommendPopup;
+        console.log('获取到弹窗引用:', aiRecommendPopup.value ? '成功' : '失败');
+      } else {
+        console.error('获取getCurrentInstance()失败或无proxy属性');
+      }
+    } catch (e) {
+      console.error('获取弹窗引用出错:', e);
+    }
+  });
+  
+  // 确保在300ms后再次尝试获取弹窗引用（有时nextTick可能不足够）
+  setTimeout(() => {
+    if (!aiRecommendPopup.value) {
+      try {
+        const instance = getCurrentInstance();
+        if (instance && instance.proxy) {
+          aiRecommendPopup.value = instance.proxy.$refs.aiRecommendPopup;
+          console.log('延迟获取到弹窗引用:', aiRecommendPopup.value ? '成功' : '失败');
+        }
+      } catch (e) {
+        console.error('延迟获取弹窗引用出错:', e);
+      }
+    }
+  }, 300);
+  
+  // 检查全局状态中是否有AI推荐点击记录
+  const hasClickedAiRecommend = store.getState('hasClickedAiRecommend');
+  console.log('用户是否已点击过AI推荐:', hasClickedAiRecommend ? '是' : '否');
+  
+  // 如果用户没有点击过AI推荐，确保重置状态
+  if (!hasClickedAiRecommend) {
+    aiAnalyzing.value = false;
+    currentTextIndex.value = 0;
+    if (aiAnalyzingTimer) {
+      clearInterval(aiAnalyzingTimer);
+      aiAnalyzingTimer = null;
+    }
+  }
+  
+  // 并行请求数据，提升页面加载速度
+  Promise.all([
+    getTeamList(),
+    getCompetitionsList(),
+    getRecommendedTeams() // 提前预加载AI推荐数据
+  ]).then(() => {
+    console.log('所有数据加载完成');
+  }).catch(err => {
+    console.error('数据加载出错:', err);
+  });
 });
 </script>
 
@@ -699,6 +1041,10 @@ page {
           background: linear-gradient(135deg, #fa709a, #fee140);
         }
         
+        &.ai-icon {
+          background: linear-gradient(135deg, #4facfe, #64f38c);
+        }
+        
         .iconfont {
           color: white;
           font-size: 40rpx;
@@ -718,6 +1064,7 @@ page {
 .section-header {
   padding: 0 30rpx 16rpx;
   @include flex-between;
+  position: relative;
   
   .section-title {
     font-size: 32rpx;
@@ -728,6 +1075,29 @@ page {
   .view-all {
     font-size: 26rpx;
     color: $primary-color;
+  }
+  
+  .ai-recommend-btn {
+    position: absolute;
+    right: 40rpx;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(135deg, #4facfe, #64f38c);
+    padding: 6rpx 16rpx;
+    border-radius: 20rpx;
+    box-shadow: 0 4rpx 8rpx rgba(79, 172, 254, 0.2);
+    
+    .iconfont {
+      color: white;
+      font-size: 24rpx;
+      margin-right: 6rpx;
+    }
+    
+    .ai-text {
+      color: white;
+      font-size: 24rpx;
+      font-weight: 500;
+    }
   }
 }
 
@@ -882,15 +1252,6 @@ page {
   }
 }
 
-// 通用动画效果
-.card-hover {
-  transition: all 0.3s;
-  
-  &:active {
-    @include card-active;
-  }
-}
-
 /* 申请弹窗样式 */
 .apply-popup {
   width: 650rpx;
@@ -1026,6 +1387,183 @@ page {
 .header-placeholder {
   width: 100%;
   flex-shrink: 0;
+}
+
+// 通用动画效果
+.card-hover {
+  transition: all 0.3s;
+  
+  &:active {
+    @include card-active;
+  }
+}
+
+/* AI推荐弹窗样式 */
+.ai-popup {
+  width: 80vw;
+  max-width: 750rpx;
+  max-height: 80vh;
+  background-color: #fff;
+  border-radius: 16rpx;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.popup-header {
+  padding: 30rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1rpx solid #eee;
+}
+
+.popup-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: $text-color;
+}
+
+.close-icon {
+  font-size: 40rpx;
+  color: #999;
+  padding: 0 10rpx;
+}
+
+.popup-content {
+  flex: 1;
+  padding: 30rpx;
+  overflow: hidden;
+}
+
+/* 分析中动画 */
+.ai-analyzing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 0;
+  
+  .ai-icon-container {
+    width: 120rpx;
+    height: 120rpx;
+    background: linear-gradient(135deg, #4facfe, #64f38c);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 30rpx;
+    
+    .ai-icon {
+      color: white;
+      font-size: 60rpx;
+      animation: pulse 1.5s infinite;
+    }
+  }
+  
+  .analyzing-text {
+    font-size: 30rpx;
+    color: $text-color;
+    margin-bottom: 20rpx;
+    min-height: 42rpx;
+  }
+  
+  .loading-dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    .dot {
+      width: 16rpx;
+      height: 16rpx;
+      border-radius: 50%;
+      background-color: $primary-color;
+      margin: 0 8rpx;
+      opacity: 0.6;
+      
+      &:nth-child(1) {
+        animation: dot-fade 1.5s 0s infinite;
+      }
+      
+      &:nth-child(2) {
+        animation: dot-fade 1.5s 0.5s infinite;
+      }
+      
+      &:nth-child(3) {
+        animation: dot-fade 1.5s 1s infinite;
+      }
+    }
+  }
+}
+
+@keyframes dot-fade {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* 推荐结果样式 */
+.ai-summary {
+  padding: 20rpx;
+  background-color: rgba($primary-color, 0.05);
+  border-radius: 12rpx;
+  margin-bottom: 20rpx;
+  
+  .summary-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10rpx;
+  }
+  
+  .summary-title {
+    font-size: 28rpx;
+    font-weight: bold;
+    color: $text-color;
+  }
+  
+  .summary-content {
+    font-size: 26rpx;
+    color: $text-secondary;
+    line-height: 1.6;
+  }
+}
+
+.recommend-teams-scroll {
+  max-height: 600rpx;
+}
+
+.recommend-teams {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.empty-recommend {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60rpx 0;
+  
+  text {
+    font-size: 28rpx;
+    color: $text-muted;
+    text-align: center;
+  }
+}
+
+.popup-footer {
+  padding: 20rpx 30rpx;
+  border-top: 1rpx solid #eee;
+  display: flex;
+  justify-content: center;
+  
+  .primary-btn {
+    background-color: $primary-color;
+    color: white;
+    font-size: 28rpx;
+    padding: 12rpx 40rpx;
+    border-radius: 40rpx;
+    border: none;
+  }
 }
 </style>
 

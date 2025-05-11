@@ -13,10 +13,14 @@ app.$mount()
 // #ifdef VUE3
 import { createSSRApp } from 'vue'
 import { getEnv } from '@/config/env'
+import store from './store'
+
 const env = getEnv()
 
 export function createApp() {
   const app = createSSRApp(App)
+  // 将store挂载到全局属性
+  app.config.globalProperties.$store = store
   return {
     app
   }

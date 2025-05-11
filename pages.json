@@ -64,6 +64,14 @@
 			}
 		},
 		{
+			"path": "pages/team/recommended",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "AI智能推荐",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
 			"path": "pages/competition/index",
 			"style": {
 				"navigationStyle": "custom",
@@ -97,6 +105,41 @@
 			}
 		},
 		{
+			"path": "pages/profile/user-info",
+			"style": {
+				"navigationBarTitleText": "个人资料",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/profile/edit-basic-info",
+			"style": {
+				"navigationBarTitleText": "编辑基本信息",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/profile/edit-bio",
+			"style": {
+				"navigationBarTitleText": "编辑个人简介",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/profile/edit-skills",
+			"style": {
+				"navigationBarTitleText": "编辑技能标签",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/profile/edit-awards",
+			"style": {
+				"navigationBarTitleText": "编辑获奖经历",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path" : "pages/Xiaoxi/Xiaoxi",
 			"style" : 
 			{
@@ -109,6 +152,12 @@
 			{
 				"navigationBarTitleText" : "申请管理",
 				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/websocket-test/index",
+			"style": {
+				"navigationBarTitleText": "WebSocket测试"
 			}
 		}
 	],

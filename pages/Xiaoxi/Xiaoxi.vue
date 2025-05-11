@@ -4,49 +4,95 @@
     <view class="header">
       <view class="navbar">
         <view class="title">通知</view>
-        <view class="mark-read" @click="markAllAsRead">
+        <view class="actions">
+          <view v-if="!isEditMode" class="mark-read" @click="markAllAsRead">
           <text class="iconfont icon-check"></text>
           <text class="mark-text">全部标记为已读</text>
         </view>
+          <view v-if="!isEditMode" class="edit-btn" @click="toggleEditMode">
+            <text class="iconfont icon-edit"></text>
+            <text class="edit-text">编辑</text>
+          </view>
+          <view v-else class="edit-actions">
+            <view class="cancel-btn" @click="toggleEditMode">
+              <text>取消</text>
+            </view>
+            <view class="delete-btn" @click="confirmBatchDelete">
+              <text class="iconfont icon-delete"></text>
+              <text>删除</text>
+            </view>
+          </view>
+        </view>
       </view>
+      
+      <!-- WebSocket连接状态指示器 -->
+      <!-- <view class="ws-status" :class="{ 'connected': wsConnected }">
+        <text class="ws-status-text">{{ wsConnected ? '实时消息已连接' : '实时消息未连接' }}</text>
+        <view class="ws-indicator"></view>
+      </view> -->
     </view>
     
     <!-- 标签页 -->
     <view class="tabs">
       <view 
         :class="['tab-item', activeTab === 'unread' ? 'tab-active' : '']" 
-        @click="activeTab = 'unread'"
+        @click="switchTab('unread')"
       >
         <text>未读</text>
         <text class="badge" v-if="unreadCount > 0">{{ unreadCount }}</text>
       </view>
       <view 
-        :class="['tab-item', activeTab === 'all' ? 'tab-active' : '']" 
-        @click="activeTab = 'all'"
+        :class="['tab-item', activeTab === 'read' ? 'tab-active' : '']" 
+        @click="switchTab('read')"
       >
-        <text>全部</text>
+        <text>已读</text>
       </view>
     </view>
     
     <!-- 通知列表 -->
-    <scroll-view scroll-y class="notification-list">
+    <scroll-view 
+      scroll-y 
+      class="notification-list" 
+      refresher-enabled 
+      :refresher-triggered="refreshing" 
+      @refresherrefresh="onRefresh"
+      @scrolltolower="loadMore"
+    >
+      <!-- 未读通知列表 -->
       <view v-if="activeTab === 'unread'">
-        <view class="notification-item" v-for="(item, index) in unreadNotifications" :key="index">
+        <view 
+          class="notification-item unread" 
+          v-for="(item, index) in unreadNotifications" 
+          :key="index"
+          :class="{
+            'item-selected': isEditMode && selectedItems.includes(item.id),
+            'reading': item.isReading
+          }"
+          @mouseenter="!isEditMode && handleNotificationView(item, index)"
+          @mouseleave="!isEditMode && handleNotificationLeave(item)"
+          @touchstart="!isEditMode && handleNotificationView(item, index)"
+          @touchend="!isEditMode && handleNotificationLeave(item)"
+        >
+          <view class="select-box" v-if="isEditMode" @click.stop="toggleSelectItem(item.id)">
+            <view class="checkbox" :class="{'checked': selectedItems.includes(item.id)}">
+              <text class="iconfont icon-check" v-if="selectedItems.includes(item.id)"></text>
+            </view>
+          </view>
           <view class="notification-avatar">
             <image :src="item.avatar || '/static/default-avatar.png'" mode="aspectFill"></image>
           </view>
-          <view class="notification-content">
+          <view class="notification-content" @click="isEditMode ? toggleSelectItem(item.id) : navigateToDetail(item)">
             <view class="notification-type">{{ item.type }}</view>
             <view class="notification-message">{{ item.message }}</view>
             <view class="notification-time">{{ item.time }}</view>
             
             <!-- 操作按钮 -->
-            <view class="notification-actions" v-if="item.actions">
+            <view class="notification-actions" v-if="!isEditMode && item.actions">
               <button 
                 v-for="(action, idx) in item.actions" 
                 :key="idx"
                 :class="['action-btn', action.primary ? 'btn-primary' : 'btn-default']"
-                @click="handleAction(action.type, item.id)"
+                @click.stop="handleAction(action.type, item.id)"
               >
                 {{ action.name }}
               </button>
@@ -55,188 +101,959 @@
         </view>
       </view>
       
-      <view v-if="activeTab === 'all'">
-        <view class="notification-item" v-for="(item, index) in allNotifications" :key="index">
+      <!-- 已读通知列表 -->
+      <view v-if="activeTab === 'read'">
+        <view 
+          class="notification-item read" 
+          v-for="(item, index) in readNotifications" 
+          :key="index"
+          :class="{
+            'item-selected': isEditMode && selectedItems.includes(item.id)
+          }"
+        >
+          <view class="select-box" v-if="isEditMode" @click.stop="toggleSelectItem(item.id)">
+            <view class="checkbox" :class="{'checked': selectedItems.includes(item.id)}">
+              <text class="iconfont icon-check" v-if="selectedItems.includes(item.id)"></text>
+            </view>
+          </view>
           <view class="notification-avatar">
             <image :src="item.avatar || '/static/default-avatar.png'" mode="aspectFill"></image>
           </view>
-          <view class="notification-content">
+          <view class="notification-content" @click="isEditMode ? toggleSelectItem(item.id) : navigateToDetail(item)">
             <view class="notification-type">{{ item.type }}</view>
             <view class="notification-message">{{ item.message }}</view>
             <view class="notification-time">{{ item.time }}</view>
-            
-            <!-- 操作按钮 -->
-            <view class="notification-actions" v-if="item.actions">
-              <button 
-                v-for="(action, idx) in item.actions" 
-                :key="idx"
-                :class="['action-btn', action.primary ? 'btn-primary' : 'btn-default']"
-                @click="handleAction(action.type, item.id)"
-              >
-                {{ action.name }}
-              </button>
-            </view>
           </view>
         </view>
+      </view>
+      
+      <!-- 加载更多 -->
+      <view class="loading-more" v-if="loading && !refreshing">
+        <text>加载中...</text>
+      </view>
+      
+      <!-- 无更多数据 -->
+      <view class="no-more" v-if="!loading && !hasMore && (activeTab === 'unread' ? unreadNotifications.length > 0 : readNotifications.length > 0)">
+        <text>没有更多了</text>
       </view>
       
       <!-- 无通知状态 -->
-      <view class="empty-state" v-if="(activeTab === 'unread' && unreadNotifications.length === 0) || 
-                                    (activeTab === 'all' && allNotifications.length === 0)">
+      <view class="empty-state" v-if="!loading && (activeTab === 'unread' && unreadNotifications.length === 0) || 
+                                    (activeTab === 'read' && readNotifications.length === 0)">
         <image class="empty-image" src="/static/empty-notification.png" mode="aspectFit"></image>
-        <text class="empty-text">暂无{{ activeTab === 'unread' ? '未读' : '' }}通知</text>
+        <text class="empty-text">暂无{{ activeTab === 'unread' ? '未读' : '已读' }}通知</text>
       </view>
     </scroll-view>
+    
+    <!-- 底部批量操作栏 -->
+    <view class="bottom-action-bar" v-if="isEditMode">
+      <view class="select-all" @click="toggleSelectAll">
+        <view class="checkbox" :class="{'checked': isAllSelected}">
+          <text class="iconfont icon-check" v-if="isAllSelected"></text>
+        </view>
+        <text>全选</text>
+      </view>
+      <view class="batch-delete" @click="confirmBatchDelete" :class="{'disabled': selectedItems.length === 0}">
+        <text>删除({{ selectedItems.length }})</text>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
+import notificationService from '@/utils/notification-service';
+import websocket from '@/utils/websocket';
+import notificationsApi from '@/api/modules/notifications';
+
+// 获取App实例
+const app = getApp();
+
+// WebSocket连接状态
+const wsConnected = ref(false);
 
 // 标签页状态
 const activeTab = ref('unread');
-const unreadCount = ref(2);
+const unreadCount = ref(0);
 
 // 通知数据
-const unreadNotifications = ref([
-  {
-    id: 1,
-    type: '团队邀请',
-    message: '张明邀请你加入"创新先锋队"参加创新创业大赛',
-    time: '10分钟前',
-    avatar: '/static/avatars/zhang.png',
-    actions: [
-      { name: '接受', type: 'accept', primary: true },
-      { name: '拒绝', type: 'reject', primary: false }
-    ]
-  },
-  {
-    id: 2,
-    type: '新消息',
-    message: '李华在"代码助手"团队中@你：能否帮忙解决一下这个问题？',
-    time: '30分钟前',
-    avatar: '/static/avatars/li.png',
-    actions: [
-      { name: '查看', type: 'view', primary: true }
-    ]
-  }
-]);
+const unreadNotifications = ref([]);
+const readNotifications = ref([]);
 
-// 所有通知，包括已读和未读
-const allNotifications = ref([
-  // 未读通知
-  ...unreadNotifications.value,
-  // 已读通知
-  {
-    id: 3,
-    type: '系统通知',
-    message: '您的团队"创业先锋"已审核通过，请及时查看',
-    time: '2天前',
-    avatar: '/static/avatars/system.png',
-    read: true,
-    actions: [
-      { name: '查看', type: 'view', primary: true }
-    ]
-  },
-  {
-    id: 4,
-    type: '好友申请',
-    message: '王芳申请添加您为好友',
-    time: '3天前',
-    avatar: '/static/avatars/wang.png',
-    read: true,
-    actions: [
-      { name: '同意', type: 'accept', primary: true },
-      { name: '拒绝', type: 'reject', primary: false }
-    ]
+// 分页参数
+const pagination = ref({
+  current: 1,
+  size: 10,
+  total: 0,
+  pages: 0
+});
+
+// 加载状态
+const loading = ref(false);
+const refreshing = ref(false);
+const hasMore = ref(true);
+
+// 编辑模式状态
+const isEditMode = ref(false);
+const selectedItems = ref([]);
+
+// 是否全选
+const isAllSelected = computed(() => {
+  const currentList = activeTab.value === 'unread' ? unreadNotifications.value : readNotifications.value;
+  return currentList.length > 0 && selectedItems.value.length === currentList.length;
+});
+
+// 切换编辑模式
+function toggleEditMode() {
+  isEditMode.value = !isEditMode.value;
+  // 退出编辑模式时清空选择
+  if (!isEditMode.value) {
+    selectedItems.value = [];
   }
-]);
+}
+
+// 切换选择单个项目
+function toggleSelectItem(id) {
+  const index = selectedItems.value.indexOf(id);
+  if (index === -1) {
+    selectedItems.value.push(id);
+  } else {
+    selectedItems.value.splice(index, 1);
+  }
+}
+
+// 切换全选/取消全选
+function toggleSelectAll() {
+  const currentList = activeTab.value === 'unread' ? unreadNotifications.value : readNotifications.value;
+  
+  if (isAllSelected.value) {
+    // 如果已全选，则取消全选
+    selectedItems.value = [];
+  } else {
+    // 如果未全选，则全选
+    selectedItems.value = currentList.map(item => item.id);
+  }
+}
+
+// 确认批量删除
+function confirmBatchDelete() {
+  if (selectedItems.value.length === 0) {
+    uni.showToast({
+      title: '请先选择要删除的通知',
+      icon: 'none'
+    });
+    return;
+  }
+  
+  uni.showModal({
+    title: '删除通知',
+    content: `确定要删除选中的${selectedItems.value.length}条通知吗？`,
+    success: (res) => {
+      if (res.confirm) {
+        batchDeleteNotifications(selectedItems.value);
+        // 删除后退出编辑模式
+        toggleEditMode();
+      }
+    }
+  });
+}
+
+// 处理新的通知消息
+function handleNewNotification(notification) {
+  console.log('收到新通知', notification);
+  
+  // 创建UI显示用的通知对象
+  const newNotification = {
+    id: notification.id,
+    type: notification.typeName,
+    message: notification.content || notification.title,
+    time: notification.time,
+    avatar: getAvatarByType(notification.typeId),
+    read: notification.isRead,
+    actions: notification.actions,
+    // 保存原始数据，用于后续处理
+    originalData: notification
+  };
+  
+  // 添加到未读列表
+  if (!notification.isRead) {
+    unreadNotifications.value.unshift(newNotification);
+    unreadCount.value++;
+  }
+  
+  // 添加到已读列表
+  readNotifications.value.unshift(newNotification);
+  
+  // 显示通知提示
+  uni.showToast({
+    title: '收到新通知',
+    icon: 'none'
+  });
+}
+
+// 根据通知类型获取头像
+function getAvatarByType(typeId) {
+  const avatarMap = {
+    'system_announcement': '/static/avatars/system.png',
+    'team_application_received': '/static/avatars/team.png',
+    'team_invite': '/static/avatars/team.png',
+    'task_application': '/static/avatars/task.png',
+    'task_update': '/static/avatars/task.png',
+    'badge_application': '/static/avatars/badge.png',
+    'friend_request': '/static/avatars/user.png'
+  };
+  
+  return avatarMap[typeId] || '/static/avatars/system.png';
+}
 
 // 标记所有为已读
-function markAllAsRead() {
+async function markAllAsRead() {
+  try {
+    loading.value = true;
+    
+    // 调用API标记所有为已读
+    const res = await notificationsApi.markAllAsRead();
+    
+    if (res.code === 200) {
+      // 更新本地状态
   unreadNotifications.value.forEach(item => {
-    const index = allNotifications.value.findIndex(n => n.id === item.id);
+    const index = readNotifications.value.findIndex(n => n.id === item.id);
     if (index !== -1) {
-      allNotifications.value[index].read = true;
+      readNotifications.value[index].read = true;
     }
   });
   unreadNotifications.value = [];
   unreadCount.value = 0;
+      
+      // 重置App全局未读通知计数
+      if (app && app.resetUnreadNotificationCount) {
+        app.resetUnreadNotificationCount();
+      }
   
   uni.showToast({
     title: '已全部标记为已读',
     icon: 'success'
   });
+    } else {
+      uni.showToast({
+        title: res.message || '操作失败',
+        icon: 'none'
+      });
+    }
+  } catch (error) {
+    console.error('标记全部已读失败:', error);
+    uni.showToast({
+      title: '操作失败，请稍后重试',
+      icon: 'none'
+    });
+  } finally {
+    loading.value = false;
+  }
 }
 
 // 处理按钮操作
 function handleAction(type, id) {
-  if (type === 'accept' && id === 1) {
+  // 找到对应的通知
+  const notification = (activeTab.value === 'unread' ? 
+                        unreadNotifications.value : 
+                        readNotifications.value).find(item => item.id === id);
+  if (!notification) return;
+  
+  if (type === 'accept') {
     uni.showModal({
-      title: '团队邀请',
-      content: '确定接受加入"创新先锋队"？',
-      success: function(res) {
+      title: '接受申请',
+      content: `确定接受此${notification.type}？`,
+      success: async function(res) {
         if (res.confirm) {
+          try {
+            loading.value = true;
+            
+            // 调用API处理通知操作
+            const apiRes = await notificationsApi.handleNotificationAction(id, 'accept', {
+              relatedId: notification.originalData?.relatedId,
+              relatedType: notification.originalData?.relatedType
+            });
+            
+            if (apiRes.code === 200) {
           // 从未读列表中移除
           removeNotification(id);
+              
           uni.showToast({
-            title: '已加入团队',
+                title: '已接受',
             icon: 'success'
           });
+            } else {
+              uni.showToast({
+                title: apiRes.message || '操作失败',
+                icon: 'none'
+              });
+            }
+          } catch (error) {
+            console.error('接受操作失败:', error);
+            uni.showToast({
+              title: '操作失败，请稍后重试',
+              icon: 'none'
+            });
+          } finally {
+            loading.value = false;
+          }
         }
       }
     });
-  } else if (type === 'reject' && id === 1) {
+  } else if (type === 'reject') {
     uni.showModal({
-      title: '团队邀请',
-      content: '确定拒绝加入"创新先锋队"？',
-      success: function(res) {
+      title: '拒绝申请',
+      content: `确定拒绝此${notification.type}？`,
+      success: async function(res) {
         if (res.confirm) {
+          try {
+            loading.value = true;
+            
+            // 调用API处理通知操作
+            const apiRes = await notificationsApi.handleNotificationAction(id, 'reject', {
+              relatedId: notification.originalData?.relatedId,
+              relatedType: notification.originalData?.relatedType
+            });
+            
+            if (apiRes.code === 200) {
           // 从未读列表中移除
           removeNotification(id);
+              
           uni.showToast({
-            title: '已拒绝邀请',
+                title: '已拒绝',
+                icon: 'none'
+              });
+            } else {
+              uni.showToast({
+                title: apiRes.message || '操作失败',
             icon: 'none'
           });
+            }
+          } catch (error) {
+            console.error('拒绝操作失败:', error);
+            uni.showToast({
+              title: '操作失败，请稍后重试',
+              icon: 'none'
+            });
+          } finally {
+            loading.value = false;
+          }
         }
       }
     });
   } else if (type === 'view') {
-    if (id === 2) {
-      // 导航到团队聊天页面
-      uni.navigateTo({
-        url: '/pages/team/chat?id=代码助手'
-      });
+    // 导航到相应页面
+    navigateToDetail(notification);
+    
       // 从未读列表中移除
       removeNotification(id);
-    } else {
-      // 导航到相应页面
+  }
+}
+
+// 重要通知类型列表
+const importantNotificationTypes = [
+  'system_announcement',  // 系统公告
+  'team_invite',          // 团队邀请
+  'task_application'      // 任务申请
+];
+
+// 朗读通知内容
+function readNotificationAloud(notification) {
+  // 检查是否为重要通知
+  if (!notification || !notification.originalData || 
+      !importantNotificationTypes.includes(notification.originalData.typeId)) {
+    return;
+  }
+  
+  // 获取朗读内容
+  const content = `${notification.type}：${notification.message}`;
+  
+  // 检查朗读API是否可用
+  if (window.speechSynthesis) {
+    // 创建语音合成实例
+    const speech = new SpeechSynthesisUtterance();
+    speech.text = content;
+    speech.lang = 'zh-CN'; // 中文
+    speech.volume = 0.7;    // 音量 0-1
+    speech.rate = 1.0;      // 语速 0.1-10
+    speech.pitch = 1.0;     // 音调 0-2
+    
+    // 朗读
+    window.speechSynthesis.speak(speech);
+  }
+}
+
+// 根据通知类型导航到相应页面
+function navigateToDetail(notification) {
+  if (!notification || !notification.originalData) return;
+  
+  // 标记为已读
+  markNotificationAsRead(notification.id);
+  
+  // 对于重要通知，朗读一次内容
+  readNotificationAloud(notification);
+  
+  const typeId = notification.originalData.typeId;
+  const relatedId = notification.originalData.relatedId;
+  
+  console.log('准备导航，通知类型:', typeId, '关联ID:', relatedId);
+  
+  // 根据通知类型跳转到不同页面
+  if (typeId === 'team_invite' || typeId.includes('team_application')) {
+    // 如果是团队申请相关通知，跳转到申请管理页面
+    if (typeId === 'team_application_received') {
+      // 收到队伍申请，跳转到申请管理页面的待我处理标签页
+      console.log('收到队伍申请，正在跳转到待我处理标签页');
+      const url = `/pages/application/application?tab=1&type=team&id=${relatedId}`;
+      console.log('跳转URL:', url);
       uni.navigateTo({
-        url: '/pages/notification/detail?id=' + id
+        url: url,
+        success: function() {
+          console.log('跳转成功');
+        },
+        fail: function(err) {
+          console.error('跳转失败:', err);
+        }
+      });
+    } else if (typeId === 'team_application_result') {
+      // 队伍申请结果，跳转到申请管理页面的我发起的标签页
+      uni.navigateTo({
+        url: `/pages/application/application?tab=0&type=team&id=${relatedId}`
+      });
+    } else {
+      // 其他团队相关通知，默认跳转到我发起的标签页
+      uni.navigateTo({
+        url: `/pages/application/application?tab=0&type=team&id=${relatedId}`
       });
     }
+  } else if (typeId.includes('task_application') || typeId.includes('task_update')) {
+    // 如果是任务申请相关通知，跳转到申请管理页面
+    uni.navigateTo({
+      url: `/pages/application/application?type=task&id=${relatedId}`
+    });
+  } else if (typeId === 'system_announcement') {
+    // 导航到公告详情页
+    uni.navigateTo({
+      url: `/pages/notification/detail?id=${notification.id}`
+    });
+  } else if (typeId === 'badge_application') {
+    // 徽章申请，跳转到申请管理页面
+    uni.navigateTo({
+      url: `/pages/application/application?type=badge&id=${relatedId}`
+    });
+  } else {
+    // 默认导航到申请管理页面
+    uni.navigateTo({
+      url: `/pages/application/application`
+    });
   }
 }
 
-// 从未读列表中移除通知
-function removeNotification(id) {
-  const index = unreadNotifications.value.findIndex(item => item.id === id);
-  if (index !== -1) {
-    unreadNotifications.value.splice(index, 1);
-    unreadCount.value--;
+// 处理通知查看行为，智能标记已读
+function handleNotificationView(notification, index) {
+  // 如果通知已读，不做处理
+  if (notification.read) return;
+  
+  // 标记为正在阅读状态
+  notification.isReading = true;
+  
+  // 记录查看开始时间
+  notification.viewStartTime = Date.now();
+  
+  // 创建一个计时器，当用户在通知上停留超过2秒时自动标记为已读
+  notification.viewTimer = setTimeout(() => {
+    markNotificationAsRead(notification.id);
+  }, 2000);
+}
+
+// 处理通知离开行为
+function handleNotificationLeave(notification) {
+  // 取消正在阅读状态
+  notification.isReading = false;
+  
+  // 清除计时器
+  if (notification.viewTimer) {
+    clearTimeout(notification.viewTimer);
+    notification.viewTimer = null;
+  }
+  
+  // 如果通知已读，不做处理
+  if (notification.read) return;
+  
+  // 如果用户查看时间超过1秒，标记为已读
+  if (notification.viewStartTime && (Date.now() - notification.viewStartTime > 1000)) {
+    markNotificationAsRead(notification.id);
+  }
+}
+
+// 计算通知是否在可视区域内
+function isNotificationVisible(element) {
+  if (!element) return false;
+  
+  const rect = element.getBoundingClientRect();
+  const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+  
+  // 通知完全在可视区域内
+  return (
+    rect.top >= 0 &&
+    rect.bottom <= windowHeight &&
+    rect.height > 0
+  );
+}
+
+// 监听滚动事件，检查可视区域内的通知
+function handleScroll() {
+  // 如果正在编辑模式，不处理
+  if (isEditMode.value) return;
+  
+  // 获取当前标签页下的通知列表
+  const notifications = activeTab.value === 'unread' ? unreadNotifications.value : readNotifications.value;
+  
+  // 获取所有通知元素
+  const notificationElements = document.querySelectorAll('.notification-item');
+  
+  // 检查每个通知是否在可视区域内
+  notificationElements.forEach((element, index) => {
+    if (index < notifications.length && isNotificationVisible(element)) {
+      const notification = notifications[index];
+      
+      // 如果通知未读且在可视区域内停留时间超过3秒，标记为已读
+      if (!notification.read && !notification.scrollTimer) {
+        notification.scrollTimer = setTimeout(() => {
+          markNotificationAsRead(notification.id);
+          notification.scrollTimer = null;
+        }, 3000);
+      }
+    }
+  });
+}
+
+// 优化标记单个通知为已读的方法
+async function markNotificationAsRead(id) {
+  // 找到对应的通知
+  const unreadIndex = unreadNotifications.value.findIndex(item => item.id === id);
+  
+  // 如果通知不存在或已读，不做处理
+  if (unreadIndex === -1) {
+    return;
+  }
+  
+  try {
+    // 先在UI上标记为已读，提升响应速度
+    if (unreadIndex !== -1) {
+      // 从未读列表取出通知，将其加入已读列表
+      const notification = unreadNotifications.value.splice(unreadIndex, 1)[0];
+      notification.read = true;
+      readNotifications.value.unshift(notification);
+      unreadCount.value--;
+      
+      // 更新全局未读通知计数
+      if (app && app.globalData) {
+        app.globalData.unreadNotificationCount = Math.max(0, app.globalData.unreadNotificationCount - 1);
+        
+        // 更新TabBar角标
+        if (app.updateMessageBadge) {
+          app.updateMessageBadge();
+        }
+      }
+    }
     
-    // 更新全部通知列表中的状态
-    const allIndex = allNotifications.value.findIndex(item => item.id === id);
-    if (allIndex !== -1) {
-      allNotifications.value[allIndex].read = true;
+    // 然后异步调用API标记为已读
+    await notificationsApi.markAsRead(id);
+    
+  } catch (error) {
+    console.error('标记已读失败:', error);
+    // API调用失败时不回滚UI状态，避免用户体验不连贯
+  }
+}
+
+// 监听WebSocket连接状态
+function monitorWebSocketStatus() {
+  // 定时检查WebSocket连接状态
+  const statusTimer = setInterval(() => {
+    wsConnected.value = websocket.isConnected();
+  }, 5000);
+  
+  // 组件卸载时清除定时器
+  onUnmounted(() => {
+    clearInterval(statusTimer);
+  });
+}
+
+// 加载通知列表
+async function loadNotifications(refresh = false) {
+  if (loading.value) return;
+  
+  try {
+    loading.value = true;
+    
+    if (refresh) {
+      pagination.value.current = 1;
+      refreshing.value = true;
+    }
+    
+    // 调用API获取通知列表
+    const res = await notificationsApi.getNotificationList({
+      pageNum: pagination.value.current,
+      pageSize: pagination.value.size,
+      onlyUnread: activeTab.value === 'unread', // 未读标签页只请求未读通知
+      onlyRead: activeTab.value === 'read'      // 已读标签页只请求已读通知
+    });
+    
+    if (res.code === 200 && res.data) {
+      // 解析通知数据
+      const notifications = (res.data.records || []).map(item => {
+        return {
+          id: item.id,
+          type: item.typeName,
+          message: item.content || item.title,
+          time: formatTime(item.createdAt),
+          avatar: getAvatarByType(item.typeId),
+          read: item.isRead, // 确保正确映射已读状态
+          actions: getActionsForNotification(item),
+          originalData: item,
+          // 添加UI状态属性
+          isReading: false,
+          viewStartTime: null,
+          viewTimer: null,
+          scrollTimer: null
+        };
+      });
+      
+      // 更新分页信息
+      pagination.value = {
+        current: res.data.current,
+        size: res.data.size,
+        total: res.data.total,
+        pages: res.data.pages
+      };
+      
+      // 判断是否还有更多数据
+      hasMore.value = pagination.value.current < pagination.value.pages;
+      
+      if (refresh) {
+        // 刷新列表
+        if (activeTab.value === 'unread') {
+          // 确保未读标签页只有未读消息
+          unreadNotifications.value = notifications.filter(item => !item.read);
+        } else if (activeTab.value === 'read') {
+          // 确保已读标签页只有已读消息
+          readNotifications.value = notifications.filter(item => item.read);
+        }
+      } else {
+        // 加载更多
+        if (activeTab.value === 'unread') {
+          // 确保未读标签页只有未读消息
+          const newUnread = notifications.filter(item => !item.read);
+          unreadNotifications.value = [...unreadNotifications.value, ...newUnread];
+        } else if (activeTab.value === 'read') {
+          // 确保已读标签页只有已读消息
+          const newRead = notifications.filter(item => item.read);
+          readNotifications.value = [...readNotifications.value, ...newRead];
+        }
+      }
+      
+      // 更新未读计数
+      if (activeTab.value === 'unread' || refresh) {
+        // 计算真实的未读消息数量
+        unreadCount.value = activeTab.value === 'unread' 
+          ? unreadNotifications.value.length 
+          : notifications.filter(item => !item.read).length;
+        
+        // 同步全局未读通知计数
+        if (app && app.globalData) {
+          app.globalData.unreadNotificationCount = unreadCount.value;
+          
+          // 更新TabBar角标，但要捕获可能的错误
+          updateTabBarBadge(unreadCount.value);
+        }
+      }
+    } else {
+      uni.showToast({
+        title: res.message || '获取通知失败',
+        icon: 'none'
+      });
+    }
+  } catch (error) {
+    console.error('获取通知列表失败:', error);
+    uni.showToast({
+      title: '获取通知失败',
+      icon: 'none'
+    });
+  } finally {
+    loading.value = false;
+    refreshing.value = false;
+  }
+}
+
+// 安全地更新TabBar徽标，处理非TabBar页面的错误
+function updateTabBarBadge(count) {
+  if (!app || !app.updateMessageBadge) return;
+  
+  try {
+    // 尝试使用应用内的更新方法
+    app.updateMessageBadge();
+  } catch (error) {
+    // 如果应用内方法失败，使用更安全的替代方法
+    try {
+      if (count > 0) {
+        uni.setTabBarBadge({
+          index: 4, // 消息页面的TabBar索引，根据实际情况调整
+          text: count.toString()
+        }).catch(err => {
+          console.log('设置TabBar徽标失败，可能不在TabBar页面', err);
+          // 不抛出错误，静默失败
+        });
+      } else {
+        uni.removeTabBarBadge({
+          index: 4
+        }).catch(err => {
+          console.log('移除TabBar徽标失败，可能不在TabBar页面', err);
+          // 不抛出错误，静默失败
+        });
+      }
+    } catch (e) {
+      console.log('TabBar操作失败，可能不在TabBar页面');
+      // 不抛出错误，静默失败
     }
   }
 }
 
+// 根据通知信息获取操作按钮
+function getActionsForNotification(notification) {
+  if (notification.typeId.includes('team_application') && !notification.isRead) {
+    return [
+      { name: '接受', type: 'accept', primary: true },
+      { name: '拒绝', type: 'reject', primary: false }
+    ];
+  } else if (notification.typeId === 'team_invite' && !notification.isRead) {
+    return [
+      { name: '接受', type: 'accept', primary: true },
+      { name: '拒绝', type: 'reject', primary: false }
+    ];
+  } else {
+    return [{ name: '查看', type: 'view', primary: true }];
+  }
+}
+
+// 格式化时间
+function formatTime(dateStr) {
+  try {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = now - date;
+    
+    // 小于1分钟
+    if (diff < 60 * 1000) {
+      return '刚刚';
+    }
+    // 小于1小时
+    else if (diff < 60 * 60 * 1000) {
+      return Math.floor(diff / (60 * 1000)) + '分钟前';
+    }
+    // 小于24小时
+    else if (diff < 24 * 60 * 60 * 1000) {
+      return Math.floor(diff / (60 * 60 * 1000)) + '小时前';
+    }
+    // 小于30天
+    else if (diff < 30 * 24 * 60 * 60 * 1000) {
+      return Math.floor(diff / (24 * 60 * 60 * 1000)) + '天前';
+    }
+    else {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+  } catch (e) {
+    console.error('格式化时间错误', e);
+    return dateStr;
+  }
+}
+
+// 切换标签页
+function switchTab(tab) {
+  if (activeTab.value === tab) return;
+  
+  activeTab.value = tab;
+  
+  // 重新加载数据
+  loadNotifications(true);
+}
+
+// 下拉刷新
+function onRefresh() {
+  loadNotifications(true);
+}
+
+// 加载更多
+function loadMore() {
+  if (loading.value || !hasMore.value) return;
+  
+  pagination.value.current++;
+  loadNotifications(false);
+}
+
+// 添加批量删除通知功能
+async function batchDeleteNotifications(ids) {
+  if (!ids || ids.length === 0) return;
+  
+  try {
+    loading.value = true;
+    
+    // 调用API批量删除通知
+    const res = await notificationsApi.batchDeleteNotifications(ids);
+    
+    if (res.code === 200) {
+      // 从列表中移除已删除的通知
+      ids.forEach(id => {
+        const unreadIndex = unreadNotifications.value.findIndex(item => item.id === id);
+        if (unreadIndex !== -1) {
+          unreadNotifications.value.splice(unreadIndex, 1);
+          unreadCount.value--;
+        }
+        
+        const readIndex = readNotifications.value.findIndex(item => item.id === id);
+        if (readIndex !== -1) {
+          readNotifications.value.splice(readIndex, 1);
+        }
+      });
+      
+      // 更新全局未读通知计数
+      if (app && app.globalData) {
+        app.globalData.unreadNotificationCount = unreadCount.value;
+        
+        // 更新TabBar角标
+        if (app.updateMessageBadge) {
+          app.updateMessageBadge();
+        }
+      }
+      
+      uni.showToast({
+        title: '删除成功',
+        icon: 'success'
+      });
+    } else {
+      uni.showToast({
+        title: res.message || '删除失败',
+        icon: 'none'
+      });
+    }
+  } catch (error) {
+    console.error('批量删除通知失败:', error);
+    uni.showToast({
+      title: '操作失败，请稍后重试',
+      icon: 'none'
+    });
+  } finally {
+    loading.value = false;
+  }
+}
+
+// 组件挂载时
 onMounted(() => {
-  // 可以在这里加载通知数据
-  // 如果有接口的话，可以请求API获取数据
+  // 加载通知列表
+  loadNotifications(true);
+  
+  // 监听WebSocket连接状态
+  monitorWebSocketStatus();
+  
+  // 添加滚动事件监听
+  const scrollView = document.querySelector('.notification-list');
+  if (scrollView) {
+    scrollView.addEventListener('scroll', handleScroll);
+  }
+  
+  // 监听全局新通知
+  listenForNewNotifications();
+  
   console.log('通知页面加载完成');
+});
+
+// 监听全局新通知
+function listenForNewNotifications() {
+  // 注册全局通知监听器
+  uni.$on('newNotification', (notification) => {
+    console.log('消息页面接收到新通知:', notification);
+    
+    // 将新通知添加到界面
+    addNewNotificationToUI(notification);
+  });
+}
+
+// 将新通知添加到UI
+function addNewNotificationToUI(notification) {
+  if (!notification) return;
+  
+  // 创建UI显示用的通知对象
+  const newNotification = {
+    id: notification.id,
+    type: notification.typeName,
+    message: notification.content || notification.title,
+    time: notification.time || formatTime(notification.createdAt || new Date()),
+    avatar: getAvatarByType(notification.typeId),
+    read: notification.isRead || false,
+    actions: notification.actions || getActionsForNotification(notification),
+    // 保存原始数据，用于后续处理
+    originalData: notification,
+    // UI状态属性
+    isReading: false,
+    viewStartTime: null,
+    viewTimer: null,
+    scrollTimer: null
+  };
+  
+  // 添加到未读列表（如果是未读通知）
+  if (!newNotification.read) {
+    // 检查是否已存在相同ID的通知，避免重复
+    const existingIndex = unreadNotifications.value.findIndex(item => item.id === newNotification.id);
+    if (existingIndex === -1) {
+      // 添加到列表顶部
+      unreadNotifications.value.unshift(newNotification);
+      unreadCount.value++;
+    }
+  } else {
+    // 如果是已读通知，添加到已读列表
+    const existingIndex = readNotifications.value.findIndex(item => item.id === newNotification.id);
+    if (existingIndex === -1) {
+      readNotifications.value.unshift(newNotification);
+    }
+  }
+  
+  // 播放通知提示音
+  playNotificationSound();
+}
+
+// 播放通知提示音
+function playNotificationSound() {
+  try {
+    const audio = uni.createInnerAudioContext();
+    audio.src = '/static/sounds/notification.mp3'; // 确保有这个音频文件
+    audio.play();
+  } catch (error) {
+    console.log('播放通知提示音失败', error);
+  }
+}
+
+// 组件卸载时
+onUnmounted(() => {
+  // 不需要在这里关闭通知服务，因为它在App全局维护
+  
+  // 移除滚动事件监听
+  const scrollView = document.querySelector('.notification-list');
+  if (scrollView) {
+    scrollView.removeEventListener('scroll', handleScroll);
+  }
+  
+  // 清除所有计时器
+  const allNotifications = [...unreadNotifications.value, ...readNotifications.value];
+  allNotifications.forEach(notification => {
+    if (notification.viewTimer) clearTimeout(notification.viewTimer);
+    if (notification.scrollTimer) clearTimeout(notification.scrollTimer);
+  });
+  
+  // 移除全局通知事件监听
+  uni.$off('newNotification');
 });
 </script>
 
@@ -276,7 +1093,11 @@ $border-color: #eeeeee;
       color: $text-primary;
     }
     
-    .mark-read {
+    .actions {
+      display: flex;
+      align-items: center;
+      
+      .mark-read, .edit-btn {
       display: flex;
       align-items: center;
       font-size: 28rpx;
@@ -285,6 +1106,25 @@ $border-color: #eeeeee;
       .iconfont {
         margin-right: 8rpx;
         font-size: 32rpx;
+        }
+      }
+      
+      .edit-actions {
+        display: flex;
+        align-items: center;
+        gap: 20rpx;
+        
+        .cancel-btn, .delete-btn {
+          display: flex;
+          align-items: center;
+          font-size: 28rpx;
+          color: $primary-color;
+          
+          .iconfont {
+            margin-right: 8rpx;
+            font-size: 32rpx;
+          }
+        }
       }
     }
   }
@@ -349,6 +1189,44 @@ $border-color: #eeeeee;
   background-color: #fff;
   margin-bottom: 2rpx;
   position: relative;
+  transition: background-color 0.3s ease;
+  
+  &.item-selected {
+    background-color: rgba($primary-color, 0.05);
+  }
+  
+  // 未读通知样式
+  &.unread {
+    border-left: 6rpx solid $primary-color;
+    background-color: rgba($primary-color, 0.03);
+    
+    .notification-type {
+      font-weight: bold;
+    }
+    
+    .notification-message {
+      font-weight: 500;
+    }
+  }
+  
+  // 已读通知样式
+  &.read {
+    border-left: 6rpx solid transparent;
+    opacity: 0.8;
+    
+    .notification-type {
+      font-weight: normal;
+    }
+    
+    .notification-message {
+      font-weight: normal;
+    }
+  }
+  
+  // 正在阅读的通知样式（鼠标悬停或触摸）
+  &.reading {
+    background-color: rgba($primary-color, 0.05);
+  }
   
   &:after {
     content: '';
@@ -362,6 +1240,34 @@ $border-color: #eeeeee;
   
   &:last-child:after {
     display: none;
+  }
+  
+  .select-box {
+    width: 60rpx;
+    height: 60rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10rpx;
+    
+    .checkbox {
+      width: 36rpx;
+      height: 36rpx;
+      border: 2rpx solid $primary-color;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      &.checked {
+        background-color: $primary-color;
+        
+        .iconfont {
+          color: #fff;
+          font-size: 24rpx;
+        }
+      }
+    }
   }
   
   .notification-avatar {
@@ -444,6 +1350,89 @@ $border-color: #eeeeee;
   .empty-text {
     font-size: 28rpx;
     color: $text-light;
+  }
+}
+
+/* WebSocket状态指示器 */
+.ws-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 30rpx 10rpx;
+  font-size: 22rpx;
+  color: $accent-color;
+  
+  &.connected {
+    color: $secondary-color;
+  }
+  
+  .ws-status-text {
+    margin-right: 10rpx;
+  }
+  
+  .ws-indicator {
+    width: 16rpx;
+    height: 16rpx;
+    border-radius: 50%;
+    background-color: $accent-color;
+    
+    .connected & {
+      background-color: $secondary-color;
+    }
+  }
+}
+
+/* 加载更多和无更多数据 */
+.loading-more, .no-more {
+  text-align: center;
+  padding: 30rpx 0;
+  font-size: 24rpx;
+  color: $text-light;
+}
+
+/* 底部批量操作栏 */
+.bottom-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 30rpx;
+  background-color: #fff;
+  
+  .select-all {
+    display: flex;
+    align-items: center;
+    gap: 10rpx;
+    font-size: 28rpx;
+    color: $primary-color;
+    
+    .checkbox {
+      width: 32rpx;
+      height: 32rpx;
+      border: 2rpx solid $primary-color;
+      border-radius: 4rpx;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      &.checked {
+        background-color: $primary-color;
+      }
+    }
+  }
+  
+  .batch-delete {
+    padding: 10rpx 24rpx;
+    font-size: 26rpx;
+    border-radius: 8rpx;
+    background-color: $primary-color;
+    color: #fff;
+    min-width: 120rpx;
+    text-align: center;
+    
+    &.disabled {
+      background-color: #f0f0f0;
+      color: $text-secondary;
+    }
   }
 }
 </style>

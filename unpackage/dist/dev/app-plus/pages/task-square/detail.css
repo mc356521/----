@@ -1,6 +1,126 @@
 /* 水平间距 */
 /* 水平间距 */
 /* 导入主题变量 */
+.sticky-header[data-v-965d9a70] {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: #ffffff;
+  box-shadow: 0 0.0625rem 0.1875rem rgba(91, 51, 51, 0.05);
+  /* 确保iOS设备上也能正常固定 */
+  transform: translateZ(0);
+  /* 添加安全区域适配 */
+  padding-top: env(safe-area-inset-top);
+  width: 100%;
+}
+.sticky-header .header-title[data-v-965d9a70] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 0.9375rem;
+}
+.sticky-header .header-title .back-btn[data-v-965d9a70] {
+  width: 2.1875rem;
+  height: 2.1875rem;
+  border-radius: 50%;
+  background-color: #F3F4F6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.3125rem;
+}
+.sticky-header .header-title .back-btn .iconfont[data-v-965d9a70] {
+  font-size: 1.125rem;
+  color: #6B7280;
+}
+.sticky-header .header-title .back-btn[data-v-965d9a70]:active {
+  opacity: 0.7;
+}
+.sticky-header .header-title .section-title[data-v-965d9a70] {
+  font-size: 1.125rem;
+  font-weight: bold;
+  color: #333333;
+  flex: 1;
+}
+.sticky-header .header-title .header-actions[data-v-965d9a70] {
+  display: flex;
+  gap: 0.75rem;
+}
+.sticky-header .header-title .header-actions .action-btn[data-v-965d9a70] {
+  width: 2.1875rem;
+  height: 2.1875rem;
+  border-radius: 50%;
+  background-color: #F3F4F6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sticky-header .header-title .header-actions .action-btn .iconfont[data-v-965d9a70] {
+  font-size: 1.125rem;
+  color: #6B7280;
+}
+.sticky-header .header-title .header-actions .action-btn.message-btn[data-v-965d9a70] {
+  position: relative;
+}
+.sticky-header .header-title .header-actions .action-btn.message-btn .badge[data-v-965d9a70] {
+  position: absolute;
+  top: -0.46875rem;
+  right: -0.46875rem;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 0.5625rem;
+  background-color: #EF4444;
+  color: #fff;
+  font-size: 0.6875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.25rem;
+}
+.sticky-header .header-title .header-actions .action-btn.ai-recommend-btn[data-v-965d9a70] {
+  background: linear-gradient(135deg, #4facfe, #64f38c);
+}
+.sticky-header .header-title .header-actions .action-btn.ai-recommend-btn .iconfont[data-v-965d9a70] {
+  color: #fff;
+}
+.sticky-header .category-scroll[data-v-965d9a70] {
+  width: 100%;
+  white-space: nowrap;
+  padding: 0.5rem 0.75rem;
+  overflow-x: auto;
+  /* 隐藏滚动条但保留滚动功能 */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+}
+.sticky-header .category-scroll[data-v-965d9a70]::-webkit-scrollbar {
+  display: none;
+}
+.sticky-header .category-scroll .category-list[data-v-965d9a70] {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 0.3125rem;
+  padding: 0 0.3125rem;
+}
+.sticky-header .category-scroll .category-list .category-item[data-v-965d9a70] {
+  display: inline-block;
+  padding: 0.3125rem 0.5rem;
+  border-radius: 3.125rem;
+  background-color: #F3F4F6;
+  font-size: 0.75rem;
+  color: #6B7280;
+  transition: all 0.3s;
+}
+.sticky-header .category-scroll .category-list .category-item.active-category[data-v-965d9a70] {
+  background-color: #247ae4;
+  color: #ffffff;
+}
+/* 水平间距 */
+/* 水平间距 */
+/* 导入主题变量 */
 /* 使用项目色彩系统 */
 .container {
   display: flex;
@@ -9,58 +129,14 @@
   background-color: #f5f5f5;
 }
 
-/* 顶部导航栏 */
-.header {
-  background-color: #4A90E2;
-  position: -webkit-sticky;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-.header .navbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 2.75rem;
-  padding: 0 1rem;
-}
-.header .navbar .back-btn {
-  width: 2rem;
-  height: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.header .navbar .back-btn .iconfont {
-  font-size: 1.5rem;
-  color: #fff;
-}
-.header .navbar .title {
-  font-size: 1.125rem;
-  font-weight: bold;
-  color: #fff;
-}
-.header .navbar .right-btns {
-  display: flex;
-}
-.header .navbar .right-btns .action-btn {
-  width: 2rem;
-  height: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.header .navbar .right-btns .action-btn .iconfont {
-  font-size: 1.25rem;
-  color: #fff;
-}
-
 /* 内容区 */
 .content-scroll {
   flex: 1;
   padding: 1rem 0;
   padding-bottom: 5rem;
   /* 为底部操作栏留出空间 */
+  margin-top: 3.75rem;
+  /* 为HeaderBar留出空间 */
 }
 
 /* 顶部信息卡片 */

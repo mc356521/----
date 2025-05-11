@@ -590,7 +590,7 @@ export default {
 }
 
 .py-3 {
-  padding-top: 20rpx;
+  padding-top: 0rpx;
   padding-bottom: 20rpx;
 }
 

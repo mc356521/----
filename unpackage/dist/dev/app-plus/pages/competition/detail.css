@@ -118,6 +118,14 @@
 .icon-info-circle:before {
   content: "\e7dc";
 }
+/* AI图标 */
+.icon-ai:before {
+  content: "\e6ab";
+}
+/* 刷新图标 */
+.icon-refresh:before {
+  content: "\e65e";
+}
 body {
   background-color: #f8fafc;
   font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif;

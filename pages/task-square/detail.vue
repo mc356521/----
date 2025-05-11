@@ -1,19 +1,12 @@
 <template>
   <view class="container">
-    <!-- 顶部导航栏 -->
-    <view class="header">
-      <view class="navbar">
-        <view class="back-btn" @click="goBack">
-          <text class="iconfont icon-back"></text>
-        </view>
-        <view class="title">任务详情</view>
-        <view class="right-btns">
-          <view class="action-btn" @click="shareTask">
-            <text class="iconfont icon-share"></text>
-          </view>
-        </view>
-      </view>
-    </view>
+    <!-- 顶部导航栏 - 使用HeaderBar组件 -->
+    <header-bar
+      title="任务详情"
+      :show-search="false"
+      :show-filter="false"
+      @back="goBack"
+    ></header-bar>
     
     <!-- 任务详情内容 -->
     <scroll-view scroll-y class="content-scroll" >
@@ -132,6 +125,7 @@
 import { ref, computed, onMounted, reactive } from 'vue';
 import request from '@/utils/request';
 import api from '@/api';
+import HeaderBar from '@/components/HeaderBar.vue'; // 引入顶部导航栏组件
 
 // 默认头像
 const defaultAvatar = 'https://via.placeholder.com/100';
@@ -217,91 +211,93 @@ const isApplyDisabled = computed(() => {
 
 // 页面加载
 onMounted(() => {
-  // 获取页面参数
-  const eventChannel = getEventChannel();
-  if (eventChannel) {
-    eventChannel.on('taskId', (data) => {
-      taskId.value = data.id;
-      getTaskDetail(data.id);
-    });
-  } else {
-    // 尝试从URL参数获取
+  // 获取任务ID
+  getTaskIdAndLoadDetail();
+});
+
+// 获取任务ID并加载详情
+function getTaskIdAndLoadDetail() {
+  try {
+    // 尝试多种方式获取任务ID
+    let id = null;
+    
+    // 方式1: 从页面参数中获取
     const pages = getCurrentPages();
-    const currentPage = pages[pages.length - 1];
-    
-    // 兼容不同平台的参数获取方式
-    let id;
-    
-    // 方法1：通过options获取（H5端常用）
-    if (currentPage.options && currentPage.options.id) {
-      id = currentPage.options.id;
-    } 
-    // 方法2：通过$page获取（某些平台可能用这种方式）
-    else if (currentPage.$page && currentPage.$page.fullPath) {
-      const query = currentPage.$page.fullPath.split('?')[1];
-      if (query) {
-        const params = new URLSearchParams(query);
-        id = params.get('id');
+    if (pages && pages.length > 0) {
+      const currentPage = pages[pages.length - 1];
+      
+      // 尝试从options中获取
+      if (currentPage.options && currentPage.options.id) {
+        id = currentPage.options.id;
+      }
+      // 尝试从$page中获取
+      else if (currentPage.$page && currentPage.$page.fullPath) {
+        const fullPath = currentPage.$page.fullPath;
+        const queryIndex = fullPath.indexOf('?');
+        
+        if (queryIndex > -1) {
+          const queryPart = fullPath.substring(queryIndex + 1);
+          const queryParams = queryPart.split('&');
+          
+          for (let param of queryParams) {
+            const [key, value] = param.split('=');
+            if (key === 'id' && value) {
+              id = value;
+              break;
+            }
+          }
+        }
+      }
+      // 尝试从__displayReporter中获取
+      else if (currentPage.__displayReporter && currentPage.__displayReporter.query) {
+        id = currentPage.__displayReporter.query.id;
       }
     }
-    // 方法3：直接从route中获取（小程序常用）
-    else if (currentPage.route && currentPage.__displayReporter && currentPage.__displayReporter.query) {
-      id = currentPage.__displayReporter.query.id;
-    }
-    // 方法4：通过onLoad传入的参数获取（兼容方案）
-    else {
-      // 可以在页面加载时通过钩子函数捕获参数
-      // 此处使用uni.$on临时保存参数，另设onLoad捕获
-      uni.$once('task-detail-params', (params) => {
-        if (params && params.id) {
-          taskId.value = params.id;
-          getTaskDetail(params.id);
-        }
-      });
-      // 添加小延迟，防止uni.$on尚未准备好
-      setTimeout(() => {
-        if (!taskId.value) {
-          uni.showToast({
-            title: '任务ID无效，请返回重试',
-            icon: 'none'
-          });
-        }
-      }, 300);
-      return; // 后续逻辑由事件触发
-    }
     
+    // 检查是否获取到ID
     if (id) {
       taskId.value = id;
       getTaskDetail(id);
     } else {
+      // 如果没有获取到ID，显示错误提示
       uni.showToast({
-        title: '任务ID无效',
+        title: '无法获取任务信息',
         icon: 'none'
       });
+      // 1.5秒后返回上一页
+      setTimeout(() => {
+        uni.navigateBack();
+      }, 1500);
     }
+  } catch (error) {
+    console.error('获取任务ID出错:', error);
+    uni.showToast({
+      title: '加载任务详情失败',
+      icon: 'none'
+    });
   }
-});
+}
 
 // 添加onLoad钩子函数，兼容方案，在组件外使用
 defineExpose({
   onLoad(options) {
     if (options && options.id) {
-      uni.$emit('task-detail-params', options);
+      taskId.value = options.id;
+      getTaskDetail(options.id);
     }
   }
 });
 
-// 获取页面传参渠道
-function getEventChannel() {
-  const currentPage = getCurrentPages().pop();
-  if (currentPage && currentPage.$page) {
-    return currentPage.$page.fullPath.eventChannel;
-  }
-  return null;
-}
-
 // 获取任务详情
 async function getTaskDetail(id) {
+  if (!id) {
+    uni.showToast({
+      title: '任务ID无效',
+      icon: 'none'
+    });
+    return;
+  }
+  
   try {
     uni.showLoading({
       title: '加载中...'
@@ -318,52 +314,31 @@ async function getTaskDetail(id) {
 
       // 检查用户是否已申请
       checkIfAlreadyApplied(id);
+      
+      // 更新页面标题
+      if (taskDetail.value.title) {
+        uni.setNavigationBarTitle({
+          title: '任务详情'
+        });
+      }
     } else {
       console.error('获取任务详情失败:', res);
       uni.showToast({
         title: '获取任务详情失败',
         icon: 'none'
       });
+      
+
     }
   } catch (error) {
     console.error('获取任务详情异常:', error);
-    
-    // 使用模拟数据（开发测试用）
-    taskDetail.value = {
-      id: id,
-      title: '图书馆志愿者服务',
-      description: '协助图书馆整理书籍、指导学生使用图书检索系统，并维持阅览室秩序。需要有耐心和良好的沟通能力，熟悉图书馆分类系统优先。',
-      requirements: '1. 有责任心，能按时参与服务\n2. 熟悉图书馆基本布局和分类\n3. 具有良好沟通能力和耐心\n4. 每周至少能保证3小时志愿时间',
-      contactInfo: {
-        phone: '13800138000',
-        wechat: 'library_volunteer'
-      },
-      categoryId: 6,
-      categoryName: '志愿服务',
-      creatorId: 10,
-      creatorName: '张同学',
-      creatorAvatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
-      creatorMajor: '计算机学院',
-      rewardTypeId: 2,
-      rewardTypeName: '学分',
-      rewardAmount: 5,
-      createdAt: new Date(new Date().getTime() - 3 * 60 * 60 * 1000).toISOString(),
-      deadline: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      status: 'ongoing',
-      maxParticipants: 5,
-      currentParticipants: 3,
-      viewCount: 128,
-      location: '中心图书馆 3楼'
-    };
-    
-    uni.showToast({
-      title: '网络异常，显示示例数据',
-      icon: 'none'
-    });
+
   } finally {
     uni.hideLoading();
   }
 }
+
+
 
 // 格式化日期
 function formatDeadline(dateStr) {
@@ -552,31 +527,6 @@ function getApplyButtonText() {
 // 返回上一页
 function goBack() {
   uni.navigateBack();
-}
-
-// 分享任务
-function shareTask() {
-  if (!taskDetail.value.title) return;
-  
-  uni.share({
-    provider: 'weixin',
-    scene: 'WXSceneSession',
-    type: 0,
-    title: taskDetail.value.title,
-    summary: taskDetail.value.description,
-    imageUrl: '',
-    href: ``,
-    success: function (res) {
-      console.log('分享成功：', res);
-    },
-    fail: function (err) {
-      console.log('分享失败：', err);
-      uni.showToast({
-        title: '分享功能开发中',
-        icon: 'none'
-      });
-    }
-  });
 }
 
 // 收藏/取消收藏
@@ -779,63 +729,12 @@ $border-color: #eeeeee;
   background-color: $bg-color;
 }
 
-/* 顶部导航栏 */
-.header {
-  background-color: $primary-color;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  
-  .navbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 88rpx;
-    padding: 0 32rpx;
-    
-    .back-btn {
-      width: 64rpx;
-      height: 64rpx;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      
-      .iconfont {
-        font-size: 48rpx;
-        color: #fff;
-      }
-    }
-    
-    .title {
-      font-size: 36rpx;
-      font-weight: bold;
-      color: #fff;
-    }
-    
-    .right-btns {
-      display: flex;
-      
-      .action-btn {
-        width: 64rpx;
-        height: 64rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        
-        .iconfont {
-          font-size: 40rpx;
-          color: #fff;
-        }
-      }
-    }
-  }
-}
-
 /* 内容区 */
 .content-scroll {
   flex: 1;
   padding: 32rpx 0rpx;
   padding-bottom: 160rpx; /* 为底部操作栏留出空间 */
+  margin-top: 120rpx; /* 为HeaderBar留出空间 */
 }
 
 /* 顶部信息卡片 */

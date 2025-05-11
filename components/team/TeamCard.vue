@@ -26,6 +26,24 @@
       </view>
     </view>
     
+    <!-- 匹配度信息 -->
+    <view class="match-info" v-if="showMatch && team.matchScore">
+      <view class="match-score">
+        <view class="score-bar">
+          <view class="score-fill" :style="{ width: `${team.matchScore}%` }"></view>
+        </view>
+        <text class="score-text">匹配度 {{ team.matchScore }}%</text>
+      </view>
+      <view class="recommend-role" v-if="team.recommendedRole">
+        <text class="role-label">推荐角色: </text>
+        <text class="role-text">{{ team.recommendedRole }}</text>
+      </view>
+      <view class="match-reason" v-if="team.matchReason || team.recommendReason">
+        <text class="reason-label">匹配理由: </text>
+        <text class="reason-text">{{  team.recommendReason }}</text>
+      </view>
+    </view>
+    
     <!-- 职位标签 -->
     <view class="role-tags" v-if="positions.length > 0">
       <view 
@@ -92,6 +110,10 @@ const props = defineProps({
   index: {
     type: Number,
     default: 0
+  },
+  showMatch: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -469,6 +491,76 @@ $border-radius-lg: 16rpx;
         background-color: #E5E7EB;
         color: #9CA3AF;
       }
+    }
+  }
+}
+
+// 匹配度信息
+.match-info {
+  padding: 12rpx 24rpx;
+  background-color: rgba($primary-color, 0.05);
+  margin-bottom: 16rpx;
+  border-radius: 8rpx;
+  
+  .match-score {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8rpx;
+    
+    .score-bar {
+      flex: 1;
+      height: 10rpx;
+      background-color: rgba($text-muted, 0.2);
+      border-radius: 5rpx;
+      overflow: hidden;
+      margin-right: 12rpx;
+      
+      .score-fill {
+        height: 100%;
+        background: linear-gradient(to right, #4facfe, #00f2fe);
+        border-radius: 5rpx;
+      }
+    }
+    
+    .score-text {
+      font-size: 22rpx;
+      color: $primary-color;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+  }
+  
+  .recommend-role {
+    font-size: 22rpx;
+    line-height: 1.4;
+    margin-bottom: 8rpx;
+    
+    .role-label {
+      color: $text-color;
+      font-weight: 500;
+    }
+    
+    .role-text {
+      color: $primary-color;
+      font-weight: 500;
+      background-color: rgba($primary-color, 0.1);
+      padding: 2rpx 10rpx;
+      border-radius: 4rpx;
+      margin-left: 4rpx;
+    }
+  }
+  
+  .match-reason {
+    font-size: 22rpx;
+    line-height: 1.4;
+    
+    .reason-label {
+      color: $text-color;
+      font-weight: 500;
+    }
+    
+    .reason-text {
+      color: $text-secondary;
     }
   }
 }

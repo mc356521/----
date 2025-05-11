@@ -1,16 +1,115 @@
 <script>
-	export default {
-		onLaunch: function() {
-			console.warn('当前组件仅支持 uni_modules 目录结构 ，请升级 HBuilderX 到 3.1.0 版本以上！')
-			console.log('App Launch')
+import notificationService from './utils/notification-service';
+
+export default {
+	globalData: {
+		unreadNotificationCount: 0
+	},
+	
+	onLaunch: function() {
+		console.warn('当前组件仅支持 uni_modules 目录结构 ，请升级 HBuilderX 到 3.1.0 版本以上！')
+		console.log('App Launch')
+		// 初始化全局通知服务
+		this.initGlobalNotificationService();
+		console.log('App Launch')
+  
+  // 清除AI推荐相关的缓存数据
+  try {
+    uni.removeStorageSync('ai_recommend_cache_time');
+    uni.removeStorageSync('ai_recommended_teams');
+    uni.removeStorageSync('ai_summary');
+    console.log('应用启动时已清除AI推荐相关缓存');
+    
+    // 重置用户交互状态中的AI推荐点击状态
+    const userInteractionState = uni.getStorageSync('userInteractionState');
+    if (userInteractionState) {
+      try {
+        const state = JSON.parse(userInteractionState);
+        state.hasClickedAiRecommend = false;
+        uni.setStorageSync('userInteractionState', JSON.stringify(state));
+        console.log('已重置AI推荐点击状态');
+      } catch (e) {
+        console.error('重置用户交互状态失败:', e);
+      }
+    }
+  } catch (e) {
+    console.error('清除AI推荐缓存失败:', e);
+  }
+	},
+	
+	onShow: function() {
+		console.log('App Show')
+	},
+	
+	onHide: function() {
+		console.log('App Hide')
+	},
+	
+	methods: {
+		// 初始化全局通知服务
+		initGlobalNotificationService() {
+			// 处理新通知的回调函数
+			const handleNewNotification = (notification) => {
+				console.log('App收到新通知:', notification);
+				
+				// 更新全局未读通知计数
+				if (!notification.isRead) {
+					this.globalData.unreadNotificationCount++;
+				}
+				
+				// 显示通知提示
+				uni.showToast({
+					title: '收到新通知',
+					icon: 'none'
+				});
+				
+				// 更新消息页面的TabBar角标
+				this.updateMessageBadge();
+				
+				// 触发全局事件，通知消息页面更新
+				uni.$emit('newNotification', notification);
+			};
+			
+			// 初始化通知服务
+			notificationService.initNotificationService(handleNewNotification);
 		},
-		onShow: function() {
-			console.log('App Show')
+		
+		// 更新消息页面的TabBar角标
+		updateMessageBadge() {
+			const count = this.globalData.unreadNotificationCount;
+			
+			try {
+				if (count > 0) {
+					// 设置TabBar角标
+					uni.setTabBarBadge({
+						index: 4, // 消息页面的TabBar索引，根据实际情况调整
+						text: count.toString()
+					}).catch(err => {
+						console.log('设置TabBar徽标失败，可能不在TabBar页面', err);
+						// 错误已处理，不再抛出
+					});
+				} else {
+					// 移除TabBar角标
+					uni.removeTabBarBadge({
+						index: 4 // 消息页面的TabBar索引，根据实际情况调整
+					}).catch(err => {
+						console.log('移除TabBar徽标失败，可能不在TabBar页面', err);
+						// 错误已处理，不再抛出
+					});
+				}
+			} catch (error) {
+				console.log('TabBar操作失败，可能不在TabBar页面', error);
+				// 错误已处理，不再抛出
+			}
 		},
-		onHide: function() {
-			console.log('App Hide')
+		
+		// 重置未读通知计数
+		resetUnreadNotificationCount() {
+			this.globalData.unreadNotificationCount = 0;
+			this.updateMessageBadge();
 		}
 	}
+}
 </script>
 
 <style lang="scss">

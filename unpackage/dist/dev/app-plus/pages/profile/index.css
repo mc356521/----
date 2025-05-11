@@ -224,6 +224,14 @@
 .icon-info-circle:before {
   content: "\e7dc";
 }
+/* AI图标 */
+.icon-ai:before {
+  content: "\e6ab";
+}
+/* 刷新图标 */
+.icon-refresh:before {
+  content: "\e65e";
+}
 body {
   background-color: #f8fafc;
   padding-bottom: 4.375rem;
@@ -238,30 +246,86 @@ body {
   padding: 1.25rem 0.9375rem 0.9375rem;
   margin-bottom: 0.625rem;
 }
+.user-info-section .loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.875rem 0;
+}
+.user-info-section .loading-container .loading-circle {
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: 50%;
+  border: 0.125rem solid rgba(59, 130, 246, 0.1);
+  border-top-color: #3B82F6;
+  animation: spin 1s linear infinite;
+  margin-bottom: 0.625rem;
+}
+.user-info-section .loading-container .loading-text {
+  font-size: 0.8125rem;
+  color: #6B7280;
+}
 .user-info-section .user-header {
   display: flex;
   align-items: center;
   margin-bottom: 0.9375rem;
 }
-.user-info-section .user-header .user-avatar {
+.user-info-section .user-header .user-info-clickable {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  position: relative;
+  margin-right: 0.625rem;
+}
+.user-info-section .user-header .user-info-clickable:active {
+  opacity: 0.8;
+}
+.user-info-section .user-header .user-info-clickable::after {
+  content: "";
+  position: absolute;
+  right: -0.4375rem;
+  top: 50%;
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-top: 0.09375rem solid #9CA3AF;
+  border-right: 0.09375rem solid #9CA3AF;
+  transform: translateY(-50%) rotate(45deg);
+  opacity: 0.5;
+}
+.user-info-section .user-header .user-info-clickable .user-avatar {
   width: 4.375rem;
   height: 4.375rem;
   border-radius: 50%;
   margin-right: 0.9375rem;
   border: 0.125rem solid rgba(59, 130, 246, 0.2);
+  flex-shrink: 0;
 }
-.user-info-section .user-header .user-details {
+.user-info-section .user-header .user-info-clickable .user-details {
   flex: 1;
+  min-width: 0;
 }
-.user-info-section .user-header .user-details .user-name {
+.user-info-section .user-header .user-info-clickable .user-details .user-name {
   font-size: 1.125rem;
   font-weight: bold;
   color: #333333;
   margin-bottom: 0.25rem;
+  display: block;
 }
-.user-info-section .user-header .user-details .user-id {
+.user-info-section .user-header .user-info-clickable .user-details .user-id {
   font-size: 0.75rem;
   color: #6B7280;
+  margin-bottom: 0.1875rem;
+}
+.user-info-section .user-header .user-info-clickable .user-details .user-school {
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+.user-info-section .user-header .user-info-clickable .user-details .user-school .school-name {
+  margin-right: 0.5rem;
+}
+.user-info-section .user-header .user-info-clickable .user-details .user-school .major-name {
+  color: #9CA3AF;
 }
 .user-info-section .user-header .edit-btn {
   width: 1.875rem;
@@ -271,6 +335,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+.user-info-section .user-header .edit-btn:active {
+  transform: scale(0.95);
+  background-color: rgba(59, 130, 246, 0.1);
 }
 .user-info-section .user-header .edit-btn .iconfont {
   font-size: 1rem;
@@ -286,12 +356,20 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
+  transition: transform 0.2s;
+}
+.user-info-section .user-stats .stat-item:active {
+  transform: scale(0.95);
 }
 .user-info-section .user-stats .stat-item .stat-value {
   font-size: 1.125rem;
   font-weight: bold;
   color: #3B82F6;
   margin-bottom: 0.25rem;
+}
+.user-info-section .user-stats .stat-item .stat-value.credit-score {
+  color: #10B981;
 }
 .user-info-section .user-stats .stat-item .stat-label {
   font-size: 0.75rem;
@@ -340,4 +418,12 @@ body {
   color: #EF4444;
   font-size: 0.9375rem;
   font-weight: 500;
+}
+@keyframes spin {
+0% {
+    transform: rotate(0deg);
+}
+100% {
+    transform: rotate(360deg);
+}
 }

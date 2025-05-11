@@ -86,6 +86,7 @@
 		  :key="index"
 		  class="application-card"
 		  :class="[getApplicationClass(item.type), getStatusClass(item.status)]"
+		  :data-id="item.id"
 		>
 		  <!-- 状态角标 - 右上角 -->
 		  <view class="status-corner" :class="getStatusClass(item.status)">
@@ -130,16 +131,16 @@
 		  <!-- 操作按钮: 创建者角色可批准/拒绝，申请者角色可取消申请 -->
 		  <view class="card-footer" v-if="(currentRole === 'creator' || currentRole === 'leader') && item.status === 'pending'">
             <view class="btn-group">
-              <button class="btn btn-detail" @click.stop="viewDetail(item)">查看详情</button>
-              <button class="btn btn-reject" @click.stop="handleApplication(item.id, 'rejected', item.type)">拒绝</button>
               <button class="btn btn-approve" @click.stop="handleApplication(item.id, 'approved', item.type)">通过</button>
+              <button class="btn btn-reject" @click.stop="handleApplication(item.id, 'rejected', item.type)">拒绝</button>
+              <button class="btn btn-detail" @click.stop="viewDetail(item)">查看详情</button>
             </view>
 		  </view>
 		  
           <view class="card-footer" v-else-if="(currentRole === 'applicant') && item.status === 'pending'">
             <view class="btn-group">
-              <button class="btn btn-detail" @click.stop="viewDetail(item)">查看详情</button>
               <button class="btn btn-reject" @click.stop="cancelApplication(item.id, item.type)">取消申请</button>
+              <button class="btn btn-detail" @click.stop="viewDetail(item)">查看详情</button>
             </view>
           </view>
 		  
@@ -175,7 +176,7 @@
   </template>
   
   <script setup>
-  import { ref, computed, onMounted } from 'vue';
+  import { ref, computed, onMounted, getCurrentInstance } from 'vue';
   import taskApplicationApi from '@/api/modules/taskApplications';
   import teamApi from '@/api/modules/team';
   import config from '@/config/env/dev';
@@ -201,8 +202,7 @@
   // 标签页
   const tabs = ref([
 	{ name: '我发起的', badge: 0, role: 'applicant' },
-	{ name: '待我处理', badge: 0, role: 'creator' },
-	{ name: '全部', badge: 0, role: 'all' }
+	{ name: '待我处理', badge: 0, role: 'creator' }
   ]);
   const currentTab = ref(0);
   
@@ -293,9 +293,112 @@
   
   // 初始化数据
   onMounted(() => {
+    // 获取页面参数
+    let query = {};
+    if (uni.getSystemInfoSync().platform === 'h5') {
+      query = getQueryParams();
+    } else {
+      const instance = getCurrentInstance();
+      if (instance && instance.proxy && instance.proxy.$mp && instance.proxy.$mp.query) {
+        query = instance.proxy.$mp.query;
+      }
+    }
+    
+    // 处理URL参数，设置初始标签页和筛选条件
+    handleUrlParams(query);
+    
+    // 获取待处理申请数量（用于角标显示）
+    loadBadgeCount();
+    
     // 获取申请列表
     loadApplications(true);
   });
+  
+  // 获取H5环境下的URL参数
+  function getQueryParams() {
+    const params = {};
+    const queryString = window.location.search.substring(1);
+    const pairs = queryString.split('&');
+    
+    for (let i = 0; i < pairs.length; i++) {
+      const pair = pairs[i].split('=');
+      params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+    }
+    
+    return params;
+  }
+  
+  // 处理URL参数
+  function handleUrlParams(query) {
+    console.log('处理URL参数:', query);
+    
+    // 设置初始标签页
+    if (query.tab !== undefined) {
+      const tabIndex = parseInt(query.tab);
+      if (!isNaN(tabIndex) && tabIndex >= 0 && tabIndex < tabs.value.length) {
+        switchTab(tabIndex);
+      }
+    }
+    
+    // 设置申请类型筛选
+    if (query.type) {
+      const type = query.type;
+      if (['task', 'team', 'badge', 'all'].includes(type)) {
+        selectedType.value = type;
+      }
+    }
+    
+    // 如果有ID参数，记录下来用于后续滚动定位
+    if (query.id) {
+      targetApplicationId.value = query.id;
+    }
+  }
+  
+  // 添加一个ref用于存储目标申请ID
+  const targetApplicationId = ref(null);
+  
+  // 在数据加载完成后，滚动到指定的申请项
+  function scrollToApplication() {
+    if (!targetApplicationId.value) return;
+    
+    // 延迟执行，确保DOM已更新
+    setTimeout(() => {
+      const selector = `.application-card[data-id="${targetApplicationId.value}"]`;
+      const query = uni.createSelectorQuery();
+      query.select(selector).boundingClientRect();
+      query.selectViewport().scrollOffset();
+      query.exec((res) => {
+        if (res[0]) {
+          // 找到目标元素，滚动到该位置
+          uni.pageScrollTo({
+            scrollTop: res[1].scrollTop + res[0].top - 100, // 减去一些偏移，让元素不要太靠近顶部
+            duration: 300
+          });
+          
+          // 高亮显示该申请项
+          highlightApplication(targetApplicationId.value);
+        }
+      });
+      
+      // 清除目标ID，防止重复滚动
+      targetApplicationId.value = null;
+    }, 500);
+  }
+  
+  // 高亮显示指定的申请项
+  function highlightApplication(id) {
+    // 找到对应的DOM元素
+    const element = document.querySelector(`.application-card[data-id="${id}"]`);
+    if (!element) return;
+    
+    // 添加高亮类
+    element.classList.add('highlight-application');
+    
+    // 3秒后移除高亮效果
+    setTimeout(() => {
+      element.classList.remove('highlight-application');
+    }, 3000);
+  }
   
   // 获取卡片标题
   function getCardTitle(item) {
@@ -341,12 +444,10 @@
     
     try {
       // 根据当前标签页确定请求角色
-	if (currentTab.value === 0) {
+      if (currentTab.value === 0) {
         currentRole.value = 'applicant';
-	} else if (currentTab.value === 1) {
+      } else if (currentTab.value === 1) {
         currentRole.value = 'creator';
-      } else {
-        currentRole.value = 'all';
       }
       
       // 加载任务申请
@@ -359,12 +460,17 @@
         await loadTeamApplications(isRefresh);
       }
       
-      // 加载徽章申请 - 仅在非"待我处理"标签页时加载
-      if ((selectedType.value === 'all' || selectedType.value === 'badge') && currentTab.value !== 1) {
+      // 加载徽章申请 - 仅在"我发起的"标签页时加载
+      if ((selectedType.value === 'all' || selectedType.value === 'badge') && currentTab.value === 0) {
         await loadBadgeApplications(isRefresh);
       }
 
       console.log('加载完成的应用列表数据：', applications.value);
+      
+      // 如果有目标申请ID，滚动到对应位置
+      if (targetApplicationId.value) {
+        scrollToApplication();
+      }
       
     } catch (error) {
       console.error('获取申请列表失败:', error);
@@ -394,13 +500,12 @@
       }
       
       // 添加角色筛选
-      if (currentRole.value !== 'all') {
-        params.role = currentRole.value;
-      }
+      params.role = currentRole.value;
       
+      // 直接请求
       const res = await taskApplicationApi.getTaskApplicationList(params);
       
-      if (res.code === 200 && res.data) {
+      if (res && res.code === 200 && res.data) {
         const taskList = (res.data.list || []).map(item => ({
           ...item,
           type: 'task'  // 确保每个任务申请都有type字段
@@ -419,11 +524,6 @@
         } else {
           // 加载更多，合并数据
           applications.value = [...applications.value, ...taskList];
-        }
-        
-        // 更新待处理数量徽章
-        if (res.data.pendingCount !== undefined) {
-          tabs.value[1].badge = res.data.pendingCount;
         }
   
         // 判断是否还有更多数据
@@ -462,12 +562,9 @@
         res = await teamApi.getMyApplications(params);
       } else if (currentRole.value === 'creator' || currentRole.value === 'leader') {
         res = await teamApi.getTeamApplications(params);
-      } else {
-        // all角色，默认展示申请者视角
-        res = await teamApi.getMyApplications(params);
       }
       
-      if (res.code === 200 && res.data) {
+      if (res && res.code === 200 && res.data) {
         const teamList = (res.data.list || []).map(item => ({
           ...item,
           type: 'team'  // 确保每个队伍申请都有type字段
@@ -488,21 +585,9 @@
           applications.value = [...applications.value, ...teamList];
         }
         
-        // 更新待处理数量徽章
-        if (currentRole.value === 'creator' || currentRole.value === 'leader') {
-          const pendingCount = (res.data.list || []).filter(item => item.status === 'pending').length;
-          if (currentTab.value === 1) {
-            // 只有在"待我处理"标签页才更新徽章
-            tabs.value[1].badge += pendingCount;
-          }
-        }
-        
         // 判断是否还有更多数据
         if (selectedType.value === 'team') {
           hasNoMore.value = !res.data.hasNext;
-        } else if (selectedType.value === 'all') {
-          // 如果是全部类型，任何一方有更多数据都不显示"没有更多"
-          hasNoMore.value = hasNoMore.value && !res.data.hasNext;
         }
         
         // 输出调试信息
@@ -531,15 +616,26 @@
       }
       
       // 调用徽章申请列表接口
-      const res = await uni.request({
-        url: `${baseApiUrl}/badge/approvals/my-applications`,
-        method: 'GET',
-        data: params,
-        header: {
-          'Authorization': `Bearer ${uni.getStorageSync('token')}`
-        }
-      });
+      let res;
+      try {
+        res = await uni.request({
+          url: `${baseApiUrl}/badge/approvals/my-applications`,
+          method: 'GET',
+          data: params,
+          header: {
+            'Authorization': `Bearer ${uni.getStorageSync('token')}`
+          }
+        });
+      } catch (error) {
+        console.error('徽章申请请求失败:', error);
+        // 如果请求失败，返回空数据结构以避免后续代码出错
+        res = {
+          statusCode: 500,
+          data: null
+        };
+      }
       
+      // 检查请求是否成功
       if (res.statusCode === 200 && res.data && res.data.code === 200) {
         const badgeList = (res.data.data.records || []).map(item => ({
           ...item,
@@ -588,9 +684,55 @@
     }
   }
   
+  // 获取待处理申请数量（用于角标显示）
+  async function loadBadgeCount() {
+    try {
+      // 获取任务待处理数量
+      const taskParams = { status: 'pending', role: 'creator', pageSize: 1 };
+      const taskRes = await taskApplicationApi.getTaskApplicationList(taskParams);
+      
+      // 获取队伍待处理数量
+      const teamParams = { status: 'pending', pageSize: 1 };
+      const teamRes = await teamApi.getTeamApplications(teamParams);
+      
+      // 更新待处理数量角标
+      let totalPending = 0;
+      
+      if (taskRes && taskRes.code === 200 && taskRes.data && taskRes.data.pendingCount !== undefined) {
+        totalPending += taskRes.data.pendingCount;
+      }
+      
+      if (teamRes && teamRes.code === 200 && teamRes.data) {
+        // 队伍API可能没有直接返回pendingCount，从total字段获取
+        if (teamRes.data.pendingCount !== undefined) {
+          totalPending += teamRes.data.pendingCount;
+        } else if (teamRes.data.total !== undefined) {
+          totalPending += teamRes.data.total;
+        } else {
+          // 如果没有直接提供数量，尝试从列表计算
+          const pendingCount = (teamRes.data.list || []).filter(item => item.status === 'pending').length;
+          totalPending += pendingCount;
+        }
+      }
+      
+      console.log('更新待处理数量角标:', totalPending);
+      
+      // 更新标签页角标
+      tabs.value[1].badge = totalPending;
+      
+    } catch (error) {
+      console.error('获取待处理数量失败:', error);
+    }
+  }
+  
   // 下拉刷新
   function onRefresh() {
     refreshing.value = true;
+    
+    // 刷新时重新获取角标数量
+    loadBadgeCount();
+    
+    // 刷新列表数据
     loadApplications(true);
   }
   
@@ -619,8 +761,6 @@
       currentRole.value = 'applicant';
     } else if (index === 1) {
       currentRole.value = 'creator';
-    } else {
-      currentRole.value = 'all';
     }
     
     // 刷新列表
@@ -657,6 +797,7 @@
   function selectStatus(status) {
     if (selectedStatus.value === status) return;
 	selectedStatus.value = status;
+    
     loadApplications(true);
   }
   
@@ -743,6 +884,9 @@
               
               // 刷新列表
               loadApplications(true);
+              
+              // 更新角标数量
+              loadBadgeCount();
             } else {
               uni.showToast({
                 title: result?.message || '操作失败',
@@ -810,6 +954,9 @@
               
               // 刷新列表
               loadApplications(true);
+              
+              // 更新角标数量
+              loadBadgeCount();
             } else {
               uni.showToast({
                 title: result?.message || '操作失败',
@@ -1283,5 +1430,27 @@
   .badge-type {
     background-color: rgba($badge-color, 0.1);
     color: $badge-color;
+  }
+  
+  // 高亮显示的申请卡片
+  .highlight-application {
+    animation: highlight-pulse 3s ease-in-out;
+    box-shadow: 0 0 15rpx rgba($primary-color, 0.8);
+    border: 2rpx solid $primary-color;
+  }
+  
+  @keyframes highlight-pulse {
+    0% {
+      box-shadow: 0 0 15rpx rgba($primary-color, 0.8);
+      transform: scale(1);
+    }
+    20% {
+      box-shadow: 0 0 25rpx rgba($primary-color, 0.9);
+      transform: scale(1.02);
+    }
+    100% {
+      box-shadow: 0 0 15rpx rgba($primary-color, 0);
+      transform: scale(1);
+    }
   }
   </style>

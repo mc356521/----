@@ -181,6 +181,50 @@ const userApi = {
       method: 'PUT',
       data
     });
+  },
+
+  /**
+   * 获取用户个人资料信息
+   * @returns {Promise} 用户个人资料的Promise对象
+   */
+  getUserProfile() {
+    return request({
+      url: '/users/profile',
+      method: 'GET'
+    });
+  },
+  
+  /**
+   * 更新用户个人资料
+   * @param {Object} data - 更新的个人资料数据
+   * @param {String} data.realName - 真实姓名
+   * @param {Number} data.schoolId - 学校ID
+   * @param {String} data.major - 专业
+   * @param {String} data.bio - 个人简介
+   * @param {Array} data.skillTags - 技能标签数组
+   * @param {Array} data.awardsHistory - 获奖经历数组
+   * @returns {Promise} 更新结果的Promise对象
+   */
+  updateUserProfile(data) {
+    return request({
+      url: '/users/profile',
+      method: 'PUT',
+      data,
+      header: {
+        'Content-Type': 'application/json'
+      }
+    });
+  },
+  
+  /**
+   * 获取所有技能标签（按分类分组）
+   * @returns {Promise} 技能标签的Promise对象
+   */
+  getSkillTags() {
+    return request({
+      url: '/api/skill-tags/group-by-category',
+      method: 'GET'
+    });
   }
 };
 

@@ -244,14 +244,15 @@
       
       <!-- 底部固定按钮 -->
       <view class="fixed-bottom">
-        <button class="team-btn">
+        <button class="team-btn" @click="createTeam">
           <text class="iconfont icon-users mr-1"></text>
           <text>创建队伍</text>
         </button>
         <button 
           class="register-btn" 
           :class="{'disabled-btn': competition.statusCode === '0' || competition.statusCode === '3'}"
-          :disabled="competition.statusCode === '0' || competition.statusCode === '3'">
+          :disabled="competition.statusCode === '0' || competition.statusCode === '3'"
+          @click="handleActionButton">
           {{ getActionButtonText() }}
         </button>
       </view>
@@ -748,6 +749,52 @@ function clearSearch() {
 function toggleFilter() {
   // 这里可以添加筛选逻辑
   console.log('打开筛选选项');
+}
+
+// 跳转到创建团队页面
+function createTeam() {
+  uni.navigateTo({
+    url: `/pages/team/create?competitionId=${competition.value.id}&competitionName=${encodeURIComponent(competition.value.title)}`
+  });
+}
+
+// 处理行动按钮点击
+function handleActionButton() {
+  const buttonText = getActionButtonText();
+  
+  switch(buttonText) {
+    case '寻找队伍':
+    case '查看队伍':
+      // 切换到参赛队伍标签页
+      currentTab.value = 'teams';
+      // 如果队伍列表为空，则加载队伍数据
+      if (teams.value.length === 0) {
+        getCompetitionTeams();
+      }
+      // 滚动到队伍列表位置
+      uni.pageScrollTo({
+        selector: '.tab-active',
+        duration: 300
+      });
+      break;
+    case '提醒我':
+      uni.showToast({
+        title: '已设置提醒',
+        icon: 'success'
+      });
+      break;
+    case '查看结果':
+      uni.showToast({
+        title: '比赛结果即将公布',
+        icon: 'none'
+      });
+      break;
+    default:
+      uni.showToast({
+        title: '功能开发中',
+        icon: 'none'
+      });
+  }
 }
 </script>
 

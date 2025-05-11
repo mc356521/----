@@ -45,11 +45,11 @@ if (uni.restoreGlobal) {
     // API基础路径
     baseUrl: "http://103.38.83.91:8080",
     // 超时时间
-    timeout: 45e3,
+    timeout: 1e5,
     // 上传接口
     uploadUrl: "/api/upload",
     // WebSocket地址
-    wsUrl: "wss://test-api.example.com/ws",
+    wsUrl: "ws://103.38.83.91:8080/ws",
     // 调试模式
     debug: true,
     // 版本号
@@ -61,11 +61,11 @@ if (uni.restoreGlobal) {
     // API基础路径
     baseUrl: "http://103.38.83.91:8080",
     // 超时时间
-    timeout: 3e4,
-    // 上传接口
+    timeout: 1e5,
+    // 上传接口 
     uploadUrl: "/api/upload",
     // WebSocket地址
-    wsUrl: "wss://dev-api.example.com/ws",
+    wsUrl: "ws://103.38.83.91:8080/ws",
     // 调试模式
     debug: true,
     // 版本号
@@ -77,11 +77,11 @@ if (uni.restoreGlobal) {
     // API基础路径
     baseUrl: "http://103.38.83.91:8080",
     // 超时时间
-    timeout: 15e3,
+    timeout: 1e5,
     // 上传接口
     uploadUrl: "/api/upload",
     // WebSocket地址
-    wsUrl: "wss://api.example.com/ws",
+    wsUrl: "ws://103.38.83.91:8080/ws",
     // 调试模式
     debug: false,
     // 版本号
@@ -105,7 +105,7 @@ if (uni.restoreGlobal) {
     envConfig.actualBaseUrl = envConfig.baseUrl;
     return envConfig;
   }
-  getEnv();
+  const env$1 = getEnv();
   getEnv();
   const env = getEnv();
   if (env.debug) {
@@ -401,6 +401,47 @@ if (uni.restoreGlobal) {
         method: "PUT",
         data
       });
+    },
+    /**
+     * 获取用户个人资料信息
+     * @returns {Promise} 用户个人资料的Promise对象
+     */
+    getUserProfile() {
+      return request({
+        url: "/users/profile",
+        method: "GET"
+      });
+    },
+    /**
+     * 更新用户个人资料
+     * @param {Object} data - 更新的个人资料数据
+     * @param {String} data.realName - 真实姓名
+     * @param {Number} data.schoolId - 学校ID
+     * @param {String} data.major - 专业
+     * @param {String} data.bio - 个人简介
+     * @param {Array} data.skillTags - 技能标签数组
+     * @param {Array} data.awardsHistory - 获奖经历数组
+     * @returns {Promise} 更新结果的Promise对象
+     */
+    updateUserProfile(data) {
+      return request({
+        url: "/users/profile",
+        method: "PUT",
+        data,
+        header: {
+          "Content-Type": "application/json"
+        }
+      });
+    },
+    /**
+     * 获取所有技能标签（按分类分组）
+     * @returns {Promise} 技能标签的Promise对象
+     */
+    getSkillTags() {
+      return request({
+        url: "/api/skill-tags/group-by-category",
+        method: "GET"
+      });
     }
   };
   const teamApi = {
@@ -591,6 +632,19 @@ if (uni.restoreGlobal) {
       return request({
         url: "/teams/my",
         method: "GET"
+      });
+    },
+    /**
+     * 获取AI智能推荐的队伍
+     * @param {Object} params - 查询参数
+     * @param {Boolean} params.useCache - 是否使用服务器端缓存的结果
+     * @returns {Promise} 智能推荐队伍的Promise对象
+     */
+    getRecommendedTeams(params = { useCache: true }) {
+      return request({
+        url: "/teams/recommend",
+        method: "GET",
+        params
       });
     }
   };
@@ -787,7 +841,7 @@ if (uni.restoreGlobal) {
     }
     return target;
   };
-  const _sfc_main$t = {
+  const _sfc_main$A = {
     __name: "login",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -811,6 +865,19 @@ if (uni.restoreGlobal) {
         const provinceName = schoolMultiArray.value[0][provinceIndex].name;
         const schoolName = schoolMultiArray.value[1][schoolIndex].name;
         return `${provinceName} - ${schoolName}`;
+      });
+      const loginForm = vue.reactive({
+        phone: "",
+        password: ""
+      });
+      const registerForm = vue.reactive({
+        phoneNumber: "",
+        password: "",
+        realName: "",
+        schoolId: 1,
+        role: "student",
+        major: "",
+        studentTeacherId: ""
       });
       vue.onMounted(async () => {
         try {
@@ -853,11 +920,35 @@ if (uni.restoreGlobal) {
             }
           }
         } catch (error) {
-          formatAppLog("error", "at pages/login/login.vue:224", "获取学校列表失败:", error);
+          formatAppLog("error", "at pages/login/login.vue:241", "获取学校列表失败:", error);
           uni.showToast({
             title: "获取学校列表失败",
             icon: "none"
           });
+        }
+        const token = uni.getStorageSync("token");
+        const savedLoginInfo = uni.getStorageSync("loginInfo");
+        if (token) {
+          try {
+            formatAppLog("log", "at pages/login/login.vue:256", "检测到已有token，尝试自动登录");
+            uni.switchTab({
+              url: "/pages/index/index"
+            });
+            return;
+          } catch (error) {
+            formatAppLog("error", "at pages/login/login.vue:263", "自动登录失败，token可能已过期:", error);
+            uni.removeStorageSync("token");
+          }
+        }
+        if (savedLoginInfo) {
+          try {
+            const loginInfo = JSON.parse(savedLoginInfo);
+            loginForm.phone = loginInfo.phone || "";
+            loginForm.password = loginInfo.password || "";
+            isRemember.value = true;
+          } catch (error) {
+            formatAppLog("error", "at pages/login/login.vue:277", "解析保存的登录信息失败:", error);
+          }
         }
       });
       function onSchoolColumnChange(e) {
@@ -878,19 +969,6 @@ if (uni.restoreGlobal) {
           registerForm.schoolId = schoolMultiArray.value[1][schoolIndex].id;
         }
       }
-      const loginForm = vue.reactive({
-        phone: "",
-        password: ""
-      });
-      const registerForm = vue.reactive({
-        phoneNumber: "",
-        password: "",
-        realName: "",
-        schoolId: 1,
-        role: "student",
-        major: "",
-        studentTeacherId: ""
-      });
       function toggleRegister() {
         isRegistering.value = !isRegistering.value;
       }
@@ -899,6 +977,17 @@ if (uni.restoreGlobal) {
       }
       function togglePasswordVisibility() {
         showPassword.value = !showPassword.value;
+      }
+      function saveLoginInfo() {
+        if (isRemember.value) {
+          const loginInfo = {
+            phone: loginForm.phone,
+            password: loginForm.password
+          };
+          uni.setStorageSync("loginInfo", JSON.stringify(loginInfo));
+        } else {
+          uni.removeStorageSync("loginInfo");
+        }
       }
       async function handleLogin() {
         if (!loginForm.phone || !loginForm.password) {
@@ -914,14 +1003,16 @@ if (uni.restoreGlobal) {
           mask: true
         });
         try {
-          formatAppLog("log", "at pages/login/login.vue:313", "正在连接登录服务器...");
+          formatAppLog("log", "at pages/login/login.vue:362", "正在连接登录服务器...");
           const res = await api.user.login({
             phone: loginForm.phone,
             password: loginForm.password
           });
           uni.hideLoading();
-          formatAppLog("log", "at pages/login/login.vue:322", "登录响应:", res);
+          formatAppLog("log", "at pages/login/login.vue:371", "登录响应:", res);
           if (res && res.token) {
+            uni.setStorageSync("token", res.token);
+            saveLoginInfo();
             uni.showToast({
               title: "登录成功",
               icon: "success"
@@ -938,7 +1029,7 @@ if (uni.restoreGlobal) {
             });
           }
         } catch (error) {
-          formatAppLog("error", "at pages/login/login.vue:346", "登录失败:", error);
+          formatAppLog("error", "at pages/login/login.vue:401", "登录失败:", error);
           uni.hideLoading();
           uni.showToast({
             title: error.message || "登录失败，请检查网络连接或服务器配置",
@@ -992,7 +1083,7 @@ if (uni.restoreGlobal) {
         }
         try {
           uni.removeStorageSync("token");
-          formatAppLog("log", "at pages/login/login.vue:414", "发送的注册数据:", JSON.stringify(registerForm));
+          formatAppLog("log", "at pages/login/login.vue:469", "发送的注册数据:", JSON.stringify(registerForm));
           const res = await api.user.register(registerForm);
           uni.showToast({
             title: "注册成功",
@@ -1005,7 +1096,7 @@ if (uni.restoreGlobal) {
             icon: "none",
             duration: 3e3
           });
-          formatAppLog("error", "at pages/login/login.vue:431", "注册失败:", error);
+          formatAppLog("error", "at pages/login/login.vue:486", "注册失败:", error);
         }
       }
       function forgotPassword() {
@@ -1032,14 +1123,14 @@ if (uni.restoreGlobal) {
           icon: "none"
         });
       }
-      const __returned__ = { isRemember, showPassword, isRegistering, schools, schoolMultiArray, schoolMultiIndex, provinces, schoolsByProvince, selectedSchoolName, onSchoolColumnChange, onSchoolChange, loginForm, registerForm, toggleRegister, toggleRemember, togglePasswordVisibility, handleLogin, handleRegister, forgotPassword, socialLogin, openTerms, openPrivacy, ref: vue.ref, reactive: vue.reactive, onMounted: vue.onMounted, computed: vue.computed, get api() {
+      const __returned__ = { isRemember, showPassword, isRegistering, schools, schoolMultiArray, schoolMultiIndex, provinces, schoolsByProvince, selectedSchoolName, loginForm, registerForm, onSchoolColumnChange, onSchoolChange, toggleRegister, toggleRemember, togglePasswordVisibility, saveLoginInfo, handleLogin, handleRegister, forgotPassword, socialLogin, openTerms, openPrivacy, ref: vue.ref, reactive: vue.reactive, onMounted: vue.onMounted, computed: vue.computed, get api() {
         return api;
       } };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
     }
   };
-  function _sfc_render$s(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$z(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 主内容区 "),
       vue.createElementVNode("view", { class: "content-area" }, [
@@ -1345,7 +1436,7 @@ if (uni.restoreGlobal) {
       ])
     ]);
   }
-  const PagesLoginLogin = /* @__PURE__ */ _export_sfc(_sfc_main$t, [["render", _sfc_render$s], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/login/login.vue"]]);
+  const PagesLoginLogin = /* @__PURE__ */ _export_sfc(_sfc_main$A, [["render", _sfc_render$z], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/login/login.vue"]]);
   class MPAnimation {
     constructor(options, _this) {
       this.options = options;
@@ -1458,7 +1549,7 @@ if (uni.restoreGlobal) {
     clearTimeout(_this.timer);
     return new MPAnimation(option, _this);
   }
-  const _sfc_main$s = {
+  const _sfc_main$z = {
     name: "uniTransition",
     emits: ["click", "change"],
     props: {
@@ -1709,7 +1800,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$r(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$y(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.withDirectives((vue.openBlock(), vue.createElementBlock("view", {
       ref: "ani",
       animation: $data.animationData,
@@ -1722,8 +1813,8 @@ if (uni.restoreGlobal) {
       [vue.vShow, $data.isShow]
     ]);
   }
-  const __easycom_0$4 = /* @__PURE__ */ _export_sfc(_sfc_main$s, [["render", _sfc_render$r], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-transition/components/uni-transition/uni-transition.vue"]]);
-  const _sfc_main$r = {
+  const __easycom_0$4 = /* @__PURE__ */ _export_sfc(_sfc_main$z, [["render", _sfc_render$y], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-transition/components/uni-transition/uni-transition.vue"]]);
+  const _sfc_main$y = {
     name: "uniPopup",
     components: {},
     emits: ["change", "maskClick"],
@@ -2073,7 +2164,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$q(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$x(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_uni_transition = resolveEasycom(vue.resolveDynamicComponent("uni-transition"), __easycom_0$4);
     return $data.showPopup ? (vue.openBlock(), vue.createElementBlock(
       "view",
@@ -2133,8 +2224,8 @@ if (uni.restoreGlobal) {
       /* CLASS */
     )) : vue.createCommentVNode("v-if", true);
   }
-  const __easycom_0$3 = /* @__PURE__ */ _export_sfc(_sfc_main$r, [["render", _sfc_render$q], ["__scopeId", "data-v-4dd3c44b"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-popup/components/uni-popup/uni-popup.vue"]]);
-  const _sfc_main$q = {
+  const __easycom_0$3 = /* @__PURE__ */ _export_sfc(_sfc_main$y, [["render", _sfc_render$x], ["__scopeId", "data-v-4dd3c44b"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-popup/components/uni-popup/uni-popup.vue"]]);
+  const _sfc_main$x = {
     __name: "TeamCard",
     props: {
       team: {
@@ -2144,6 +2235,10 @@ if (uni.restoreGlobal) {
       index: {
         type: Number,
         default: 0
+      },
+      showMatch: {
+        type: Boolean,
+        default: false
       }
     },
     emits: ["detail", "apply"],
@@ -2227,7 +2322,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$p(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$w(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock(
       vue.Fragment,
       null,
@@ -2297,9 +2392,62 @@ if (uni.restoreGlobal) {
                 ])
               ])
             ]),
+            vue.createCommentVNode(" 匹配度信息 "),
+            $props.showMatch && $props.team.matchScore ? (vue.openBlock(), vue.createElementBlock("view", {
+              key: 0,
+              class: "match-info"
+            }, [
+              vue.createElementVNode("view", { class: "match-score" }, [
+                vue.createElementVNode("view", { class: "score-bar" }, [
+                  vue.createElementVNode(
+                    "view",
+                    {
+                      class: "score-fill",
+                      style: vue.normalizeStyle({ width: `${$props.team.matchScore}%` })
+                    },
+                    null,
+                    4
+                    /* STYLE */
+                  )
+                ]),
+                vue.createElementVNode(
+                  "text",
+                  { class: "score-text" },
+                  "匹配度 " + vue.toDisplayString($props.team.matchScore) + "%",
+                  1
+                  /* TEXT */
+                )
+              ]),
+              $props.team.recommendedRole ? (vue.openBlock(), vue.createElementBlock("view", {
+                key: 0,
+                class: "recommend-role"
+              }, [
+                vue.createElementVNode("text", { class: "role-label" }, "推荐角色: "),
+                vue.createElementVNode(
+                  "text",
+                  { class: "role-text" },
+                  vue.toDisplayString($props.team.recommendedRole),
+                  1
+                  /* TEXT */
+                )
+              ])) : vue.createCommentVNode("v-if", true),
+              $props.team.matchReason || $props.team.recommendReason ? (vue.openBlock(), vue.createElementBlock("view", {
+                key: 1,
+                class: "match-reason"
+              }, [
+                vue.createElementVNode("text", { class: "reason-label" }, "匹配理由: "),
+                vue.createElementVNode(
+                  "text",
+                  { class: "reason-text" },
+                  vue.toDisplayString($props.team.recommendReason),
+                  1
+                  /* TEXT */
+                )
+              ])) : vue.createCommentVNode("v-if", true)
+            ])) : vue.createCommentVNode("v-if", true),
             vue.createCommentVNode(" 职位标签 "),
             $setup.positions.length > 0 ? (vue.openBlock(), vue.createElementBlock("view", {
-              key: 0,
+              key: 1,
               class: "role-tags"
             }, [
               (vue.openBlock(true), vue.createElementBlock(
@@ -2392,8 +2540,8 @@ if (uni.restoreGlobal) {
       /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */
     );
   }
-  const TeamCard = /* @__PURE__ */ _export_sfc(_sfc_main$q, [["render", _sfc_render$p], ["__scopeId", "data-v-49d62ae1"], ["__file", "D:/Uniapp/htmlTest/赛创项目/components/team/TeamCard.vue"]]);
-  const _sfc_main$p = {
+  const TeamCard = /* @__PURE__ */ _export_sfc(_sfc_main$x, [["render", _sfc_render$w], ["__scopeId", "data-v-49d62ae1"], ["__file", "D:/Uniapp/htmlTest/赛创项目/components/team/TeamCard.vue"]]);
+  const _sfc_main$w = {
     __name: "TabBar",
     props: {
       activeTab: {
@@ -2534,7 +2682,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$o(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$v(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock(
       "view",
       {
@@ -2622,8 +2770,69 @@ if (uni.restoreGlobal) {
       /* CLASS */
     );
   }
-  const TabBar = /* @__PURE__ */ _export_sfc(_sfc_main$p, [["render", _sfc_render$o], ["__scopeId", "data-v-89ca1f91"], ["__file", "D:/Uniapp/htmlTest/赛创项目/components/TabBar.vue"]]);
-  const _sfc_main$o = {
+  const TabBar = /* @__PURE__ */ _export_sfc(_sfc_main$w, [["render", _sfc_render$v], ["__scopeId", "data-v-89ca1f91"], ["__file", "D:/Uniapp/htmlTest/赛创项目/components/TabBar.vue"]]);
+  function getNotificationList(params = {}) {
+    return request({
+      url: "/notifications",
+      method: "GET",
+      params: {
+        pageNum: params.pageNum || 1,
+        pageSize: params.pageSize || 10,
+        onlyUnread: params.onlyUnread || false
+      }
+    });
+  }
+  function getUnreadCount$1() {
+    return request({
+      url: "/notifications/unread/count",
+      method: "GET"
+    });
+  }
+  function markAsRead$1(notificationId) {
+    return request({
+      url: `/notifications/${notificationId}/read`,
+      method: "PUT"
+    });
+  }
+  function markAllAsRead$1() {
+    return request({
+      url: "/notifications/read/all",
+      method: "PUT"
+    });
+  }
+  function deleteNotification(notificationId) {
+    return request({
+      url: `/notifications/${notificationId}`,
+      method: "DELETE"
+    });
+  }
+  function batchDeleteNotifications(ids) {
+    return request({
+      url: "/notifications/batch",
+      method: "DELETE",
+      data: ids
+    });
+  }
+  function handleNotificationAction(notificationId, action, data = {}) {
+    return request({
+      url: `/notifications/${notificationId}/action`,
+      method: "POST",
+      data: {
+        action,
+        ...data
+      }
+    });
+  }
+  const notificationsApi = {
+    getNotificationList,
+    getUnreadCount: getUnreadCount$1,
+    markAsRead: markAsRead$1,
+    markAllAsRead: markAllAsRead$1,
+    deleteNotification,
+    batchDeleteNotifications,
+    handleNotificationAction
+  };
+  const _sfc_main$v = {
     __name: "HeaderBar",
     props: {
       title: {
@@ -2636,6 +2845,10 @@ if (uni.restoreGlobal) {
       },
       showFilter: {
         type: Boolean,
+        default: true
+      },
+      showAiRecommend: {
+        type: Boolean,
         default: false
       },
       categories: {
@@ -2647,10 +2860,25 @@ if (uni.restoreGlobal) {
         default: 0
       }
     },
-    emits: ["search", "filter", "category-change"],
+    emits: ["search", "filter", "category-change", "ai-recommend", "back"],
     setup(__props, { expose: __expose, emit: __emit }) {
+      const tabBarPages = [
+        "pages/index/index",
+        "pages/competition/index",
+        "pages/team/list",
+        "pages/profile/index"
+      ];
       const props = __props;
       const currentCategory = vue.ref(props.defaultCategory);
+      const unreadCount = vue.ref(0);
+      const isTabBarPage = vue.computed(() => {
+        const pages = getCurrentPages();
+        if (pages.length === 0)
+          return true;
+        const currentPage = pages[pages.length - 1];
+        const currentRoute = currentPage.route || "";
+        return tabBarPages.includes(currentRoute);
+      });
       const headerHeight = vue.computed(() => {
         let height = 90;
         if (props.categories && props.categories.length > 0) {
@@ -2673,10 +2901,57 @@ if (uni.restoreGlobal) {
         currentCategory.value = index;
         emit("category-change", index);
       }
+      function goBack() {
+        emit("back");
+        const pages = getCurrentPages();
+        if (pages.length > 1) {
+          uni.navigateBack();
+        } else {
+          uni.switchTab({
+            url: "/pages/index/index"
+          });
+        }
+      }
+      async function fetchUnreadCount() {
+        try {
+          const res = await notificationsApi.getUnreadCount();
+          if (res.code === 200 && res.data !== void 0) {
+            unreadCount.value = res.data;
+            const app = getApp();
+            if (app && app.globalData) {
+              app.globalData.unreadNotificationCount = res.data;
+              try {
+                if (app.updateMessageBadge) {
+                  app.updateMessageBadge();
+                }
+              } catch (error) {
+                formatAppLog("log", "at components/HeaderBar.vue:166", "HeaderBar: 更新TabBar徽标失败", error);
+              }
+            }
+          }
+        } catch (error) {
+          formatAppLog("error", "at components/HeaderBar.vue:172", "获取未读消息数量失败:", error);
+        }
+      }
+      function getUnreadMessageCount() {
+        const app = getApp();
+        if (app && app.globalData) {
+          unreadCount.value = app.globalData.unreadNotificationCount || 0;
+        }
+      }
+      function onAiRecommend() {
+        emit("ai-recommend");
+      }
       __expose({
-        headerHeight
+        headerHeight,
+        unreadCount,
+        fetchUnreadCount,
+        // 暴露刷新未读数方法，供父组件调用
+        isTabBarPage
+        // 暴露tabBar页面状态
       });
       let safeAreaHeight = vue.ref(0);
+      let timer = null;
       vue.onMounted(() => {
         uni.getSystemInfo({
           success: (res) => {
@@ -2685,19 +2960,42 @@ if (uni.restoreGlobal) {
             }
           }
         });
+        fetchUnreadCount();
+        timer = setInterval(() => {
+          fetchUnreadCount();
+        }, 3e4);
       });
-      const __returned__ = { props, currentCategory, headerHeight, emit, onSearch, onFilter, selectCategory, get safeAreaHeight() {
+      vue.onUnmounted(() => {
+        if (timer) {
+          clearInterval(timer);
+          timer = null;
+        }
+      });
+      const __returned__ = { tabBarPages, props, currentCategory, unreadCount, isTabBarPage, headerHeight, emit, onSearch, onFilter, selectCategory, goBack, fetchUnreadCount, getUnreadMessageCount, onAiRecommend, get safeAreaHeight() {
         return safeAreaHeight;
       }, set safeAreaHeight(v) {
         safeAreaHeight = v;
-      }, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted };
+      }, get timer() {
+        return timer;
+      }, set timer(v) {
+        timer = v;
+      }, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, onUnmounted: vue.onUnmounted, get notificationsApi() {
+        return notificationsApi;
+      } };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
     }
   };
-  function _sfc_render$n(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$u(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "sticky-header" }, [
       vue.createElementVNode("view", { class: "header-title" }, [
+        !$setup.isTabBarPage ? (vue.openBlock(), vue.createElementBlock("view", {
+          key: 0,
+          class: "back-btn",
+          onClick: $setup.goBack
+        }, [
+          vue.createElementVNode("text", { class: "iconfont icon-back" })
+        ])) : vue.createCommentVNode("v-if", true),
         vue.createElementVNode(
           "text",
           { class: "section-title" },
@@ -2715,10 +3013,20 @@ if (uni.restoreGlobal) {
           ])) : vue.createCommentVNode("v-if", true),
           $props.showFilter ? (vue.openBlock(), vue.createElementBlock("view", {
             key: 1,
-            class: "action-btn",
+            class: "action-btn message-btn",
             onClick: $setup.onFilter
           }, [
-            vue.createElementVNode("text", { class: "iconfont icon-filter" })
+            vue.createElementVNode("text", { class: "iconfont icon-message" }),
+            $setup.unreadCount > 0 ? (vue.openBlock(), vue.createElementBlock(
+              "view",
+              {
+                key: 0,
+                class: "badge"
+              },
+              vue.toDisplayString($setup.unreadCount > 99 ? "99+" : $setup.unreadCount),
+              1
+              /* TEXT */
+            )) : vue.createCommentVNode("v-if", true)
           ])) : vue.createCommentVNode("v-if", true),
           vue.renderSlot(_ctx.$slots, "actions", {}, void 0, true)
         ])
@@ -2756,8 +3064,57 @@ if (uni.restoreGlobal) {
       vue.renderSlot(_ctx.$slots, "default", {}, void 0, true)
     ]);
   }
-  const HeaderBar = /* @__PURE__ */ _export_sfc(_sfc_main$o, [["render", _sfc_render$n], ["__scopeId", "data-v-965d9a70"], ["__file", "D:/Uniapp/htmlTest/赛创项目/components/HeaderBar.vue"]]);
-  const _sfc_main$n = {
+  const HeaderBar = /* @__PURE__ */ _export_sfc(_sfc_main$v, [["render", _sfc_render$u], ["__scopeId", "data-v-965d9a70"], ["__file", "D:/Uniapp/htmlTest/赛创项目/components/HeaderBar.vue"]]);
+  const getStoredState = () => {
+    try {
+      const storedState = uni.getStorageSync("userInteractionState");
+      return storedState ? JSON.parse(storedState) : null;
+    } catch (e) {
+      formatAppLog("error", "at store/index.js:10", "读取本地存储失败", e);
+      return null;
+    }
+  };
+  const saveStateToStorage = (state2) => {
+    try {
+      uni.setStorageSync("userInteractionState", JSON.stringify(state2));
+    } catch (e) {
+      formatAppLog("error", "at store/index.js:20", "存储状态失败", e);
+    }
+  };
+  const initialState = getStoredState() || {
+    // 记录用户是否已经点击过AI智能推荐
+    hasClickedAiRecommend: false
+    // 可以添加更多全局状态...
+  };
+  const state = vue.reactive(initialState);
+  const updateState = (key, value) => {
+    if (key in state) {
+      state[key] = value;
+      saveStateToStorage(state);
+    }
+  };
+  const getState = (key) => {
+    return key in state ? state[key] : null;
+  };
+  const clearState = () => {
+    Object.keys(state).forEach((key) => {
+      state[key] = initialState[key];
+    });
+    uni.removeStorageSync("userInteractionState");
+  };
+  const resetAiRecommendState = () => {
+    state.hasClickedAiRecommend = false;
+    saveStateToStorage(state);
+    formatAppLog("log", "at store/index.js:59", "已重置AI推荐状态，下次将显示分析动画");
+  };
+  const store = {
+    state,
+    updateState,
+    getState,
+    clearState,
+    resetAiRecommendState
+  };
+  const _sfc_main$u = {
     __name: "index",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -2770,12 +3127,24 @@ if (uni.restoreGlobal) {
       });
       const teamList = vue.ref([]);
       const competitionsList = vue.ref([]);
+      const recommendedTeams = vue.ref([]);
+      const aiSummary = vue.ref("");
       const showApplyModal = vue.ref(false);
       const applyTeamId = vue.ref(null);
       const applyMessage = vue.ref("希望加入您的团队，请审核");
       const selectedRoleId = vue.ref(null);
       const availableRoles = vue.ref([]);
       const loadingRoles = vue.ref(false);
+      const aiRecommendPopup = vue.ref(null);
+      const aiAnalyzing = vue.ref(false);
+      const aiAnalyzingTexts = [
+        "正在分析您的个人资料...",
+        "正在匹配与您技能相符的队伍...",
+        "正在计算兴趣匹配度...",
+        "正在生成个性化推荐..."
+      ];
+      let aiAnalyzingTimer = null;
+      const currentTextIndex = vue.ref(0);
       async function getCompetitionsList() {
         try {
           const res = await competitionsApi.getCompetitionsList({
@@ -2785,10 +3154,10 @@ if (uni.restoreGlobal) {
           });
           if (res.code === 200 && res.data && res.data.list) {
             competitionsList.value = res.data.list;
-            formatAppLog("log", "at pages/index/index.vue:248", "获取到热门竞赛数据:", competitionsList.value);
+            formatAppLog("log", "at pages/index/index.vue:327", "获取到热门竞赛数据:", competitionsList.value);
           }
         } catch (error) {
-          formatAppLog("error", "at pages/index/index.vue:251", "获取竞赛数据失败:", error);
+          formatAppLog("error", "at pages/index/index.vue:330", "获取竞赛数据失败:", error);
         }
       }
       async function getTeamList() {
@@ -2796,10 +3165,52 @@ if (uni.restoreGlobal) {
           const res = await teamApi.getTeamList();
           if (res.code === 200 && res.data && res.data.list) {
             teamList.value = res.data.list.slice(0, 10);
-            formatAppLog("log", "at pages/index/index.vue:261", "获取到队伍列表数据:", teamList.value);
+            formatAppLog("log", "at pages/index/index.vue:340", "获取到队伍列表数据:", teamList.value);
           }
         } catch (error) {
-          formatAppLog("error", "at pages/index/index.vue:264", "获取队伍数据失败:", error);
+          formatAppLog("error", "at pages/index/index.vue:344", "获取队伍数据失败:", error);
+        }
+      }
+      async function getRecommendedTeams() {
+        try {
+          if (recommendedTeams.value && recommendedTeams.value.length > 0) {
+            formatAppLog("log", "at pages/index/index.vue:353", "使用缓存的AI推荐队伍数据:", recommendedTeams.value);
+            return;
+          }
+          const res = await teamApi.getRecommendedTeams();
+          if (res.code === 200 && res.data) {
+            const teams = res.data.recommendedTeams || [];
+            recommendedTeams.value = teams.map((team) => {
+              return {
+                ...team,
+                matchScore: team.matchScore || Math.floor(Math.random() * 30) + 70,
+                // 如果没有匹配度，随机生成70-100之间的分数
+                matchReason: team.matchReason || team.recommendReason || "根据您的技能和兴趣推荐",
+                recommendedRole: team.recommendedRole || ""
+              };
+            });
+            aiSummary.value = res.data.aiSummary || "根据您的专业、技能和兴趣，我们为您推荐了以下最匹配的团队";
+            formatAppLog("log", "at pages/index/index.vue:371", "获取到AI推荐队伍数据:", recommendedTeams.value);
+            try {
+              uni.setStorageSync("ai_recommended_teams", JSON.stringify(recommendedTeams.value));
+              uni.setStorageSync("ai_summary", aiSummary.value);
+            } catch (e) {
+              formatAppLog("error", "at pages/index/index.vue:378", "缓存AI推荐数据失败:", e);
+            }
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/index/index.vue:382", "获取AI推荐队伍失败:", error);
+          try {
+            const cachedTeams = uni.getStorageSync("ai_recommended_teams");
+            const cachedSummary = uni.getStorageSync("ai_summary");
+            if (cachedTeams) {
+              recommendedTeams.value = JSON.parse(cachedTeams);
+              aiSummary.value = cachedSummary || "";
+              formatAppLog("log", "at pages/index/index.vue:390", "从缓存加载AI推荐队伍数据:", recommendedTeams.value);
+            }
+          } catch (e) {
+            formatAppLog("error", "at pages/index/index.vue:393", "读取缓存AI推荐数据失败:", e);
+          }
         }
       }
       function navigateTo(page) {
@@ -2811,6 +3222,8 @@ if (uni.restoreGlobal) {
           uni.switchTab({
             url: "/pages/task-square/index"
           });
+        } else if (page === "recommend") {
+          navigateToAiRecommend();
         } else {
           uni.showToast({
             title: `导航到${page}页面`,
@@ -2818,15 +3231,24 @@ if (uni.restoreGlobal) {
           });
         }
       }
+      function navigateToAiRecommend() {
+        uni.navigateTo({
+          url: "/pages/team/recommended"
+        });
+      }
       function viewAll(type) {
         if (type === "competition") {
           uni.navigateTo({
             url: "/pages/competition/index"
           });
+        } else if (type === "recommend") {
+          uni.navigateTo({
+            url: "/pages/team/recommended"
+            // 假设有个推荐队伍页面
+          });
         } else {
-          uni.showToast({
-            title: `查看所有${type}`,
-            icon: "none"
+          uni.navigateTo({
+            url: "/pages/team/list"
           });
         }
       }
@@ -2887,7 +3309,7 @@ if (uni.restoreGlobal) {
             title: "操作失败，请稍后重试",
             icon: "none"
           });
-          formatAppLog("error", "at pages/index/index.vue:371", "获取队伍角色失败:", error);
+          formatAppLog("error", "at pages/index/index.vue:514", "获取队伍角色失败:", error);
         } finally {
           loadingRoles.value = false;
         }
@@ -2927,7 +3349,7 @@ if (uni.restoreGlobal) {
             // 确保是数字类型
             message: applyMessage.value.trim()
           };
-          formatAppLog("log", "at pages/index/index.vue:419", "申请加入队伍:", applyData);
+          formatAppLog("log", "at pages/index/index.vue:562", "申请加入队伍:", applyData);
           const applyRes = await teamApi.applyTeam(applyData);
           uni.hideLoading();
           if (applyRes.code === 200) {
@@ -2945,7 +3367,7 @@ if (uni.restoreGlobal) {
           }
         } catch (error) {
           uni.hideLoading();
-          formatAppLog("error", "at pages/index/index.vue:442", "申请加入队伍失败:", error);
+          formatAppLog("error", "at pages/index/index.vue:585", "申请加入队伍失败:", error);
           uni.showToast({
             title: error.message || "申请提交失败，请稍后重试",
             icon: "none"
@@ -2994,24 +3416,169 @@ if (uni.restoreGlobal) {
           }, 0);
         }
       });
+      function showAiRecommendPopup() {
+        const hasClickedAiRecommend = store.getState("hasClickedAiRecommend");
+        if (hasClickedAiRecommend) {
+          formatAppLog("log", "at pages/index/index.vue:652", "用户已点击过AI推荐，直接跳转到推荐页面");
+          navigateToAiRecommend();
+          return;
+        }
+        formatAppLog("log", "at pages/index/index.vue:657", "用户首次点击AI推荐，显示分析动画");
+        aiAnalyzing.value = true;
+        currentTextIndex.value = 0;
+        try {
+          if (aiRecommendPopup.value) {
+            aiRecommendPopup.value.open();
+          } else {
+            formatAppLog("error", "at pages/index/index.vue:668", "AI推荐弹窗引用获取失败");
+            uni.showToast({
+              title: "正在分析中...",
+              icon: "loading",
+              mask: true,
+              duration: 2e3
+            });
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/index/index.vue:677", "打开AI弹窗失败:", error);
+          uni.showLoading({
+            title: aiAnalyzingTexts[0],
+            mask: true
+          });
+        }
+        if (aiAnalyzingTimer) {
+          clearInterval(aiAnalyzingTimer);
+          aiAnalyzingTimer = null;
+        }
+        aiAnalyzingTimer = setInterval(() => {
+          currentTextIndex.value = (currentTextIndex.value + 1) % aiAnalyzingTexts.length;
+          if (!aiRecommendPopup.value || !aiRecommendPopup.value.showPopup) {
+            uni.showLoading({
+              title: aiAnalyzingTexts[currentTextIndex.value],
+              mask: true
+            });
+          }
+          if (currentTextIndex.value === aiAnalyzingTexts.length - 1) {
+            setTimeout(() => {
+              clearInterval(aiAnalyzingTimer);
+              aiAnalyzingTimer = null;
+              uni.hideLoading();
+              try {
+                if (aiRecommendPopup.value) {
+                  aiRecommendPopup.value.close();
+                }
+              } catch (error) {
+                formatAppLog("error", "at pages/index/index.vue:715", "关闭AI弹窗失败:", error);
+              }
+              store.updateState("hasClickedAiRecommend", true);
+              uni.showToast({
+                title: "分析完成",
+                icon: "success",
+                duration: 1e3
+              });
+              setTimeout(() => {
+                navigateToAiRecommend();
+              }, 1e3);
+            }, 1500);
+          }
+        }, 1500);
+      }
+      function closeAiRecommendPopup() {
+        formatAppLog("log", "at pages/index/index.vue:739", "关闭AI推荐弹窗");
+        if (aiAnalyzingTimer) {
+          clearInterval(aiAnalyzingTimer);
+          aiAnalyzingTimer = null;
+        }
+        uni.hideLoading();
+        aiAnalyzing.value = false;
+        currentTextIndex.value = 0;
+      }
+      function viewRecommendedTeam(id) {
+        closeAiRecommendPopup();
+        viewDetail("team", id);
+      }
+      function resetAiRecommendForTesting() {
+        formatAppLog("log", "at pages/index/index.vue:768", "重置AI推荐状态（开发测试用）");
+        store.resetAiRecommendState();
+        aiAnalyzing.value = false;
+        currentTextIndex.value = 0;
+        if (aiAnalyzingTimer) {
+          clearInterval(aiAnalyzingTimer);
+          aiAnalyzingTimer = null;
+        }
+        uni.showToast({
+          title: "已重置AI推荐状态",
+          icon: "success",
+          duration: 1500
+        });
+      }
       vue.onMounted(() => {
         const statusBarHeight = uni.getSystemInfoSync().statusBarHeight;
-        formatAppLog("log", "at pages/index/index.vue:505", "状态栏高度:", statusBarHeight);
-        getTeamList();
-        getCompetitionsList();
+        formatAppLog("log", "at pages/index/index.vue:793", "状态栏高度:", statusBarHeight);
+        vue.nextTick(() => {
+          try {
+            const instance = vue.getCurrentInstance();
+            if (instance && instance.proxy) {
+              aiRecommendPopup.value = instance.proxy.$refs.aiRecommendPopup;
+              formatAppLog("log", "at pages/index/index.vue:802", "获取到弹窗引用:", aiRecommendPopup.value ? "成功" : "失败");
+            } else {
+              formatAppLog("error", "at pages/index/index.vue:804", "获取getCurrentInstance()失败或无proxy属性");
+            }
+          } catch (e) {
+            formatAppLog("error", "at pages/index/index.vue:807", "获取弹窗引用出错:", e);
+          }
+        });
+        setTimeout(() => {
+          if (!aiRecommendPopup.value) {
+            try {
+              const instance = vue.getCurrentInstance();
+              if (instance && instance.proxy) {
+                aiRecommendPopup.value = instance.proxy.$refs.aiRecommendPopup;
+                formatAppLog("log", "at pages/index/index.vue:818", "延迟获取到弹窗引用:", aiRecommendPopup.value ? "成功" : "失败");
+              }
+            } catch (e) {
+              formatAppLog("error", "at pages/index/index.vue:821", "延迟获取弹窗引用出错:", e);
+            }
+          }
+        }, 300);
+        const hasClickedAiRecommend = store.getState("hasClickedAiRecommend");
+        formatAppLog("log", "at pages/index/index.vue:828", "用户是否已点击过AI推荐:", hasClickedAiRecommend ? "是" : "否");
+        if (!hasClickedAiRecommend) {
+          aiAnalyzing.value = false;
+          currentTextIndex.value = 0;
+          if (aiAnalyzingTimer) {
+            clearInterval(aiAnalyzingTimer);
+            aiAnalyzingTimer = null;
+          }
+        }
+        Promise.all([
+          getTeamList(),
+          getCompetitionsList(),
+          getRecommendedTeams()
+          // 提前预加载AI推荐数据
+        ]).then(() => {
+          formatAppLog("log", "at pages/index/index.vue:846", "所有数据加载完成");
+        }).catch((err) => {
+          formatAppLog("error", "at pages/index/index.vue:848", "数据加载出错:", err);
+        });
       });
-      const __returned__ = { headerBarRef, headerPlaceholderHeight, teamList, competitionsList, showApplyModal, applyTeamId, applyMessage, selectedRoleId, availableRoles, loadingRoles, getCompetitionsList, getTeamList, navigateTo, viewAll, viewDetail, joinTeam, submitApplication, resetApplyForm, goToSearch, getStatusClass, ref: vue.ref, onMounted: vue.onMounted, watch: vue.watch, getCurrentInstance: vue.getCurrentInstance, computed: vue.computed, get teamApi() {
+      const __returned__ = { headerBarRef, headerPlaceholderHeight, teamList, competitionsList, recommendedTeams, aiSummary, showApplyModal, applyTeamId, applyMessage, selectedRoleId, availableRoles, loadingRoles, aiRecommendPopup, aiAnalyzing, aiAnalyzingTexts, get aiAnalyzingTimer() {
+        return aiAnalyzingTimer;
+      }, set aiAnalyzingTimer(v) {
+        aiAnalyzingTimer = v;
+      }, currentTextIndex, getCompetitionsList, getTeamList, getRecommendedTeams, navigateTo, navigateToAiRecommend, viewAll, viewDetail, joinTeam, submitApplication, resetApplyForm, goToSearch, getStatusClass, showAiRecommendPopup, closeAiRecommendPopup, viewRecommendedTeam, resetAiRecommendForTesting, ref: vue.ref, onMounted: vue.onMounted, watch: vue.watch, getCurrentInstance: vue.getCurrentInstance, computed: vue.computed, nextTick: vue.nextTick, get teamApi() {
         return teamApi;
       }, get competitionsApi() {
         return competitionsApi;
       }, TeamCard, TabBar, HeaderBar, get api() {
         return api;
+      }, get store() {
+        return store;
       } };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
     }
   };
-  function _sfc_render$m(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$t(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_uni_popup = resolveEasycom(vue.resolveDynamicComponent("uni-popup"), __easycom_0$3);
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
@@ -3020,7 +3587,9 @@ if (uni.restoreGlobal) {
         {
           ref: "headerBarRef",
           title: "校园任务与组队平台",
-          onSearch: $setup.goToSearch
+          "show-ai-recommend": true,
+          onSearch: $setup.goToSearch,
+          onAiRecommend: $setup.navigateToAiRecommend
         },
         null,
         512
@@ -3238,10 +3807,20 @@ if (uni.restoreGlobal) {
         vue.createElementVNode("view", { class: "section" }, [
           vue.createElementVNode("view", { class: "section-header" }, [
             vue.createElementVNode("text", { class: "section-title animate__animated animate__fadeInLeft" }, "热门队伍"),
-            vue.createElementVNode("text", {
-              class: "view-all animate__animated animate__fadeInRight",
-              onClick: _cache[5] || (_cache[5] = ($event) => $setup.viewAll("team"))
-            }, "查看全部")
+            vue.createElementVNode(
+              "view",
+              {
+                class: "ai-recommend-btn",
+                onClick: $setup.showAiRecommendPopup,
+                onLongpress: $setup.resetAiRecommendForTesting
+              },
+              [
+                vue.createElementVNode("text", { class: "iconfont icon-ai" }),
+                vue.createElementVNode("text", { class: "ai-text" }, "AI智能推荐")
+              ],
+              32
+              /* NEED_HYDRATION */
+            )
           ]),
           vue.createElementVNode("view", { class: "team-list" }, [
             vue.createCommentVNode(" 使用团队卡片组件 "),
@@ -3253,7 +3832,7 @@ if (uni.restoreGlobal) {
                   key: team.id,
                   team,
                   index,
-                  onDetail: _cache[6] || (_cache[6] = (id) => $setup.viewDetail("team", id)),
+                  onDetail: _cache[5] || (_cache[5] = (id) => $setup.viewDetail("team", id)),
                   onApply: $setup.joinTeam
                 }, null, 8, ["team", "index"]);
               }),
@@ -3275,7 +3854,7 @@ if (uni.restoreGlobal) {
         ref: "applyPopup",
         type: "center",
         show: $setup.showApplyModal,
-        onChange: _cache[10] || (_cache[10] = (e) => {
+        onChange: _cache[9] || (_cache[9] = (e) => {
           if (!e.show)
             $setup.resetApplyForm();
         })
@@ -3286,7 +3865,7 @@ if (uni.restoreGlobal) {
               vue.createElementVNode("text", { class: "popup-title" }, "申请加入团队"),
               vue.createElementVNode("text", {
                 class: "close-icon",
-                onClick: _cache[7] || (_cache[7] = ($event) => $setup.showApplyModal = false)
+                onClick: _cache[6] || (_cache[6] = ($event) => $setup.showApplyModal = false)
               }, "×")
             ]),
             vue.createElementVNode("view", { class: "popup-content" }, [
@@ -3332,7 +3911,7 @@ if (uni.restoreGlobal) {
                   "textarea",
                   {
                     class: "message-input",
-                    "onUpdate:modelValue": _cache[8] || (_cache[8] = ($event) => $setup.applyMessage = $event),
+                    "onUpdate:modelValue": _cache[7] || (_cache[7] = ($event) => $setup.applyMessage = $event),
                     placeholder: "请输入申请留言",
                     maxlength: "100"
                   },
@@ -3354,7 +3933,7 @@ if (uni.restoreGlobal) {
             vue.createElementVNode("view", { class: "popup-footer" }, [
               vue.createElementVNode("button", {
                 class: "cancel-btn",
-                onClick: _cache[9] || (_cache[9] = ($event) => $setup.showApplyModal = false)
+                onClick: _cache[8] || (_cache[8] = ($event) => $setup.showApplyModal = false)
               }, "取消"),
               vue.createElementVNode("button", {
                 class: "submit-btn",
@@ -3366,10 +3945,118 @@ if (uni.restoreGlobal) {
         ]),
         _: 1
         /* STABLE */
-      }, 8, ["show"])
+      }, 8, ["show"]),
+      vue.createCommentVNode(" 添加AI推荐弹窗 "),
+      vue.createVNode(
+        _component_uni_popup,
+        {
+          ref: "aiRecommendPopup",
+          type: "center"
+        },
+        {
+          default: vue.withCtx(() => [
+            vue.createElementVNode("view", { class: "ai-popup" }, [
+              vue.createElementVNode("view", { class: "popup-header" }, [
+                vue.createElementVNode("text", { class: "popup-title" }, "AI智能推荐"),
+                vue.createElementVNode("text", {
+                  class: "close-icon",
+                  onClick: $setup.closeAiRecommendPopup
+                }, "×")
+              ]),
+              vue.createElementVNode("view", { class: "popup-content" }, [
+                vue.createCommentVNode(" 分析中动画 "),
+                $setup.aiAnalyzing ? (vue.openBlock(), vue.createElementBlock("view", {
+                  key: 0,
+                  class: "ai-analyzing"
+                }, [
+                  vue.createElementVNode("view", { class: "ai-icon-container" }, [
+                    vue.createElementVNode("text", { class: "iconfont icon-ai ai-icon" })
+                  ]),
+                  vue.createElementVNode("view", { class: "analyzing-text" }, [
+                    vue.createElementVNode(
+                      "text",
+                      null,
+                      vue.toDisplayString($setup.aiAnalyzingTexts[$setup.currentTextIndex]),
+                      1
+                      /* TEXT */
+                    )
+                  ]),
+                  vue.createElementVNode("view", { class: "loading-dots" }, [
+                    vue.createElementVNode("view", { class: "dot" }),
+                    vue.createElementVNode("view", { class: "dot" }),
+                    vue.createElementVNode("view", { class: "dot" })
+                  ])
+                ])) : (vue.openBlock(), vue.createElementBlock(
+                  vue.Fragment,
+                  { key: 1 },
+                  [
+                    vue.createCommentVNode(" 推荐结果 "),
+                    vue.createElementVNode("view", null, [
+                      vue.createCommentVNode(" AI分析摘要 "),
+                      $setup.aiSummary ? (vue.openBlock(), vue.createElementBlock("view", {
+                        key: 0,
+                        class: "ai-summary"
+                      }, [
+                        vue.createElementVNode("view", { class: "summary-header" }, [
+                          vue.createElementVNode("text", { class: "summary-title" }, "✨ AI分析结果")
+                        ]),
+                        vue.createElementVNode(
+                          "text",
+                          { class: "summary-content" },
+                          vue.toDisplayString($setup.aiSummary),
+                          1
+                          /* TEXT */
+                        )
+                      ])) : vue.createCommentVNode("v-if", true),
+                      vue.createCommentVNode(" 推荐队伍列表 "),
+                      vue.createElementVNode("scroll-view", {
+                        class: "recommend-teams-scroll",
+                        "scroll-y": ""
+                      }, [
+                        $setup.recommendedTeams.length > 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+                          key: 0,
+                          class: "recommend-teams"
+                        }, [
+                          (vue.openBlock(true), vue.createElementBlock(
+                            vue.Fragment,
+                            null,
+                            vue.renderList($setup.recommendedTeams.slice(0, 3), (team, index) => {
+                              return vue.openBlock(), vue.createBlock($setup["TeamCard"], {
+                                key: team.id,
+                                team,
+                                index,
+                                "show-match": true,
+                                onDetail: $setup.viewRecommendedTeam,
+                                onApply: $setup.joinTeam
+                              }, null, 8, ["team", "index"]);
+                            }),
+                            128
+                            /* KEYED_FRAGMENT */
+                          ))
+                        ])) : (vue.openBlock(), vue.createElementBlock("view", {
+                          key: 1,
+                          class: "empty-recommend"
+                        }, [
+                          vue.createElementVNode("text", null, "暂无推荐结果，请完善个人资料后再试")
+                        ]))
+                      ])
+                    ])
+                  ],
+                  2112
+                  /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */
+                ))
+              ])
+            ])
+          ]),
+          _: 1
+          /* STABLE */
+        },
+        512
+        /* NEED_PATCH */
+      )
     ]);
   }
-  const PagesIndexIndex = /* @__PURE__ */ _export_sfc(_sfc_main$n, [["render", _sfc_render$m], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/index/index.vue"]]);
+  const PagesIndexIndex = /* @__PURE__ */ _export_sfc(_sfc_main$u, [["render", _sfc_render$t], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/index/index.vue"]]);
   const isObject = (val) => val !== null && typeof val === "object";
   const defaultDelimiters = ["{", "}"];
   class BaseFormatter {
@@ -3683,7 +4370,7 @@ if (uni.restoreGlobal) {
   const {
     t: t$2
   } = initVueI18n(messages);
-  const _sfc_main$m = {
+  const _sfc_main$t = {
     name: "UniLoadMore",
     emits: ["clickLoadMore"],
     props: {
@@ -3765,7 +4452,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$l(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$s(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", {
       class: "uni-load-more",
       onClick: _cache[0] || (_cache[0] = (...args) => $options.onClick && $options.onClick(...args))
@@ -3840,11 +4527,11 @@ if (uni.restoreGlobal) {
       )) : vue.createCommentVNode("v-if", true)
     ]);
   }
-  const __easycom_0$2 = /* @__PURE__ */ _export_sfc(_sfc_main$m, [["render", _sfc_render$l], ["__scopeId", "data-v-9245e42c"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-load-more/components/uni-load-more/uni-load-more.vue"]]);
-  const _imports_0$2 = "/static/empty-task.png";
+  const __easycom_0$2 = /* @__PURE__ */ _export_sfc(_sfc_main$t, [["render", _sfc_render$s], ["__scopeId", "data-v-9245e42c"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-load-more/components/uni-load-more/uni-load-more.vue"]]);
+  const _imports_0$3 = "/static/empty-task.png";
   const defaultAvatar$1 = "https://via.placeholder.com/100";
   const mainCategoryCount = 4;
-  const _sfc_main$l = {
+  const _sfc_main$s = {
     __name: "index",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -4129,7 +4816,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$k(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$r(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_uni_load_more = resolveEasycom(vue.resolveDynamicComponent("uni-load-more"), __easycom_0$2);
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部固定区域 "),
@@ -4416,7 +5103,7 @@ if (uni.restoreGlobal) {
           }, [
             vue.createElementVNode("image", {
               class: "empty-image",
-              src: _imports_0$2,
+              src: _imports_0$3,
               mode: "aspectFit"
             }),
             vue.createElementVNode("text", { class: "empty-text" }, "暂无任务数据")
@@ -4453,9 +5140,9 @@ if (uni.restoreGlobal) {
       ])
     ]);
   }
-  const PagesTaskSquareIndex = /* @__PURE__ */ _export_sfc(_sfc_main$l, [["render", _sfc_render$k], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/task-square/index.vue"]]);
+  const PagesTaskSquareIndex = /* @__PURE__ */ _export_sfc(_sfc_main$s, [["render", _sfc_render$r], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/task-square/index.vue"]]);
   const defaultAvatar = "https://via.placeholder.com/100";
-  const _sfc_main$k = {
+  const _sfc_main$r = {
     __name: "detail",
     setup(__props, { expose: __expose }) {
       const taskId = vue.ref(null);
@@ -4498,7 +5185,7 @@ if (uni.restoreGlobal) {
           }
           return contactData;
         } catch (e) {
-          formatAppLog("error", "at pages/task-square/detail.vue:184", "解析联系方式失败:", e);
+          formatAppLog("error", "at pages/task-square/detail.vue:178", "解析联系方式失败:", e);
           return null;
         }
       });
@@ -4520,69 +5207,70 @@ if (uni.restoreGlobal) {
         return false;
       });
       vue.onMounted(() => {
-        const eventChannel = getEventChannel();
-        if (eventChannel) {
-          eventChannel.on("taskId", (data) => {
-            taskId.value = data.id;
-            getTaskDetail(data.id);
-          });
-        } else {
+        getTaskIdAndLoadDetail();
+      });
+      function getTaskIdAndLoadDetail() {
+        try {
+          let id = null;
           const pages = getCurrentPages();
-          const currentPage = pages[pages.length - 1];
-          let id;
-          if (currentPage.options && currentPage.options.id) {
-            id = currentPage.options.id;
-          } else if (currentPage.$page && currentPage.$page.fullPath) {
-            const query = currentPage.$page.fullPath.split("?")[1];
-            if (query) {
-              const params = new URLSearchParams(query);
-              id = params.get("id");
+          if (pages && pages.length > 0) {
+            const currentPage = pages[pages.length - 1];
+            if (currentPage.options && currentPage.options.id) {
+              id = currentPage.options.id;
+            } else if (currentPage.$page && currentPage.$page.fullPath) {
+              const fullPath = currentPage.$page.fullPath;
+              const queryIndex = fullPath.indexOf("?");
+              if (queryIndex > -1) {
+                const queryPart = fullPath.substring(queryIndex + 1);
+                const queryParams = queryPart.split("&");
+                for (let param of queryParams) {
+                  const [key, value] = param.split("=");
+                  if (key === "id" && value) {
+                    id = value;
+                    break;
+                  }
+                }
+              }
+            } else if (currentPage.__displayReporter && currentPage.__displayReporter.query) {
+              id = currentPage.__displayReporter.query.id;
             }
-          } else if (currentPage.route && currentPage.__displayReporter && currentPage.__displayReporter.query) {
-            id = currentPage.__displayReporter.query.id;
-          } else {
-            uni.$once("task-detail-params", (params) => {
-              if (params && params.id) {
-                taskId.value = params.id;
-                getTaskDetail(params.id);
-              }
-            });
-            setTimeout(() => {
-              if (!taskId.value) {
-                uni.showToast({
-                  title: "任务ID无效，请返回重试",
-                  icon: "none"
-                });
-              }
-            }, 300);
-            return;
           }
           if (id) {
             taskId.value = id;
             getTaskDetail(id);
           } else {
             uni.showToast({
-              title: "任务ID无效",
+              title: "无法获取任务信息",
               icon: "none"
             });
+            setTimeout(() => {
+              uni.navigateBack();
+            }, 1500);
           }
+        } catch (error) {
+          formatAppLog("error", "at pages/task-square/detail.vue:273", "获取任务ID出错:", error);
+          uni.showToast({
+            title: "加载任务详情失败",
+            icon: "none"
+          });
         }
-      });
+      }
       __expose({
         onLoad(options) {
           if (options && options.id) {
-            uni.$emit("task-detail-params", options);
+            taskId.value = options.id;
+            getTaskDetail(options.id);
           }
         }
       });
-      function getEventChannel() {
-        const currentPage = getCurrentPages().pop();
-        if (currentPage && currentPage.$page) {
-          return currentPage.$page.fullPath.eventChannel;
-        }
-        return null;
-      }
       async function getTaskDetail(id) {
+        if (!id) {
+          uni.showToast({
+            title: "任务ID无效",
+            icon: "none"
+          });
+          return;
+        }
         try {
           uni.showLoading({
             title: "加载中..."
@@ -4594,45 +5282,20 @@ if (uni.restoreGlobal) {
           if (res.code === 200 && res.data) {
             taskDetail.value = res.data;
             checkIfAlreadyApplied(id);
+            if (taskDetail.value.title) {
+              uni.setNavigationBarTitle({
+                title: "任务详情"
+              });
+            }
           } else {
-            formatAppLog("error", "at pages/task-square/detail.vue:322", "获取任务详情失败:", res);
+            formatAppLog("error", "at pages/task-square/detail.vue:325", "获取任务详情失败:", res);
             uni.showToast({
               title: "获取任务详情失败",
               icon: "none"
             });
           }
         } catch (error) {
-          formatAppLog("error", "at pages/task-square/detail.vue:329", "获取任务详情异常:", error);
-          taskDetail.value = {
-            id,
-            title: "图书馆志愿者服务",
-            description: "协助图书馆整理书籍、指导学生使用图书检索系统，并维持阅览室秩序。需要有耐心和良好的沟通能力，熟悉图书馆分类系统优先。",
-            requirements: "1. 有责任心，能按时参与服务\n2. 熟悉图书馆基本布局和分类\n3. 具有良好沟通能力和耐心\n4. 每周至少能保证3小时志愿时间",
-            contactInfo: {
-              phone: "13800138000",
-              wechat: "library_volunteer"
-            },
-            categoryId: 6,
-            categoryName: "志愿服务",
-            creatorId: 10,
-            creatorName: "张同学",
-            creatorAvatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100",
-            creatorMajor: "计算机学院",
-            rewardTypeId: 2,
-            rewardTypeName: "学分",
-            rewardAmount: 5,
-            createdAt: new Date((/* @__PURE__ */ new Date()).getTime() - 3 * 60 * 60 * 1e3).toISOString(),
-            deadline: new Date((/* @__PURE__ */ new Date()).getTime() + 7 * 24 * 60 * 60 * 1e3).toISOString(),
-            status: "ongoing",
-            maxParticipants: 5,
-            currentParticipants: 3,
-            viewCount: 128,
-            location: "中心图书馆 3楼"
-          };
-          uni.showToast({
-            title: "网络异常，显示示例数据",
-            icon: "none"
-          });
+          formatAppLog("error", "at pages/task-square/detail.vue:334", "获取任务详情异常:", error);
         } finally {
           uni.hideLoading();
         }
@@ -4796,29 +5459,6 @@ if (uni.restoreGlobal) {
       function goBack() {
         uni.navigateBack();
       }
-      function shareTask() {
-        if (!taskDetail.value.title)
-          return;
-        uni.share({
-          provider: "weixin",
-          scene: "WXSceneSession",
-          type: 0,
-          title: taskDetail.value.title,
-          summary: taskDetail.value.description,
-          imageUrl: "",
-          href: ``,
-          success: function(res) {
-            formatAppLog("log", "at pages/task-square/detail.vue:570", "分享成功：", res);
-          },
-          fail: function(err) {
-            formatAppLog("log", "at pages/task-square/detail.vue:573", "分享失败：", err);
-            uni.showToast({
-              title: "分享功能开发中",
-              icon: "none"
-            });
-          }
-        });
-      }
       async function toggleFavorite() {
         if (!taskId.value)
           return;
@@ -4830,7 +5470,7 @@ if (uni.restoreGlobal) {
             isAlreadyApplied.value = response.data.participated || false;
           }
         } catch (error) {
-          formatAppLog("error", "at pages/task-square/detail.vue:611", "检查申请状态失败:", error);
+          formatAppLog("error", "at pages/task-square/detail.vue:561", "检查申请状态失败:", error);
           isAlreadyApplied.value = false;
         }
       }
@@ -4874,7 +5514,7 @@ if (uni.restoreGlobal) {
                 }
               } catch (error) {
                 uni.hideLoading();
-                formatAppLog("error", "at pages/task-square/detail.vue:665", "申请任务失败:", error);
+                formatAppLog("error", "at pages/task-square/detail.vue:615", "申请任务失败:", error);
                 uni.showToast({
                   title: "申请失败，请稍后重试",
                   icon: "none"
@@ -4948,44 +5588,31 @@ if (uni.restoreGlobal) {
           }
         } catch (error) {
           uni.hideLoading();
-          formatAppLog("error", "at pages/task-square/detail.vue:754", "更新任务状态失败:", error);
+          formatAppLog("error", "at pages/task-square/detail.vue:704", "更新任务状态失败:", error);
           uni.showToast({
             title: "网络异常，请稍后重试",
             icon: "none"
           });
         }
       }
-      const __returned__ = { defaultAvatar, taskId, isFavorite, viewCounted, favoriteCount, isAlreadyApplied, taskDetail, contactInfo, validContacts, isApplyDisabled, getEventChannel, getTaskDetail, formatDeadline, formatTimeAgo, getStatusText, getStatusClass, getRewardTypeText, getRewardClass, getContactTypeText, copyContactInfo, getApplyButtonText, goBack, shareTask, toggleFavorite, checkIfAlreadyApplied, applyTask, updateTaskStatus, doUpdateTaskStatus, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, reactive: vue.reactive, get request() {
+      const __returned__ = { defaultAvatar, taskId, isFavorite, viewCounted, favoriteCount, isAlreadyApplied, taskDetail, contactInfo, validContacts, isApplyDisabled, getTaskIdAndLoadDetail, getTaskDetail, formatDeadline, formatTimeAgo, getStatusText, getStatusClass, getRewardTypeText, getRewardClass, getContactTypeText, copyContactInfo, getApplyButtonText, goBack, toggleFavorite, checkIfAlreadyApplied, applyTask, updateTaskStatus, doUpdateTaskStatus, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, reactive: vue.reactive, get request() {
         return request;
       }, get api() {
         return api;
-      } };
+      }, HeaderBar };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
     }
   };
-  function _sfc_render$j(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$q(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
-      vue.createCommentVNode(" 顶部导航栏 "),
-      vue.createElementVNode("view", { class: "header" }, [
-        vue.createElementVNode("view", { class: "navbar" }, [
-          vue.createElementVNode("view", {
-            class: "back-btn",
-            onClick: $setup.goBack
-          }, [
-            vue.createElementVNode("text", { class: "iconfont icon-back" })
-          ]),
-          vue.createElementVNode("view", { class: "title" }, "任务详情"),
-          vue.createElementVNode("view", { class: "right-btns" }, [
-            vue.createElementVNode("view", {
-              class: "action-btn",
-              onClick: $setup.shareTask
-            }, [
-              vue.createElementVNode("text", { class: "iconfont icon-share" })
-            ])
-          ])
-        ])
-      ]),
+      vue.createCommentVNode(" 顶部导航栏 - 使用HeaderBar组件 "),
+      vue.createVNode($setup["HeaderBar"], {
+        title: "任务详情",
+        "show-search": false,
+        "show-filter": false,
+        onBack: $setup.goBack
+      }),
       vue.createCommentVNode(" 任务详情内容 "),
       vue.createElementVNode("scroll-view", {
         "scroll-y": "",
@@ -5228,7 +5855,7 @@ if (uni.restoreGlobal) {
       ])
     ]);
   }
-  const PagesTaskSquareDetail = /* @__PURE__ */ _export_sfc(_sfc_main$k, [["render", _sfc_render$j], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/task-square/detail.vue"]]);
+  const PagesTaskSquareDetail = /* @__PURE__ */ _export_sfc(_sfc_main$r, [["render", _sfc_render$q], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/task-square/detail.vue"]]);
   const fontData = [
     {
       "font_class": "arrow-down",
@@ -5879,7 +6506,7 @@ if (uni.restoreGlobal) {
     const reg = /^[0-9]*$/g;
     return typeof val === "number" || reg.test(val) ? val + "px" : val;
   };
-  const _sfc_main$j = {
+  const _sfc_main$q = {
     name: "UniIcons",
     emits: ["click"],
     props: {
@@ -5933,7 +6560,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$i(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$p(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock(
       "text",
       {
@@ -5948,7 +6575,7 @@ if (uni.restoreGlobal) {
       /* CLASS, STYLE */
     );
   }
-  const __easycom_0$1 = /* @__PURE__ */ _export_sfc(_sfc_main$j, [["render", _sfc_render$i], ["__scopeId", "data-v-d31e1c47"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-icons/components/uni-icons/uni-icons.vue"]]);
+  const __easycom_0$1 = /* @__PURE__ */ _export_sfc(_sfc_main$q, [["render", _sfc_render$p], ["__scopeId", "data-v-d31e1c47"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-icons/components/uni-icons/uni-icons.vue"]]);
   function obj2strClass(obj) {
     let classess = "";
     for (let key in obj) {
@@ -5967,7 +6594,7 @@ if (uni.restoreGlobal) {
     }
     return style;
   }
-  const _sfc_main$i = {
+  const _sfc_main$p = {
     name: "uni-easyinput",
     emits: [
       "click",
@@ -6316,7 +6943,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$h(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$o(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_uni_icons = resolveEasycom(vue.resolveDynamicComponent("uni-icons"), __easycom_0$1);
     return vue.openBlock(), vue.createElementBlock(
       "view",
@@ -6441,8 +7068,8 @@ if (uni.restoreGlobal) {
       /* CLASS, STYLE */
     );
   }
-  const __easycom_0 = /* @__PURE__ */ _export_sfc(_sfc_main$i, [["render", _sfc_render$h], ["__scopeId", "data-v-09fd5285"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-easyinput/components/uni-easyinput/uni-easyinput.vue"]]);
-  const _sfc_main$h = {
+  const __easycom_0 = /* @__PURE__ */ _export_sfc(_sfc_main$p, [["render", _sfc_render$o], ["__scopeId", "data-v-09fd5285"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-easyinput/components/uni-easyinput/uni-easyinput.vue"]]);
+  const _sfc_main$o = {
     name: "uniFormsItem",
     options: {
       virtualHost: true
@@ -6774,7 +7401,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$g(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$n(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock(
       "view",
       {
@@ -6830,7 +7457,7 @@ if (uni.restoreGlobal) {
       /* CLASS */
     );
   }
-  const __easycom_1$1 = /* @__PURE__ */ _export_sfc(_sfc_main$h, [["render", _sfc_render$g], ["__scopeId", "data-v-462874dd"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-forms/components/uni-forms-item/uni-forms-item.vue"]]);
+  const __easycom_1$1 = /* @__PURE__ */ _export_sfc(_sfc_main$o, [["render", _sfc_render$n], ["__scopeId", "data-v-462874dd"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-forms/components/uni-forms-item/uni-forms-item.vue"]]);
   let Calendar$1 = class Calendar {
     constructor({
       selected,
@@ -7186,7 +7813,7 @@ if (uni.restoreGlobal) {
     }
     return value;
   }
-  const _sfc_main$g = {
+  const _sfc_main$n = {
     props: {
       weeks: {
         type: Object,
@@ -7220,7 +7847,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$f(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$m(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock(
       "view",
       {
@@ -7276,7 +7903,7 @@ if (uni.restoreGlobal) {
       /* CLASS, NEED_HYDRATION */
     );
   }
-  const calendarItem = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["render", _sfc_render$f], ["__scopeId", "data-v-3c762a01"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-datetime-picker/components/uni-datetime-picker/calendar-item.vue"]]);
+  const calendarItem = /* @__PURE__ */ _export_sfc(_sfc_main$n, [["render", _sfc_render$m], ["__scopeId", "data-v-3c762a01"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-datetime-picker/components/uni-datetime-picker/calendar-item.vue"]]);
   const en = {
     "uni-datetime-picker.selectDate": "select date",
     "uni-datetime-picker.selectTime": "select time",
@@ -7351,7 +7978,7 @@ if (uni.restoreGlobal) {
   const {
     t: t$1
   } = initVueI18n(i18nMessages);
-  const _sfc_main$f = {
+  const _sfc_main$m = {
     name: "UniDatetimePicker",
     data() {
       return {
@@ -7955,7 +8582,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$e(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$l(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "uni-datetime-picker" }, [
       vue.createElementVNode("view", {
         onClick: _cache[0] || (_cache[0] = (...args) => $options.initTimePicker && $options.initTimePicker(...args))
@@ -8232,11 +8859,11 @@ if (uni.restoreGlobal) {
       )) : vue.createCommentVNode("v-if", true)
     ]);
   }
-  const TimePicker = /* @__PURE__ */ _export_sfc(_sfc_main$f, [["render", _sfc_render$e], ["__scopeId", "data-v-1d532b70"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-datetime-picker/components/uni-datetime-picker/time-picker.vue"]]);
+  const TimePicker = /* @__PURE__ */ _export_sfc(_sfc_main$m, [["render", _sfc_render$l], ["__scopeId", "data-v-1d532b70"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-datetime-picker/components/uni-datetime-picker/time-picker.vue"]]);
   const {
     t
   } = initVueI18n(i18nMessages);
-  const _sfc_main$e = {
+  const _sfc_main$l = {
     components: {
       calendarItem,
       timePicker: TimePicker
@@ -8717,7 +9344,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$d(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$k(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_calendar_item = vue.resolveComponent("calendar-item");
     const _component_time_picker = vue.resolveComponent("time-picker");
     const _component_uni_icons = resolveEasycom(vue.resolveDynamicComponent("uni-icons"), __easycom_0$1);
@@ -9010,8 +9637,8 @@ if (uni.restoreGlobal) {
       /* NEED_HYDRATION */
     );
   }
-  const Calendar = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["render", _sfc_render$d], ["__scopeId", "data-v-1d379219"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-datetime-picker/components/uni-datetime-picker/calendar.vue"]]);
-  const _sfc_main$d = {
+  const Calendar = /* @__PURE__ */ _export_sfc(_sfc_main$l, [["render", _sfc_render$k], ["__scopeId", "data-v-1d379219"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-datetime-picker/components/uni-datetime-picker/calendar.vue"]]);
+  const _sfc_main$k = {
     name: "UniDatetimePicker",
     options: {
       virtualHost: true
@@ -9667,7 +10294,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$c(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$j(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_uni_icons = resolveEasycom(vue.resolveDynamicComponent("uni-icons"), __easycom_0$1);
     const _component_time_picker = vue.resolveComponent("time-picker");
     const _component_Calendar = vue.resolveComponent("Calendar");
@@ -10011,8 +10638,8 @@ if (uni.restoreGlobal) {
       }, null, 8, ["date", "defTime", "start-date", "end-date", "selectableTimes", "startPlaceholder", "endPlaceholder", "default-value", "pleStatus", "range", "hasTime", "hideSecond", "onConfirm", "onMaskClose", "onChange"])) : vue.createCommentVNode("v-if", true)
     ]);
   }
-  const __easycom_1 = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["render", _sfc_render$c], ["__scopeId", "data-v-9802168a"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-datetime-picker/components/uni-datetime-picker/uni-datetime-picker.vue"]]);
-  const _sfc_main$c = {
+  const __easycom_1 = /* @__PURE__ */ _export_sfc(_sfc_main$k, [["render", _sfc_render$j], ["__scopeId", "data-v-9802168a"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-datetime-picker/components/uni-datetime-picker/uni-datetime-picker.vue"]]);
+  const _sfc_main$j = {
     name: "UniNumberBox",
     emits: ["change", "input", "update:modelValue", "blur", "focus"],
     props: {
@@ -10141,7 +10768,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$b(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$i(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "uni-numbox" }, [
       vue.createElementVNode(
         "view",
@@ -10200,7 +10827,7 @@ if (uni.restoreGlobal) {
       )
     ]);
   }
-  const __easycom_3 = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["render", _sfc_render$b], ["__scopeId", "data-v-7ae2ee72"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-number-box/components/uni-number-box/uni-number-box.vue"]]);
+  const __easycom_3 = /* @__PURE__ */ _export_sfc(_sfc_main$j, [["render", _sfc_render$i], ["__scopeId", "data-v-7ae2ee72"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-number-box/components/uni-number-box/uni-number-box.vue"]]);
   var pattern = {
     email: /^\S+?@\S+?\.\S+?$/,
     idcard: /^[1-9]\d{5}(18|19|([23]\d))\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$/,
@@ -10764,7 +11391,7 @@ if (uni.restoreGlobal) {
       return false;
     }
   };
-  const _sfc_main$b = {
+  const _sfc_main$i = {
     name: "uniForms",
     emits: ["validate", "submit"],
     options: {
@@ -11061,14 +11688,14 @@ if (uni.restoreGlobal) {
       _isEqual: isEqual
     }
   };
-  function _sfc_render$a(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$h(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "uni-forms" }, [
       vue.createElementVNode("form", null, [
         vue.renderSlot(_ctx.$slots, "default", {}, void 0, true)
       ])
     ]);
   }
-  const __easycom_4 = /* @__PURE__ */ _export_sfc(_sfc_main$b, [["render", _sfc_render$a], ["__scopeId", "data-v-9a1e3c32"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-forms/components/uni-forms/uni-forms.vue"]]);
+  const __easycom_4 = /* @__PURE__ */ _export_sfc(_sfc_main$i, [["render", _sfc_render$h], ["__scopeId", "data-v-9a1e3c32"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-forms/components/uni-forms/uni-forms.vue"]]);
   const baseApiUrl = config.baseUrl;
   function createTask(data) {
     return request({
@@ -11089,7 +11716,7 @@ if (uni.restoreGlobal) {
       method: "GET"
     });
   }
-  const _sfc_main$a = {
+  const _sfc_main$h = {
     __name: "create",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -11382,7 +12009,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$9(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$g(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_uni_easyinput = resolveEasycom(vue.resolveDynamicComponent("uni-easyinput"), __easycom_0);
     const _component_uni_forms_item = resolveEasycom(vue.resolveDynamicComponent("uni-forms-item"), __easycom_1$1);
     const _component_uni_datetime_picker = resolveEasycom(vue.resolveDynamicComponent("uni-datetime-picker"), __easycom_1);
@@ -11845,8 +12472,8 @@ if (uni.restoreGlobal) {
       ])
     ]);
   }
-  const PagesTaskSquareCreate = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["render", _sfc_render$9], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/task-square/create.vue"]]);
-  const _sfc_main$9 = {
+  const PagesTaskSquareCreate = /* @__PURE__ */ _export_sfc(_sfc_main$h, [["render", _sfc_render$g], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/task-square/create.vue"]]);
+  const _sfc_main$g = {
     data() {
       return {
         defaultAvatar: "/static/images/default-avatar.png",
@@ -12209,7 +12836,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$8(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$f(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createElementVNode("view", { class: "top-bar" }, [
@@ -12600,8 +13227,8 @@ if (uni.restoreGlobal) {
       ])) : vue.createCommentVNode("v-if", true)
     ]);
   }
-  const PagesTeamDetail = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["render", _sfc_render$8], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/team/detail.vue"]]);
-  const _sfc_main$8 = {
+  const PagesTeamDetail = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["render", _sfc_render$f], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/team/detail.vue"]]);
+  const _sfc_main$f = {
     __name: "list",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -12844,7 +13471,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$7(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$e(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createVNode($setup["HeaderBar"], {
@@ -12938,8 +13565,8 @@ if (uni.restoreGlobal) {
       })
     ]);
   }
-  const PagesTeamList = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["render", _sfc_render$7], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/team/list.vue"]]);
-  const _sfc_main$7 = {
+  const PagesTeamList = /* @__PURE__ */ _export_sfc(_sfc_main$f, [["render", _sfc_render$e], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/team/list.vue"]]);
+  const _sfc_main$e = {
     __name: "create",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -12985,10 +13612,20 @@ if (uni.restoreGlobal) {
           uni.showLoading({
             title: "加载中..."
           });
+          const selectedId = form.competitionId;
+          let tempCompetition = null;
+          if (selectedId) {
+            tempCompetition = competitionList.value.find((item) => item.id === selectedId);
+          }
           const res = await competitionsApi.getCompetitionsBasicInfo();
           if (res && res.code === 200 && res.data) {
-            competitionList.value = res.data;
-            filteredCompetitionList.value = [...res.data];
+            const apiHasSelectedCompetition = res.data.some((item) => item.id === selectedId);
+            if (selectedId && !apiHasSelectedCompetition && tempCompetition) {
+              competitionList.value = [...res.data, tempCompetition];
+            } else {
+              competitionList.value = res.data;
+            }
+            filteredCompetitionList.value = [...competitionList.value];
             const categories = /* @__PURE__ */ new Map();
             categories.set(0, { id: 0, name: "全部分类" });
             res.data.forEach((item) => {
@@ -13000,11 +13637,14 @@ if (uni.restoreGlobal) {
               }
             });
             competitionCategories.value = Array.from(categories.values());
+            formatAppLog("log", "at pages/team/create.vue:573", "API请求结果:", res.data);
+            formatAppLog("log", "at pages/team/create.vue:574", "处理后的竞赛列表:", competitionList.value);
+            formatAppLog("log", "at pages/team/create.vue:575", "当前选中竞赛ID:", selectedId);
           } else {
             showToast("获取竞赛列表失败");
           }
         } catch (error) {
-          formatAppLog("error", "at pages/team/create.vue:558", "获取竞赛列表失败:", error);
+          formatAppLog("error", "at pages/team/create.vue:580", "获取竞赛列表失败:", error);
           showToast("获取竞赛列表失败");
         } finally {
           uni.hideLoading();
@@ -13037,7 +13677,7 @@ if (uni.restoreGlobal) {
             showToast("获取教师列表失败");
           }
         } catch (error) {
-          formatAppLog("error", "at pages/team/create.vue:600", "获取教师列表失败:", error);
+          formatAppLog("error", "at pages/team/create.vue:622", "获取教师列表失败:", error);
           showToast("获取教师列表失败");
         } finally {
           uni.hideLoading();
@@ -13212,9 +13852,9 @@ if (uni.restoreGlobal) {
               skillRequirements: role.skills || []
             }))
           };
-          formatAppLog("log", "at pages/team/create.vue:846", "提交数据:", apiData);
+          formatAppLog("log", "at pages/team/create.vue:868", "提交数据:", apiData);
           const res = await teamApi.createTeam(apiData);
-          formatAppLog("log", "at pages/team/create.vue:850", res);
+          formatAppLog("log", "at pages/team/create.vue:872", res);
           uni.hideLoading();
           if (res.code === 200) {
             uni.showToast({
@@ -13228,15 +13868,41 @@ if (uni.restoreGlobal) {
             showToast(res.message || "创建失败");
           }
         } catch (error) {
-          formatAppLog("error", "at pages/team/create.vue:866", "创建团队失败:", error);
+          formatAppLog("error", "at pages/team/create.vue:888", "创建团队失败:", error);
           uni.hideLoading();
           showToast("创建失败，请稍后重试");
         }
       }
-      vue.onMounted(() => {
-        getCompetitionsBasicInfo();
-        getTeachersList();
-        getSkillTags();
+      vue.onMounted(async () => {
+        const pages = getCurrentPages();
+        const page = pages[pages.length - 1];
+        if (page.$page && page.$page.options) {
+          const { competitionId, competitionName } = page.$page.options;
+          if (competitionId) {
+            formatAppLog("log", "at pages/team/create.vue:904", "从URL获取到竞赛ID:", competitionId);
+            formatAppLog("log", "at pages/team/create.vue:905", "从URL获取到竞赛名称:", competitionName);
+            form.competitionId = competitionId;
+            if (competitionName) {
+              const decodedName = decodeURIComponent(competitionName);
+              formatAppLog("log", "at pages/team/create.vue:914", "解码后的竞赛名称:", decodedName);
+              const tempCompetition = {
+                id: competitionId,
+                title: decodedName,
+                categoryId: 0,
+                categoryName: "未分类"
+              };
+              competitionList.value.push(tempCompetition);
+              filteredCompetitionList.value = [...competitionList.value];
+              formatAppLog("log", "at pages/team/create.vue:927", "已添加临时竞赛对象:", tempCompetition);
+              formatAppLog("log", "at pages/team/create.vue:928", "当前竞赛列表:", competitionList.value);
+            }
+          }
+        }
+        await getCompetitionsBasicInfo();
+        await getTeachersList();
+        await getSkillTags();
+        await vue.nextTick();
+        formatAppLog("log", "at pages/team/create.vue:940", "竞赛选择组件:", competitionPopup.value);
       });
       function getCategoryClass(categoryId) {
         switch (categoryId) {
@@ -13307,13 +13973,13 @@ if (uni.restoreGlobal) {
               });
             });
             filteredSkillTags.value = allTags;
-            formatAppLog("log", "at pages/team/create.vue:981", "所有技能标签:", allTags);
-            formatAppLog("log", "at pages/team/create.vue:982", "分类:", categories);
+            formatAppLog("log", "at pages/team/create.vue:1045", "所有技能标签:", allTags);
+            formatAppLog("log", "at pages/team/create.vue:1046", "分类:", categories);
           } else {
             showToast("获取技能标签失败");
           }
         } catch (error) {
-          formatAppLog("error", "at pages/team/create.vue:987", "获取技能标签失败:", error);
+          formatAppLog("error", "at pages/team/create.vue:1051", "获取技能标签失败:", error);
           showToast("获取技能标签失败");
         } finally {
           uni.hideLoading();
@@ -13322,8 +13988,8 @@ if (uni.restoreGlobal) {
       function filterSkillsByCategory(category) {
         selectedSkillCategory.value = category;
         skillSearchKey.value = "";
-        formatAppLog("log", "at pages/team/create.vue:999", "筛选分类:", category);
-        formatAppLog("log", "at pages/team/create.vue:1000", "所有技能标签数据:", skillTags.value);
+        formatAppLog("log", "at pages/team/create.vue:1063", "筛选分类:", category);
+        formatAppLog("log", "at pages/team/create.vue:1064", "所有技能标签数据:", skillTags.value);
         if (category === "全部") {
           const allTags = [];
           Object.entries(skillTags.value).forEach(([cat, tags]) => {
@@ -13342,7 +14008,7 @@ if (uni.restoreGlobal) {
             category
           }));
         }
-        formatAppLog("log", "at pages/team/create.vue:1023", "筛选后的技能标签:", filteredSkillTags.value);
+        formatAppLog("log", "at pages/team/create.vue:1087", "筛选后的技能标签:", filteredSkillTags.value);
       }
       function confirmSkillSelection() {
         closeSkillModal();
@@ -13372,7 +14038,7 @@ if (uni.restoreGlobal) {
         }
       }
       function searchSkills() {
-        formatAppLog("log", "at pages/team/create.vue:1067", "搜索技能:", skillSearchKey.value);
+        formatAppLog("log", "at pages/team/create.vue:1131", "搜索技能:", skillSearchKey.value);
         if (!skillSearchKey.value.trim()) {
           filterSkillsByCategory(selectedSkillCategory.value);
           return;
@@ -13398,7 +14064,7 @@ if (uni.restoreGlobal) {
         filteredSkillTags.value = baseList.filter(
           (item) => item.tagName.toLowerCase().includes(keyword) || item.description && item.description.toLowerCase().includes(keyword)
         );
-        formatAppLog("log", "at pages/team/create.vue:1105", "搜索结果:", filteredSkillTags.value);
+        formatAppLog("log", "at pages/team/create.vue:1169", "搜索结果:", filteredSkillTags.value);
       }
       function clearSkillSearch() {
         skillSearchKey.value = "";
@@ -13410,7 +14076,7 @@ if (uni.restoreGlobal) {
         const role = form.roles[currentRoleIndex.value];
         return role.skills ? role.skills.length : 0;
       }
-      const __returned__ = { competitionPopup, teacherPopup, skillPopup, baseUrl, form, competitionList, filteredCompetitionList, competitionCategories, selectedCategoryId, teacherList, filteredTeacherList, teacherMajors, selectedMajorId, currentTeacherIndex, skillTags, skillCategories, selectedSkillCategory, currentRoleIndex, skillSearchKey, filteredSkillTags, skillInputs, teacherSearchKey, selectedCompetitionName, getCompetitionsBasicInfo, getTeachersList, filterCompetitionsByCategory, filterTeachersByMajor, goBack, showCompetitionModal, closeCompetitionModal, selectCompetition, confirmCompetitionSelection, showTeacherModal, closeTeacherModal, selectTeacher, confirmTeacherSelection, formatDate, padZero, addTeacher, removeTeacher, addRole, removeRole, addSkill, removeSkill, validateForm, showToast, submitTeam, getCategoryClass, isTeacherAlreadySelected, searchTeachers, clearTeacherSearch, showSkillModal, closeSkillModal, getSkillTags, filterSkillsByCategory, confirmSkillSelection, isSkillSelected, isSkillAlreadySelected, toggleSkillSelection, searchSkills, clearSkillSearch, getSelectedSkillsCount, ref: vue.ref, reactive: vue.reactive, computed: vue.computed, onMounted: vue.onMounted, get teamApi() {
+      const __returned__ = { competitionPopup, teacherPopup, skillPopup, baseUrl, form, competitionList, filteredCompetitionList, competitionCategories, selectedCategoryId, teacherList, filteredTeacherList, teacherMajors, selectedMajorId, currentTeacherIndex, skillTags, skillCategories, selectedSkillCategory, currentRoleIndex, skillSearchKey, filteredSkillTags, skillInputs, teacherSearchKey, selectedCompetitionName, getCompetitionsBasicInfo, getTeachersList, filterCompetitionsByCategory, filterTeachersByMajor, goBack, showCompetitionModal, closeCompetitionModal, selectCompetition, confirmCompetitionSelection, showTeacherModal, closeTeacherModal, selectTeacher, confirmTeacherSelection, formatDate, padZero, addTeacher, removeTeacher, addRole, removeRole, addSkill, removeSkill, validateForm, showToast, submitTeam, getCategoryClass, isTeacherAlreadySelected, searchTeachers, clearTeacherSearch, showSkillModal, closeSkillModal, getSkillTags, filterSkillsByCategory, confirmSkillSelection, isSkillSelected, isSkillAlreadySelected, toggleSkillSelection, searchSkills, clearSkillSearch, getSelectedSkillsCount, ref: vue.ref, reactive: vue.reactive, computed: vue.computed, onMounted: vue.onMounted, nextTick: vue.nextTick, get teamApi() {
         return teamApi;
       }, get competitionsApi() {
         return competitionsApi;
@@ -13421,7 +14087,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$6(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$d(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_uni_popup = resolveEasycom(vue.resolveDynamicComponent("uni-popup"), __easycom_0$3);
     const _component_uni_datetime_picker = resolveEasycom(vue.resolveDynamicComponent("uni-datetime-picker"), __easycom_1);
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
@@ -14289,8 +14955,258 @@ if (uni.restoreGlobal) {
       )
     ]);
   }
-  const PagesTeamCreate = /* @__PURE__ */ _export_sfc(_sfc_main$7, [["render", _sfc_render$6], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/team/create.vue"]]);
-  const _sfc_main$6 = {
+  const PagesTeamCreate = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["render", _sfc_render$d], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/team/create.vue"]]);
+  const _imports_0$2 = "/static/images/empty-data.png";
+  const _sfc_main$d = {
+    __name: "recommended",
+    setup(__props, { expose: __expose }) {
+      __expose();
+      const loading = vue.ref(true);
+      const recommendedTeams = vue.ref([]);
+      const aiSummary = vue.ref("");
+      const headerBarRef = vue.ref(null);
+      const headerPlaceholderHeight = vue.computed(() => {
+        if (headerBarRef.value && headerBarRef.value.headerHeight) {
+          return headerBarRef.value.headerHeight + "rpx";
+        }
+        return "120rpx";
+      });
+      async function getRecommendedTeams(forceRefresh = false) {
+        loading.value = true;
+        try {
+          formatAppLog("log", "at pages/team/recommended.vue:88", "开始获取AI推荐队伍数据，强制刷新:", forceRefresh);
+          let cachedTeams = null;
+          let cachedSummary = null;
+          let cacheTime = null;
+          try {
+            cachedTeams = uni.getStorageSync("ai_recommended_teams");
+            cachedSummary = uni.getStorageSync("ai_summary");
+            cacheTime = uni.getStorageSync("ai_recommend_cache_time");
+            formatAppLog("log", "at pages/team/recommended.vue:101", "缓存状态检查:");
+            formatAppLog("log", "at pages/team/recommended.vue:102", "- 缓存数据存在:", !!cachedTeams);
+            formatAppLog("log", "at pages/team/recommended.vue:103", "- 缓存时间:", cacheTime ? new Date(parseInt(cacheTime)).toLocaleString() : "无");
+          } catch (e) {
+            formatAppLog("error", "at pages/team/recommended.vue:105", "读取缓存出错:", e);
+          }
+          const currentTime = (/* @__PURE__ */ new Date()).getTime();
+          const cacheExpired = !cacheTime || isNaN(parseInt(cacheTime)) || currentTime - parseInt(cacheTime) > 24 * 60 * 60 * 1e3;
+          formatAppLog("log", "at pages/team/recommended.vue:112", "缓存是否过期:", cacheExpired);
+          if (cachedTeams && !cacheExpired && !forceRefresh) {
+            formatAppLog("log", "at pages/team/recommended.vue:116", "使用缓存的AI推荐数据");
+            try {
+              recommendedTeams.value = JSON.parse(cachedTeams);
+              aiSummary.value = cachedSummary || "根据您的专业、技能和兴趣，我们为您推荐了以下最匹配的团队";
+              formatAppLog("log", "at pages/team/recommended.vue:120", "成功加载缓存数据，推荐队伍数量:", recommendedTeams.value.length);
+              loading.value = false;
+              return;
+            } catch (e) {
+              formatAppLog("error", "at pages/team/recommended.vue:124", "解析缓存数据失败:", e);
+            }
+          }
+          formatAppLog("log", "at pages/team/recommended.vue:130", "请求新的AI推荐数据");
+          const res = await teamApi.getRecommendedTeams();
+          if (res.code === 200 && res.data) {
+            const teams = res.data.recommendedTeams || [];
+            recommendedTeams.value = teams.map((team) => {
+              return {
+                ...team,
+                matchScore: team.matchScore || Math.floor(Math.random() * 30) + 70,
+                // 如果没有匹配度，随机生成70-100之间的分数
+                matchReason: team.matchReason || team.recommendReason || "根据您的技能和兴趣推荐",
+                recommendedRole: team.recommendedRole || ""
+              };
+            });
+            aiSummary.value = res.data.aiSummary || "根据您的专业、技能和兴趣，我们为您推荐了以下最匹配的团队";
+            formatAppLog("log", "at pages/team/recommended.vue:146", "获取到新的AI推荐队伍数据:", recommendedTeams.value.length, "个队伍");
+            try {
+              uni.setStorageSync("ai_recommended_teams", JSON.stringify(recommendedTeams.value));
+              uni.setStorageSync("ai_summary", aiSummary.value);
+              uni.setStorageSync("ai_recommend_cache_time", currentTime.toString());
+              formatAppLog("log", "at pages/team/recommended.vue:153", "AI推荐数据缓存成功");
+            } catch (e) {
+              formatAppLog("error", "at pages/team/recommended.vue:155", "缓存AI推荐数据失败:", e);
+            }
+          } else {
+            formatAppLog("error", "at pages/team/recommended.vue:158", "获取推荐数据失败:", res.message || "未知错误");
+            if (cachedTeams) {
+              try {
+                recommendedTeams.value = JSON.parse(cachedTeams);
+                aiSummary.value = cachedSummary || "根据您的专业、技能和兴趣，我们为您推荐了以下最匹配的团队";
+                formatAppLog("log", "at pages/team/recommended.vue:164", "使用过期缓存作为备用数据");
+              } catch (e) {
+                formatAppLog("error", "at pages/team/recommended.vue:166", "解析旧缓存失败:", e);
+              }
+            }
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/team/recommended.vue:171", "获取AI推荐队伍失败:", error);
+          try {
+            const cachedTeams = uni.getStorageSync("ai_recommended_teams");
+            if (cachedTeams) {
+              recommendedTeams.value = JSON.parse(cachedTeams);
+              aiSummary.value = uni.getStorageSync("ai_summary") || "";
+              formatAppLog("log", "at pages/team/recommended.vue:179", "由于请求失败，使用缓存作为备用数据");
+            }
+          } catch (e) {
+            formatAppLog("error", "at pages/team/recommended.vue:182", "加载备用缓存失败:", e);
+          }
+          if (recommendedTeams.value.length === 0) {
+            uni.showToast({
+              title: "获取推荐失败，请稍后再试",
+              icon: "none",
+              duration: 2e3
+            });
+          }
+        } finally {
+          loading.value = false;
+          formatAppLog("log", "at pages/team/recommended.vue:196", "AI推荐数据加载完成，显示状态更新");
+        }
+      }
+      function refreshRecommendations() {
+        uni.showLoading({
+          title: "刷新推荐中..."
+        });
+        try {
+          uni.removeStorageSync("ai_recommended_teams");
+          uni.removeStorageSync("ai_summary");
+          uni.removeStorageSync("ai_recommend_cache_time");
+          formatAppLog("log", "at pages/team/recommended.vue:212", "已清除AI推荐缓存，准备获取新数据");
+        } catch (e) {
+          formatAppLog("error", "at pages/team/recommended.vue:214", "清除缓存失败:", e);
+        }
+        getRecommendedTeams(true).then(() => {
+          formatAppLog("log", "at pages/team/recommended.vue:220", "推荐刷新完成");
+        }).catch((err) => {
+          formatAppLog("error", "at pages/team/recommended.vue:223", "推荐刷新出错:", err);
+        }).finally(() => {
+          uni.hideLoading();
+          uni.showToast({
+            title: "推荐已更新",
+            icon: "success"
+          });
+        });
+      }
+      function viewTeamDetail(id) {
+        uni.navigateTo({
+          url: `/pages/team/detail?id=${id}`
+        });
+      }
+      function goToProfile() {
+        uni.switchTab({
+          url: "/pages/profile/index"
+        });
+      }
+      vue.onMounted(() => {
+        getRecommendedTeams();
+      });
+      const __returned__ = { loading, recommendedTeams, aiSummary, headerBarRef, headerPlaceholderHeight, getRecommendedTeams, refreshRecommendations, viewTeamDetail, goToProfile, ref: vue.ref, onMounted: vue.onMounted, computed: vue.computed, HeaderBar, TeamCard, TabBar, get teamApi() {
+        return teamApi;
+      } };
+      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
+      return __returned__;
+    }
+  };
+  function _sfc_render$c(_ctx, _cache, $props, $setup, $data, $options) {
+    return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
+      vue.createCommentVNode(" 顶部导航栏 "),
+      vue.createVNode(
+        $setup["HeaderBar"],
+        {
+          ref: "headerBarRef",
+          title: "AI智能推荐",
+          "show-search": false,
+          "show-filter": false,
+          "show-ai-recommend": false
+        },
+        null,
+        512
+        /* NEED_PATCH */
+      ),
+      vue.createCommentVNode(" 页面内容 "),
+      vue.createElementVNode(
+        "scroll-view",
+        {
+          "scroll-y": "",
+          class: "content-scroll",
+          style: vue.normalizeStyle({ paddingTop: $setup.headerPlaceholderHeight })
+        },
+        [
+          vue.createCommentVNode(" AI分析摘要 "),
+          $setup.aiSummary ? (vue.openBlock(), vue.createElementBlock("view", {
+            key: 0,
+            class: "ai-summary"
+          }, [
+            vue.createElementVNode("view", { class: "summary-header" }, [
+              vue.createElementVNode("text", { class: "summary-title" }, "✨ AI分析结果")
+            ]),
+            vue.createElementVNode(
+              "text",
+              { class: "summary-content" },
+              vue.toDisplayString($setup.aiSummary),
+              1
+              /* TEXT */
+            )
+          ])) : vue.createCommentVNode("v-if", true),
+          vue.createCommentVNode(" 推荐队伍列表 "),
+          vue.createElementVNode("view", { class: "section" }, [
+            vue.createElementVNode("view", { class: "section-header" }, [
+              vue.createElementVNode("text", { class: "section-title" }, "为您推荐的队伍"),
+              vue.createElementVNode("view", {
+                class: "refresh-btn",
+                onClick: $setup.refreshRecommendations
+              }, [
+                vue.createElementVNode("text", { class: "iconfont icon-refresh" })
+              ])
+            ]),
+            $setup.loading ? (vue.openBlock(), vue.createElementBlock("view", {
+              key: 0,
+              class: "loading-container"
+            }, [
+              vue.createElementVNode("view", { class: "loading-circle" }),
+              vue.createElementVNode("text", { class: "loading-text" }, "正在加载推荐...")
+            ])) : $setup.recommendedTeams.length > 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+              key: 1,
+              class: "team-list"
+            }, [
+              (vue.openBlock(true), vue.createElementBlock(
+                vue.Fragment,
+                null,
+                vue.renderList($setup.recommendedTeams, (team, index) => {
+                  return vue.openBlock(), vue.createBlock($setup["TeamCard"], {
+                    key: team.id,
+                    team,
+                    index,
+                    "show-match": true,
+                    onDetail: $setup.viewTeamDetail
+                  }, null, 8, ["team", "index"]);
+                }),
+                128
+                /* KEYED_FRAGMENT */
+              ))
+            ])) : (vue.openBlock(), vue.createElementBlock("view", {
+              key: 2,
+              class: "empty-state"
+            }, [
+              vue.createElementVNode("image", {
+                class: "empty-icon",
+                src: _imports_0$2,
+                mode: "aspectFit"
+              }),
+              vue.createElementVNode("text", { class: "empty-text" }, "暂无推荐，请完善个人资料后再试"),
+              vue.createElementVNode("button", {
+                class: "primary-btn",
+                onClick: $setup.goToProfile
+              }, "完善资料")
+            ]))
+          ])
+        ],
+        4
+        /* STYLE */
+      )
+    ]);
+  }
+  const PagesTeamRecommended = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["render", _sfc_render$c], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/team/recommended.vue"]]);
+  const _sfc_main$c = {
     components: {
       TabBar,
       HeaderBar
@@ -14543,7 +15459,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$5(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$b(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_header_bar = vue.resolveComponent("header-bar");
     const _component_tab_bar = vue.resolveComponent("tab-bar");
     return vue.openBlock(), vue.createElementBlock(
@@ -14813,8 +15729,8 @@ if (uni.restoreGlobal) {
       /* NEED_PATCH */
     );
   }
-  const PagesCompetitionIndex = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["render", _sfc_render$5], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/competition/index.vue"]]);
-  const _sfc_main$5 = {
+  const PagesCompetitionIndex = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["render", _sfc_render$b], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/competition/index.vue"]]);
+  const _sfc_main$b = {
     __name: "create",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -15107,7 +16023,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$4(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$a(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_uni_easyinput = resolveEasycom(vue.resolveDynamicComponent("uni-easyinput"), __easycom_0);
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
@@ -15556,8 +16472,8 @@ if (uni.restoreGlobal) {
       ])
     ]);
   }
-  const PagesCompetitionCreate = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["render", _sfc_render$4], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/competition/create.vue"]]);
-  const _sfc_main$4 = {
+  const PagesCompetitionCreate = /* @__PURE__ */ _export_sfc(_sfc_main$b, [["render", _sfc_render$a], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/competition/create.vue"]]);
+  const _sfc_main$a = {
     __name: "detail",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -15688,7 +16604,7 @@ if (uni.restoreGlobal) {
               coverImageUrl: data.coverImageUrl || ""
             };
             updateCompetitionStages(data);
-            formatAppLog("log", "at pages/competition/detail.vue:409", "竞赛详情数据:", competition.value);
+            formatAppLog("log", "at pages/competition/detail.vue:410", "竞赛详情数据:", competition.value);
           } else {
             uni.showToast({
               title: "获取竞赛详情失败",
@@ -15696,7 +16612,7 @@ if (uni.restoreGlobal) {
             });
           }
         } catch (error) {
-          formatAppLog("error", "at pages/competition/detail.vue:417", "获取竞赛详情错误:", error);
+          formatAppLog("error", "at pages/competition/detail.vue:418", "获取竞赛详情错误:", error);
           uni.showToast({
             title: "获取竞赛详情失败",
             icon: "none"
@@ -15839,7 +16755,7 @@ if (uni.restoreGlobal) {
             }
           }
         } catch (error) {
-          formatAppLog("error", "at pages/competition/detail.vue:590", "获取竞赛队伍列表失败:", error);
+          formatAppLog("error", "at pages/competition/detail.vue:591", "获取竞赛队伍列表失败:", error);
           uni.showToast({
             title: "获取队伍列表失败",
             icon: "none"
@@ -15970,16 +16886,54 @@ if (uni.restoreGlobal) {
         searchText.value = "";
       }
       function toggleFilter() {
-        formatAppLog("log", "at pages/competition/detail.vue:750", "打开筛选选项");
+        formatAppLog("log", "at pages/competition/detail.vue:751", "打开筛选选项");
       }
-      const __returned__ = { competitionId, loading, currentTab, competition, competitionStages, relatedCompetitions, teams, teamsLoading, teamsCurrentPage, teamsPageSize, teamsHasMore, searchText, getCompetitionDetail, getStatusText, formatDatePeriod, updateCompetitionStages, getCompetitionTeams, getRandomColor, loadMoreTeams, switchTab, viewTeamDetail, getTagClass, getStatusBadgeClass, getActionButtonText, getRegistrationDeadline, goBack, clearSearch, toggleFilter, ref: vue.ref, onMounted: vue.onMounted, computed: vue.computed, get api() {
+      function createTeam() {
+        uni.navigateTo({
+          url: `/pages/team/create?competitionId=${competition.value.id}&competitionName=${encodeURIComponent(competition.value.title)}`
+        });
+      }
+      function handleActionButton() {
+        const buttonText = getActionButtonText();
+        switch (buttonText) {
+          case "寻找队伍":
+          case "查看队伍":
+            currentTab.value = "teams";
+            if (teams.value.length === 0) {
+              getCompetitionTeams();
+            }
+            uni.pageScrollTo({
+              selector: ".tab-active",
+              duration: 300
+            });
+            break;
+          case "提醒我":
+            uni.showToast({
+              title: "已设置提醒",
+              icon: "success"
+            });
+            break;
+          case "查看结果":
+            uni.showToast({
+              title: "比赛结果即将公布",
+              icon: "none"
+            });
+            break;
+          default:
+            uni.showToast({
+              title: "功能开发中",
+              icon: "none"
+            });
+        }
+      }
+      const __returned__ = { competitionId, loading, currentTab, competition, competitionStages, relatedCompetitions, teams, teamsLoading, teamsCurrentPage, teamsPageSize, teamsHasMore, searchText, getCompetitionDetail, getStatusText, formatDatePeriod, updateCompetitionStages, getCompetitionTeams, getRandomColor, loadMoreTeams, switchTab, viewTeamDetail, getTagClass, getStatusBadgeClass, getActionButtonText, getRegistrationDeadline, goBack, clearSearch, toggleFilter, createTeam, handleActionButton, ref: vue.ref, onMounted: vue.onMounted, computed: vue.computed, get api() {
         return api;
       } };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
     }
   };
-  function _sfc_render$3(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$9(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 加载中状态 "),
       $setup.loading ? (vue.openBlock(), vue.createElementBlock("view", {
@@ -16574,13 +17528,17 @@ if (uni.restoreGlobal) {
           ])) : vue.createCommentVNode("v-if", true),
           vue.createCommentVNode(" 底部固定按钮 "),
           vue.createElementVNode("view", { class: "fixed-bottom" }, [
-            vue.createElementVNode("button", { class: "team-btn" }, [
+            vue.createElementVNode("button", {
+              class: "team-btn",
+              onClick: $setup.createTeam
+            }, [
               vue.createElementVNode("text", { class: "iconfont icon-users mr-1" }),
               vue.createElementVNode("text", null, "创建队伍")
             ]),
             vue.createElementVNode("button", {
               class: vue.normalizeClass(["register-btn", { "disabled-btn": $setup.competition.statusCode === "0" || $setup.competition.statusCode === "3" }]),
-              disabled: $setup.competition.statusCode === "0" || $setup.competition.statusCode === "3"
+              disabled: $setup.competition.statusCode === "0" || $setup.competition.statusCode === "3",
+              onClick: $setup.handleActionButton
             }, vue.toDisplayString($setup.getActionButtonText()), 11, ["disabled"])
           ])
         ],
@@ -16589,11 +17547,42 @@ if (uni.restoreGlobal) {
       ))
     ]);
   }
-  const PagesCompetitionDetail = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["render", _sfc_render$3], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/competition/detail.vue"]]);
-  const _sfc_main$3 = {
+  const PagesCompetitionDetail = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["render", _sfc_render$9], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/competition/detail.vue"]]);
+  const _sfc_main$9 = {
     __name: "index",
     setup(__props, { expose: __expose }) {
       __expose();
+      const userInfo = vue.ref({
+        realName: "加载中...",
+        phoneNumber: "",
+        schoolId: null,
+        schoolName: "",
+        role: "",
+        isVerified: false,
+        creditScore: 0,
+        major: "",
+        studentTeacherId: "加载中...",
+        avatarUrl: null,
+        bio: "",
+        skillTags: [],
+        awardsHistory: []
+      });
+      const loading = vue.ref(true);
+      async function getUserProfile() {
+        try {
+          const res = await userApi.getUserProfile();
+          if (res.code === 200 && res.data) {
+            userInfo.value = res.data;
+            formatAppLog("log", "at pages/profile/index.vue:141", "个人中心页获取到用户资料:", userInfo.value);
+          } else {
+            formatAppLog("error", "at pages/profile/index.vue:143", "获取用户资料失败:", res.message);
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/profile/index.vue:146", "获取用户资料失败:", error);
+        } finally {
+          loading.value = false;
+        }
+      }
       function navigateTo(page) {
         if (page === "applications") {
           uni.navigateTo({
@@ -16612,6 +17601,28 @@ if (uni.restoreGlobal) {
           content: "确定要退出登录吗？",
           success: function(res) {
             if (res.confirm) {
+              store.clearState();
+              try {
+                uni.removeStorageSync("userInteractionState");
+                uni.removeStorageSync("_DC_STAT_UUID");
+                uni.removeStorageSync("ai_recommend_cache_time");
+                uni.removeStorageSync("ai_recommended_teams");
+                uni.removeStorageSync("ai_summary");
+                uni.removeStorageSync("token");
+                const keys = uni.getStorageInfoSync().keys;
+                formatAppLog("log", "at pages/profile/index.vue:189", "准备清除所有缓存:", keys);
+                keys.forEach((key) => {
+                  try {
+                    uni.removeStorageSync(key);
+                    formatAppLog("log", "at pages/profile/index.vue:194", "已清除缓存:", key);
+                  } catch (e) {
+                    formatAppLog("error", "at pages/profile/index.vue:196", "清除缓存失败:", key, e);
+                  }
+                });
+                formatAppLog("log", "at pages/profile/index.vue:200", "所有缓存已清除");
+              } catch (e) {
+                formatAppLog("error", "at pages/profile/index.vue:202", "清除缓存出错:", e);
+              }
               uni.showToast({
                 title: "已退出登录",
                 icon: "success",
@@ -16630,6 +17641,11 @@ if (uni.restoreGlobal) {
       function goToNotification() {
         uni.navigateTo({
           url: "/pages/Xiaoxi/Xiaoxi"
+        });
+      }
+      function goToUserInfo() {
+        uni.navigateTo({
+          url: "/pages/profile/user-info"
         });
       }
       function handleTabChange(tab) {
@@ -16658,53 +17674,130 @@ if (uni.restoreGlobal) {
           }
         });
       }
-      const __returned__ = { navigateTo, logout, goToNotification, handleTabChange, showPublishOptions, ref: vue.ref, TabBar };
+      vue.onMounted(() => {
+        getUserProfile();
+      });
+      const __returned__ = { userInfo, loading, getUserProfile, navigateTo, logout, goToNotification, goToUserInfo, handleTabChange, showPublishOptions, ref: vue.ref, onMounted: vue.onMounted, TabBar, get userApi() {
+        return userApi;
+      }, get store() {
+        return store;
+      } };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
     }
   };
-  function _sfc_render$2(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$8(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部用户信息区 "),
       vue.createElementVNode("view", { class: "user-info-section" }, [
-        vue.createElementVNode("view", { class: "user-header" }, [
-          vue.createElementVNode("image", {
-            class: "user-avatar",
-            src: "https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=200",
-            mode: "aspectFill"
-          }),
-          vue.createElementVNode("view", { class: "user-details" }, [
-            vue.createElementVNode("text", { class: "user-name" }, "李明"),
-            vue.createElementVNode("text", { class: "user-id" }, "学号: 2023114514")
+        vue.createCommentVNode(" 加载中显示 "),
+        $setup.loading ? (vue.openBlock(), vue.createElementBlock("view", {
+          key: 0,
+          class: "loading-container"
+        }, [
+          vue.createElementVNode("view", { class: "loading-circle" }),
+          vue.createElementVNode("text", { class: "loading-text" }, "加载中...")
+        ])) : (vue.openBlock(), vue.createElementBlock("view", { key: 1 }, [
+          vue.createElementVNode("view", { class: "user-header" }, [
+            vue.createElementVNode("view", {
+              class: "user-info-clickable",
+              onClick: $setup.goToUserInfo
+            }, [
+              vue.createElementVNode("image", {
+                class: "user-avatar",
+                src: $setup.userInfo.avatarUrl || "https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=200",
+                mode: "aspectFill"
+              }, null, 8, ["src"]),
+              vue.createElementVNode("view", { class: "user-details" }, [
+                vue.createElementVNode(
+                  "text",
+                  { class: "user-name" },
+                  vue.toDisplayString($setup.userInfo.realName),
+                  1
+                  /* TEXT */
+                ),
+                vue.createElementVNode(
+                  "text",
+                  { class: "user-id" },
+                  "学号: " + vue.toDisplayString($setup.userInfo.studentTeacherId),
+                  1
+                  /* TEXT */
+                ),
+                vue.createElementVNode("view", { class: "user-school" }, [
+                  vue.createElementVNode(
+                    "text",
+                    { class: "school-name" },
+                    vue.toDisplayString($setup.userInfo.schoolName),
+                    1
+                    /* TEXT */
+                  ),
+                  vue.createElementVNode(
+                    "text",
+                    { class: "major-name" },
+                    vue.toDisplayString($setup.userInfo.major),
+                    1
+                    /* TEXT */
+                  )
+                ])
+              ])
+            ]),
+            vue.createElementVNode("view", {
+              class: "edit-btn",
+              onClick: $setup.goToUserInfo
+            }, [
+              vue.createElementVNode("text", { class: "iconfont icon-edit" })
+            ])
           ]),
-          vue.createElementVNode("view", {
-            class: "edit-btn",
-            onClick: $setup.goToNotification
-          }, [
-            vue.createElementVNode("text", { class: "iconfont icon-edit" })
+          vue.createElementVNode("view", { class: "user-stats" }, [
+            vue.createElementVNode("view", {
+              class: "stat-item",
+              onClick: _cache[0] || (_cache[0] = ($event) => $setup.navigateTo("myCompetitions"))
+            }, [
+              vue.createElementVNode("text", { class: "stat-value" }, "4"),
+              vue.createElementVNode("text", { class: "stat-label" }, "参与竞赛")
+            ]),
+            vue.createElementVNode("view", {
+              class: "stat-item",
+              onClick: _cache[1] || (_cache[1] = ($event) => $setup.navigateTo("myTeams"))
+            }, [
+              vue.createElementVNode("text", { class: "stat-value" }, "2"),
+              vue.createElementVNode("text", { class: "stat-label" }, "我的团队")
+            ]),
+            vue.createElementVNode("view", {
+              class: "stat-item",
+              onClick: _cache[2] || (_cache[2] = ($event) => $setup.navigateTo("myAwards"))
+            }, [
+              vue.createElementVNode(
+                "text",
+                { class: "stat-value" },
+                vue.toDisplayString($setup.userInfo.awardsHistory ? $setup.userInfo.awardsHistory.length : 0),
+                1
+                /* TEXT */
+              ),
+              vue.createElementVNode("text", { class: "stat-label" }, "获得奖项")
+            ]),
+            vue.createElementVNode("view", {
+              class: "stat-item",
+              onClick: _cache[3] || (_cache[3] = ($event) => $setup.navigateTo("settings"))
+            }, [
+              vue.createElementVNode(
+                "text",
+                { class: "stat-value credit-score" },
+                vue.toDisplayString($setup.userInfo.creditScore),
+                1
+                /* TEXT */
+              ),
+              vue.createElementVNode("text", { class: "stat-label" }, "信用分")
+            ])
           ])
-        ]),
-        vue.createElementVNode("view", { class: "user-stats" }, [
-          vue.createElementVNode("view", { class: "stat-item" }, [
-            vue.createElementVNode("text", { class: "stat-value" }, "4"),
-            vue.createElementVNode("text", { class: "stat-label" }, "参与竞赛")
-          ]),
-          vue.createElementVNode("view", { class: "stat-item" }, [
-            vue.createElementVNode("text", { class: "stat-value" }, "2"),
-            vue.createElementVNode("text", { class: "stat-label" }, "我的团队")
-          ]),
-          vue.createElementVNode("view", { class: "stat-item" }, [
-            vue.createElementVNode("text", { class: "stat-value" }, "1"),
-            vue.createElementVNode("text", { class: "stat-label" }, "获得奖项")
-          ])
-        ])
+        ]))
       ]),
       vue.createCommentVNode(" 功能菜单 "),
       vue.createElementVNode("view", { class: "menu-section" }, [
         vue.createElementVNode("view", { class: "menu-group" }, [
           vue.createElementVNode("view", {
             class: "menu-item",
-            onClick: _cache[0] || (_cache[0] = ($event) => $setup.navigateTo("myCompetitions"))
+            onClick: _cache[4] || (_cache[4] = ($event) => $setup.navigateTo("myCompetitions"))
           }, [
             vue.createElementVNode("text", { class: "iconfont icon-trophy menu-icon" }),
             vue.createElementVNode("text", { class: "menu-text" }, "我的竞赛"),
@@ -16712,7 +17805,7 @@ if (uni.restoreGlobal) {
           ]),
           vue.createElementVNode("view", {
             class: "menu-item",
-            onClick: _cache[1] || (_cache[1] = ($event) => $setup.navigateTo("myTeams"))
+            onClick: _cache[5] || (_cache[5] = ($event) => $setup.navigateTo("myTeams"))
           }, [
             vue.createElementVNode("text", { class: "iconfont icon-users menu-icon" }),
             vue.createElementVNode("text", { class: "menu-text" }, "我的团队"),
@@ -16720,7 +17813,7 @@ if (uni.restoreGlobal) {
           ]),
           vue.createElementVNode("view", {
             class: "menu-item",
-            onClick: _cache[2] || (_cache[2] = ($event) => $setup.navigateTo("myAwards"))
+            onClick: _cache[6] || (_cache[6] = ($event) => $setup.navigateTo("myAwards"))
           }, [
             vue.createElementVNode("text", { class: "iconfont icon-star menu-icon" }),
             vue.createElementVNode("text", { class: "menu-text" }, "我的获奖"),
@@ -16728,7 +17821,7 @@ if (uni.restoreGlobal) {
           ]),
           vue.createElementVNode("view", {
             class: "menu-item",
-            onClick: _cache[3] || (_cache[3] = ($event) => $setup.navigateTo("applications"))
+            onClick: _cache[7] || (_cache[7] = ($event) => $setup.navigateTo("applications"))
           }, [
             vue.createElementVNode("text", { class: "iconfont icon-paper-plane menu-icon" }),
             vue.createElementVNode("text", { class: "menu-text" }, "申请管理"),
@@ -16738,7 +17831,7 @@ if (uni.restoreGlobal) {
         vue.createElementVNode("view", { class: "menu-group" }, [
           vue.createElementVNode("view", {
             class: "menu-item",
-            onClick: _cache[4] || (_cache[4] = ($event) => $setup.navigateTo("settings"))
+            onClick: _cache[8] || (_cache[8] = ($event) => $setup.navigateTo("settings"))
           }, [
             vue.createElementVNode("text", { class: "iconfont icon-settings menu-icon" }),
             vue.createElementVNode("text", { class: "menu-text" }, "账号设置"),
@@ -16746,7 +17839,7 @@ if (uni.restoreGlobal) {
           ]),
           vue.createElementVNode("view", {
             class: "menu-item",
-            onClick: _cache[5] || (_cache[5] = ($event) => $setup.navigateTo("feedback"))
+            onClick: _cache[9] || (_cache[9] = ($event) => $setup.navigateTo("feedback"))
           }, [
             vue.createElementVNode("text", { class: "iconfont icon-feedback menu-icon" }),
             vue.createElementVNode("text", { class: "menu-text" }, "意见反馈"),
@@ -16754,7 +17847,7 @@ if (uni.restoreGlobal) {
           ]),
           vue.createElementVNode("view", {
             class: "menu-item",
-            onClick: _cache[6] || (_cache[6] = ($event) => $setup.navigateTo("about"))
+            onClick: _cache[10] || (_cache[10] = ($event) => $setup.navigateTo("about"))
           }, [
             vue.createElementVNode("text", { class: "iconfont icon-info-circle menu-icon" }),
             vue.createElementVNode("text", { class: "menu-text" }, "关于我们"),
@@ -16777,154 +17870,2651 @@ if (uni.restoreGlobal) {
       })
     ]);
   }
-  const PagesProfileIndex = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["render", _sfc_render$2], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/index.vue"]]);
-  const _imports_0$1 = "/static/empty-notification.png";
-  const _sfc_main$2 = {
-    __name: "Xiaoxi",
+  const PagesProfileIndex = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["render", _sfc_render$8], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/index.vue"]]);
+  const _sfc_main$8 = {
+    __name: "user-info",
     setup(__props, { expose: __expose }) {
       __expose();
-      const activeTab = vue.ref("unread");
-      const unreadCount = vue.ref(2);
-      const unreadNotifications = vue.ref([
-        {
-          id: 1,
-          type: "团队邀请",
-          message: '张明邀请你加入"创新先锋队"参加创新创业大赛',
-          time: "10分钟前",
-          avatar: "/static/avatars/zhang.png",
-          actions: [
-            { name: "接受", type: "accept", primary: true },
-            { name: "拒绝", type: "reject", primary: false }
-          ]
-        },
-        {
-          id: 2,
-          type: "新消息",
-          message: '李华在"代码助手"团队中@你：能否帮忙解决一下这个问题？',
-          time: "30分钟前",
-          avatar: "/static/avatars/li.png",
-          actions: [
-            { name: "查看", type: "view", primary: true }
-          ]
-        }
-      ]);
-      const allNotifications = vue.ref([
-        // 未读通知
-        ...unreadNotifications.value,
-        // 已读通知
-        {
-          id: 3,
-          type: "系统通知",
-          message: '您的团队"创业先锋"已审核通过，请及时查看',
-          time: "2天前",
-          avatar: "/static/avatars/system.png",
-          read: true,
-          actions: [
-            { name: "查看", type: "view", primary: true }
-          ]
-        },
-        {
-          id: 4,
-          type: "好友申请",
-          message: "王芳申请添加您为好友",
-          time: "3天前",
-          avatar: "/static/avatars/wang.png",
-          read: true,
-          actions: [
-            { name: "同意", type: "accept", primary: true },
-            { name: "拒绝", type: "reject", primary: false }
-          ]
-        }
-      ]);
-      function markAllAsRead() {
-        unreadNotifications.value.forEach((item) => {
-          const index = allNotifications.value.findIndex((n) => n.id === item.id);
-          if (index !== -1) {
-            allNotifications.value[index].read = true;
-          }
-        });
-        unreadNotifications.value = [];
-        unreadCount.value = 0;
-        uni.showToast({
-          title: "已全部标记为已读",
-          icon: "success"
-        });
-      }
-      function handleAction(type, id) {
-        if (type === "accept" && id === 1) {
-          uni.showModal({
-            title: "团队邀请",
-            content: '确定接受加入"创新先锋队"？',
-            success: function(res) {
-              if (res.confirm) {
-                removeNotification(id);
-                uni.showToast({
-                  title: "已加入团队",
-                  icon: "success"
-                });
-              }
-            }
-          });
-        } else if (type === "reject" && id === 1) {
-          uni.showModal({
-            title: "团队邀请",
-            content: '确定拒绝加入"创新先锋队"？',
-            success: function(res) {
-              if (res.confirm) {
-                removeNotification(id);
-                uni.showToast({
-                  title: "已拒绝邀请",
-                  icon: "none"
-                });
-              }
-            }
-          });
-        } else if (type === "view") {
-          if (id === 2) {
-            uni.navigateTo({
-              url: "/pages/team/chat?id=代码助手"
-            });
-            removeNotification(id);
+      const userInfo = vue.ref({
+        realName: "",
+        phoneNumber: "",
+        schoolId: null,
+        schoolName: "",
+        role: "",
+        isVerified: false,
+        creditScore: 0,
+        major: "",
+        studentTeacherId: "",
+        avatarUrl: null,
+        bio: "",
+        skillTags: [],
+        awardsHistory: []
+      });
+      const loading = vue.ref(true);
+      const isRefreshing = vue.ref(false);
+      async function getUserProfile() {
+        try {
+          loading.value = true;
+          const res = await userApi.getUserProfile();
+          if (res.code === 200 && res.data) {
+            userInfo.value = res.data;
+            formatAppLog("log", "at pages/profile/user-info.vue:182", "获取到用户资料:", userInfo.value);
           } else {
-            uni.navigateTo({
-              url: "/pages/notification/detail?id=" + id
+            uni.showToast({
+              title: res.message || "获取资料失败",
+              icon: "none"
             });
           }
+        } catch (error) {
+          formatAppLog("error", "at pages/profile/user-info.vue:190", "获取用户资料失败:", error);
+          uni.showToast({
+            title: "获取个人资料失败",
+            icon: "none"
+          });
+        } finally {
+          loading.value = false;
         }
       }
-      function removeNotification(id) {
-        const index = unreadNotifications.value.findIndex((item) => item.id === id);
-        if (index !== -1) {
-          unreadNotifications.value.splice(index, 1);
-          unreadCount.value--;
-          const allIndex = allNotifications.value.findIndex((item) => item.id === id);
-          if (allIndex !== -1) {
-            allNotifications.value[allIndex].read = true;
+      async function refreshUserInfo() {
+        if (isRefreshing.value)
+          return;
+        isRefreshing.value = true;
+        uni.showToast({
+          title: "正在刷新...",
+          icon: "none",
+          duration: 1e3
+        });
+        try {
+          const res = await userApi.getUserProfile();
+          if (res.code === 200 && res.data) {
+            userInfo.value = res.data;
+            uni.showToast({
+              title: "刷新成功",
+              icon: "success",
+              duration: 1e3
+            });
+          } else {
+            uni.showToast({
+              title: res.message || "刷新失败",
+              icon: "none"
+            });
           }
+        } catch (error) {
+          formatAppLog("error", "at pages/profile/user-info.vue:228", "刷新用户资料失败:", error);
+          uni.showToast({
+            title: "刷新失败",
+            icon: "none"
+          });
+        } finally {
+          isRefreshing.value = false;
         }
+      }
+      function changeAvatar() {
+        uni.chooseImage({
+          count: 1,
+          sizeType: ["compressed"],
+          sourceType: ["album", "camera"],
+          success: function(res) {
+            res.tempFilePaths[0];
+            uni.showToast({
+              title: "头像上传功能开发中",
+              icon: "none"
+            });
+          }
+        });
+      }
+      function editBasicInfo() {
+        uni.navigateTo({
+          url: "/pages/profile/edit-basic-info"
+        });
+      }
+      function editBio() {
+        uni.navigateTo({
+          url: "/pages/profile/edit-bio"
+        });
+      }
+      function editSkills() {
+        uni.navigateTo({
+          url: "/pages/profile/edit-skills"
+        });
+      }
+      function editAwards() {
+        uni.navigateTo({
+          url: "/pages/profile/edit-awards"
+        });
+      }
+      function goBack() {
+        uni.navigateBack();
       }
       vue.onMounted(() => {
-        formatAppLog("log", "at pages/Xiaoxi/Xiaoxi.vue:239", "通知页面加载完成");
+        getUserProfile();
       });
-      const __returned__ = { activeTab, unreadCount, unreadNotifications, allNotifications, markAllAsRead, handleAction, removeNotification, ref: vue.ref, onMounted: vue.onMounted };
+      const __returned__ = { userInfo, loading, isRefreshing, getUserProfile, refreshUserInfo, changeAvatar, editBasicInfo, editBio, editSkills, editAwards, goBack, ref: vue.ref, onMounted: vue.onMounted, get userApi() {
+        return userApi;
+      } };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
     }
   };
-  function _sfc_render$1(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$7(_ctx, _cache, $props, $setup, $data, $options) {
+    return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
+      vue.createCommentVNode(" 顶部导航栏 "),
+      vue.createElementVNode("view", { class: "header" }, [
+        vue.createElementVNode("view", {
+          class: "back-btn",
+          onClick: $setup.goBack
+        }, [
+          vue.createElementVNode("text", { class: "iconfont icon-arrow-left" })
+        ]),
+        vue.createElementVNode("text", { class: "header-title" }, "个人资料"),
+        vue.createElementVNode("view", { class: "right-placeholder" })
+      ]),
+      vue.createCommentVNode(" 加载中显示 "),
+      $setup.loading ? (vue.openBlock(), vue.createElementBlock("view", {
+        key: 0,
+        class: "loading-container"
+      }, [
+        vue.createElementVNode("view", { class: "loading-circle" }),
+        vue.createElementVNode("text", { class: "loading-text" }, "加载中...")
+      ])) : (vue.openBlock(), vue.createElementBlock(
+        vue.Fragment,
+        { key: 1 },
+        [
+          vue.createCommentVNode(" 个人资料内容 "),
+          vue.createElementVNode("scroll-view", {
+            "scroll-y": "",
+            class: "content-scroll"
+          }, [
+            vue.createCommentVNode(" 头像区域 "),
+            vue.createElementVNode("view", { class: "avatar-section" }, [
+              vue.createElementVNode("image", {
+                class: "avatar",
+                src: $setup.userInfo.avatarUrl || "https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=200",
+                mode: "aspectFill"
+              }, null, 8, ["src"]),
+              vue.createElementVNode("view", {
+                class: "change-avatar-btn",
+                onClick: $setup.changeAvatar
+              }, [
+                vue.createElementVNode("text", null, "更换头像")
+              ])
+            ]),
+            vue.createCommentVNode(" 基本信息卡片 "),
+            vue.createElementVNode("view", { class: "info-card" }, [
+              vue.createElementVNode("view", { class: "card-header" }, [
+                vue.createElementVNode("text", { class: "card-title" }, "基本信息"),
+                vue.createElementVNode("view", {
+                  class: "edit-btn",
+                  onClick: $setup.editBasicInfo
+                }, [
+                  vue.createElementVNode("text", { class: "iconfont icon-edit" }),
+                  vue.createElementVNode("text", { class: "edit-text" }, "编辑")
+                ])
+              ]),
+              vue.createElementVNode("view", { class: "info-item" }, [
+                vue.createElementVNode("text", { class: "item-label" }, "姓名"),
+                vue.createElementVNode(
+                  "text",
+                  { class: "item-value" },
+                  vue.toDisplayString($setup.userInfo.realName),
+                  1
+                  /* TEXT */
+                )
+              ]),
+              vue.createElementVNode("view", { class: "info-item" }, [
+                vue.createElementVNode("text", { class: "item-label" }, "手机号"),
+                vue.createElementVNode(
+                  "text",
+                  { class: "item-value" },
+                  vue.toDisplayString($setup.userInfo.phoneNumber),
+                  1
+                  /* TEXT */
+                )
+              ]),
+              vue.createElementVNode("view", { class: "info-item" }, [
+                vue.createElementVNode("text", { class: "item-label" }, "学号"),
+                vue.createElementVNode(
+                  "text",
+                  { class: "item-value" },
+                  vue.toDisplayString($setup.userInfo.studentTeacherId),
+                  1
+                  /* TEXT */
+                )
+              ]),
+              vue.createElementVNode("view", { class: "info-item" }, [
+                vue.createElementVNode("text", { class: "item-label" }, "学校"),
+                vue.createElementVNode(
+                  "text",
+                  { class: "item-value" },
+                  vue.toDisplayString($setup.userInfo.schoolName),
+                  1
+                  /* TEXT */
+                )
+              ]),
+              vue.createElementVNode("view", { class: "info-item" }, [
+                vue.createElementVNode("text", { class: "item-label" }, "专业"),
+                vue.createElementVNode(
+                  "text",
+                  { class: "item-value" },
+                  vue.toDisplayString($setup.userInfo.major),
+                  1
+                  /* TEXT */
+                )
+              ]),
+              vue.createElementVNode("view", { class: "info-item" }, [
+                vue.createElementVNode("text", { class: "item-label" }, "角色"),
+                vue.createElementVNode(
+                  "text",
+                  { class: "item-value" },
+                  vue.toDisplayString($setup.userInfo.role === "student" ? "学生" : $setup.userInfo.role === "teacher" ? "教师" : "管理员"),
+                  1
+                  /* TEXT */
+                )
+              ]),
+              vue.createElementVNode("view", { class: "info-item" }, [
+                vue.createElementVNode("text", { class: "item-label" }, "信用分"),
+                vue.createElementVNode(
+                  "text",
+                  { class: "item-value credit-score" },
+                  vue.toDisplayString($setup.userInfo.creditScore),
+                  1
+                  /* TEXT */
+                )
+              ])
+            ]),
+            vue.createCommentVNode(" 个人简介卡片 "),
+            vue.createElementVNode("view", { class: "info-card" }, [
+              vue.createElementVNode("view", { class: "card-header" }, [
+                vue.createElementVNode("text", { class: "card-title" }, "个人简介"),
+                vue.createElementVNode("view", {
+                  class: "edit-btn",
+                  onClick: $setup.editBio
+                }, [
+                  vue.createElementVNode("text", { class: "iconfont icon-edit" }),
+                  vue.createElementVNode("text", { class: "edit-text" }, "编辑")
+                ])
+              ]),
+              vue.createElementVNode("view", { class: "bio-content" }, [
+                vue.createElementVNode(
+                  "text",
+                  null,
+                  vue.toDisplayString($setup.userInfo.bio || "暂无个人简介，点击右上角编辑添加"),
+                  1
+                  /* TEXT */
+                )
+              ])
+            ]),
+            vue.createCommentVNode(" 技能标签卡片 "),
+            vue.createElementVNode("view", { class: "info-card" }, [
+              vue.createElementVNode("view", { class: "card-header" }, [
+                vue.createElementVNode("text", { class: "card-title" }, "技能标签"),
+                vue.createElementVNode("view", {
+                  class: "edit-btn",
+                  onClick: $setup.editSkills
+                }, [
+                  vue.createElementVNode("text", { class: "iconfont icon-edit" }),
+                  vue.createElementVNode("text", { class: "edit-text" }, "编辑")
+                ])
+              ]),
+              vue.createElementVNode("view", { class: "skills-container" }, [
+                (vue.openBlock(true), vue.createElementBlock(
+                  vue.Fragment,
+                  null,
+                  vue.renderList($setup.userInfo.skillTags, (skill, index) => {
+                    return vue.openBlock(), vue.createElementBlock("view", {
+                      class: "skill-tag",
+                      key: index
+                    }, [
+                      vue.createElementVNode(
+                        "text",
+                        null,
+                        vue.toDisplayString(skill),
+                        1
+                        /* TEXT */
+                      )
+                    ]);
+                  }),
+                  128
+                  /* KEYED_FRAGMENT */
+                )),
+                !$setup.userInfo.skillTags || $setup.userInfo.skillTags.length === 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+                  key: 0,
+                  class: "empty-skills"
+                }, [
+                  vue.createElementVNode("text", null, "暂无技能标签，点击右上角编辑添加")
+                ])) : vue.createCommentVNode("v-if", true)
+              ])
+            ]),
+            vue.createCommentVNode(" 获奖经历卡片 "),
+            vue.createElementVNode("view", { class: "info-card" }, [
+              vue.createElementVNode("view", { class: "card-header" }, [
+                vue.createElementVNode("text", { class: "card-title" }, "获奖经历"),
+                vue.createElementVNode("view", {
+                  class: "edit-btn",
+                  onClick: $setup.editAwards
+                }, [
+                  vue.createElementVNode("text", { class: "iconfont icon-edit" }),
+                  vue.createElementVNode("text", { class: "edit-text" }, "编辑")
+                ])
+              ]),
+              vue.createElementVNode("view", { class: "awards-container" }, [
+                (vue.openBlock(true), vue.createElementBlock(
+                  vue.Fragment,
+                  null,
+                  vue.renderList($setup.userInfo.awardsHistory, (award, index) => {
+                    return vue.openBlock(), vue.createElementBlock("view", {
+                      class: "award-item",
+                      key: index
+                    }, [
+                      vue.createElementVNode("view", { class: "award-header" }, [
+                        vue.createElementVNode(
+                          "text",
+                          { class: "award-name" },
+                          vue.toDisplayString(award.awardName),
+                          1
+                          /* TEXT */
+                        ),
+                        vue.createElementVNode(
+                          "text",
+                          { class: "award-level" },
+                          vue.toDisplayString(award.level),
+                          1
+                          /* TEXT */
+                        )
+                      ]),
+                      vue.createElementVNode("view", { class: "award-detail" }, [
+                        vue.createElementVNode(
+                          "text",
+                          { class: "award-org" },
+                          vue.toDisplayString(award.organization),
+                          1
+                          /* TEXT */
+                        ),
+                        vue.createElementVNode(
+                          "text",
+                          { class: "award-time" },
+                          vue.toDisplayString(award.awardTime),
+                          1
+                          /* TEXT */
+                        )
+                      ])
+                    ]);
+                  }),
+                  128
+                  /* KEYED_FRAGMENT */
+                )),
+                !$setup.userInfo.awardsHistory || $setup.userInfo.awardsHistory.length === 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+                  key: 0,
+                  class: "empty-awards"
+                }, [
+                  vue.createElementVNode("text", null, "暂无获奖经历，点击右上角编辑添加")
+                ])) : vue.createCommentVNode("v-if", true)
+              ])
+            ])
+          ])
+        ],
+        2112
+        /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */
+      )),
+      vue.createCommentVNode(" 悬浮刷新按钮 "),
+      vue.createElementVNode("view", {
+        class: "refresh-btn",
+        onClick: $setup.refreshUserInfo
+      }, [
+        vue.createElementVNode(
+          "text",
+          {
+            class: vue.normalizeClass(["iconfont icon-refresh", { "refreshing": $setup.isRefreshing }])
+          },
+          null,
+          2
+          /* CLASS */
+        )
+      ])
+    ]);
+  }
+  const PagesProfileUserInfo = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["render", _sfc_render$7], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/user-info.vue"]]);
+  const _sfc_main$7 = {
+    __name: "edit-basic-info",
+    setup(__props, { expose: __expose }) {
+      __expose();
+      const userInfo = vue.ref({
+        realName: "",
+        phoneNumber: "",
+        schoolId: null,
+        schoolName: "",
+        major: "",
+        studentTeacherId: ""
+      });
+      const loading = vue.ref(true);
+      const schoolOptions = vue.ref([]);
+      const selectedSchoolIndex = vue.computed(() => {
+        if (!userInfo.value.schoolId || schoolOptions.value.length === 0)
+          return 0;
+        const index = schoolOptions.value.findIndex((school) => school.id === userInfo.value.schoolId);
+        return index >= 0 ? index : 0;
+      });
+      const selectedSchoolName = vue.computed(() => {
+        return userInfo.value.schoolName || "请选择学校";
+      });
+      async function getUserProfile() {
+        try {
+          loading.value = true;
+          const res = await userApi.getUserProfile();
+          if (res.code === 200 && res.data) {
+            userInfo.value = res.data;
+            formatAppLog("log", "at pages/profile/edit-basic-info.vue:105", "获取到用户资料:", userInfo.value);
+            await getSchools();
+          } else {
+            uni.showToast({
+              title: res.message || "获取资料失败",
+              icon: "none"
+            });
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/profile/edit-basic-info.vue:114", "获取用户资料失败:", error);
+          uni.showToast({
+            title: "获取个人资料失败",
+            icon: "none"
+          });
+        } finally {
+          loading.value = false;
+        }
+      }
+      async function getSchools() {
+        try {
+          const res = await userApi.getSchools();
+          if (res.code === 200 && res.data) {
+            schoolOptions.value = res.data;
+          } else {
+            formatAppLog("error", "at pages/profile/edit-basic-info.vue:131", "获取学校列表失败:", res.message);
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/profile/edit-basic-info.vue:134", "获取学校列表失败:", error);
+        }
+      }
+      function onSchoolChange(e) {
+        const index = e.detail.value;
+        if (index >= 0 && index < schoolOptions.value.length) {
+          const selectedSchool = schoolOptions.value[index];
+          userInfo.value.schoolId = selectedSchool.id;
+          userInfo.value.schoolName = selectedSchool.name;
+        }
+      }
+      async function saveChanges() {
+        if (!userInfo.value.realName || userInfo.value.realName.trim() === "") {
+          uni.showToast({
+            title: "姓名不能为空",
+            icon: "none"
+          });
+          return;
+        }
+        if (!userInfo.value.schoolId) {
+          uni.showToast({
+            title: "请选择学校",
+            icon: "none"
+          });
+          return;
+        }
+        try {
+          uni.showLoading({
+            title: "保存中..."
+          });
+          const updateData = {
+            realName: userInfo.value.realName,
+            schoolId: userInfo.value.schoolId,
+            major: userInfo.value.major,
+            bio: userInfo.value.bio,
+            skillTags: userInfo.value.skillTags || [],
+            awardsHistory: userInfo.value.awardsHistory || []
+          };
+          const res = await userApi.updateUserProfile(updateData);
+          if (res.code === 200) {
+            uni.showToast({
+              title: "保存成功",
+              icon: "success"
+            });
+            setTimeout(() => {
+              goBack();
+            }, 1500);
+          } else {
+            uni.showToast({
+              title: res.message || "保存失败",
+              icon: "none"
+            });
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/profile/edit-basic-info.vue:198", "保存用户资料失败:", error);
+          uni.showToast({
+            title: "保存失败，请稍后再试",
+            icon: "none"
+          });
+        } finally {
+          uni.hideLoading();
+        }
+      }
+      function goBack() {
+        uni.navigateBack();
+      }
+      vue.onMounted(() => {
+        getUserProfile();
+      });
+      const __returned__ = { userInfo, loading, schoolOptions, selectedSchoolIndex, selectedSchoolName, getUserProfile, getSchools, onSchoolChange, saveChanges, goBack, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, get userApi() {
+        return userApi;
+      } };
+      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
+      return __returned__;
+    }
+  };
+  function _sfc_render$6(_ctx, _cache, $props, $setup, $data, $options) {
+    return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
+      vue.createCommentVNode(" 顶部导航栏 "),
+      vue.createElementVNode("view", { class: "header" }, [
+        vue.createElementVNode("view", {
+          class: "back-btn",
+          onClick: $setup.goBack
+        }, [
+          vue.createElementVNode("text", { class: "iconfont icon-arrow-left" })
+        ]),
+        vue.createElementVNode("text", { class: "header-title" }, "编辑基本信息"),
+        vue.createElementVNode("view", {
+          class: "save-btn",
+          onClick: $setup.saveChanges
+        }, [
+          vue.createElementVNode("text", null, "保存")
+        ])
+      ]),
+      vue.createCommentVNode(" 加载中显示 "),
+      $setup.loading ? (vue.openBlock(), vue.createElementBlock("view", {
+        key: 0,
+        class: "loading-container"
+      }, [
+        vue.createElementVNode("view", { class: "loading-circle" }),
+        vue.createElementVNode("text", { class: "loading-text" }, "加载中...")
+      ])) : (vue.openBlock(), vue.createElementBlock(
+        vue.Fragment,
+        { key: 1 },
+        [
+          vue.createCommentVNode(" 编辑表单 "),
+          vue.createElementVNode("scroll-view", {
+            "scroll-y": "",
+            class: "content-scroll"
+          }, [
+            vue.createElementVNode("view", { class: "form-section" }, [
+              vue.createElementVNode("view", { class: "form-item" }, [
+                vue.createElementVNode("text", { class: "form-label" }, "姓名"),
+                vue.withDirectives(vue.createElementVNode(
+                  "input",
+                  {
+                    class: "form-input",
+                    type: "text",
+                    "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => $setup.userInfo.realName = $event),
+                    placeholder: "请输入真实姓名",
+                    maxlength: "20"
+                  },
+                  null,
+                  512
+                  /* NEED_PATCH */
+                ), [
+                  [vue.vModelText, $setup.userInfo.realName]
+                ])
+              ]),
+              vue.createElementVNode("view", { class: "form-item" }, [
+                vue.createElementVNode("text", { class: "form-label" }, "学校"),
+                vue.createElementVNode("picker", {
+                  class: "form-picker",
+                  range: $setup.schoolOptions,
+                  "range-key": "name",
+                  value: $setup.selectedSchoolIndex,
+                  onChange: $setup.onSchoolChange
+                }, [
+                  vue.createElementVNode(
+                    "view",
+                    { class: "picker-text" },
+                    vue.toDisplayString($setup.selectedSchoolName || "请选择学校"),
+                    1
+                    /* TEXT */
+                  )
+                ], 40, ["range", "value"])
+              ]),
+              vue.createElementVNode("view", { class: "form-item" }, [
+                vue.createElementVNode("text", { class: "form-label" }, "专业"),
+                vue.withDirectives(vue.createElementVNode(
+                  "input",
+                  {
+                    class: "form-input",
+                    type: "text",
+                    "onUpdate:modelValue": _cache[1] || (_cache[1] = ($event) => $setup.userInfo.major = $event),
+                    placeholder: "请输入专业",
+                    maxlength: "30"
+                  },
+                  null,
+                  512
+                  /* NEED_PATCH */
+                ), [
+                  [vue.vModelText, $setup.userInfo.major]
+                ])
+              ]),
+              vue.createElementVNode("view", { class: "form-item form-item-last" }, [
+                vue.createElementVNode("text", { class: "form-label" }, "手机号"),
+                vue.createElementVNode(
+                  "view",
+                  { class: "form-text" },
+                  vue.toDisplayString($setup.userInfo.phoneNumber || "未设置"),
+                  1
+                  /* TEXT */
+                )
+              ])
+            ]),
+            vue.createElementVNode("text", { class: "form-tip" }, "注意：学号和角色信息不可修改")
+          ])
+        ],
+        2112
+        /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */
+      ))
+    ]);
+  }
+  const PagesProfileEditBasicInfo = /* @__PURE__ */ _export_sfc(_sfc_main$7, [["render", _sfc_render$6], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/edit-basic-info.vue"]]);
+  const _sfc_main$6 = {
+    __name: "edit-bio",
+    setup(__props, { expose: __expose }) {
+      __expose();
+      const userInfo = vue.ref({
+        bio: "",
+        realName: "",
+        schoolId: null,
+        major: "",
+        skillTags: [],
+        awardsHistory: []
+      });
+      const loading = vue.ref(true);
+      async function getUserProfile() {
+        try {
+          loading.value = true;
+          const res = await userApi.getUserProfile();
+          if (res.code === 200 && res.data) {
+            userInfo.value = res.data;
+            formatAppLog("log", "at pages/profile/edit-bio.vue:83", "获取到用户资料:", userInfo.value);
+          } else {
+            uni.showToast({
+              title: res.message || "获取资料失败",
+              icon: "none"
+            });
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/profile/edit-bio.vue:91", "获取用户资料失败:", error);
+          uni.showToast({
+            title: "获取个人资料失败",
+            icon: "none"
+          });
+        } finally {
+          loading.value = false;
+        }
+      }
+      async function saveChanges() {
+        try {
+          uni.showLoading({
+            title: "保存中..."
+          });
+          const updateData = {
+            realName: userInfo.value.realName,
+            schoolId: userInfo.value.schoolId,
+            major: userInfo.value.major,
+            bio: userInfo.value.bio,
+            skillTags: userInfo.value.skillTags || [],
+            awardsHistory: userInfo.value.awardsHistory || []
+          };
+          const res = await userApi.updateUserProfile(updateData);
+          if (res.code === 200) {
+            uni.showToast({
+              title: "保存成功",
+              icon: "success"
+            });
+            setTimeout(() => {
+              goBack();
+            }, 1500);
+          } else {
+            uni.showToast({
+              title: res.message || "保存失败",
+              icon: "none"
+            });
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/profile/edit-bio.vue:135", "保存用户资料失败:", error);
+          uni.showToast({
+            title: "保存失败，请稍后再试",
+            icon: "none"
+          });
+        } finally {
+          uni.hideLoading();
+        }
+      }
+      function goBack() {
+        uni.navigateBack();
+      }
+      vue.onMounted(() => {
+        getUserProfile();
+      });
+      const __returned__ = { userInfo, loading, getUserProfile, saveChanges, goBack, ref: vue.ref, onMounted: vue.onMounted, get userApi() {
+        return userApi;
+      } };
+      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
+      return __returned__;
+    }
+  };
+  function _sfc_render$5(_ctx, _cache, $props, $setup, $data, $options) {
+    return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
+      vue.createCommentVNode(" 顶部导航栏 "),
+      vue.createElementVNode("view", { class: "header" }, [
+        vue.createElementVNode("view", {
+          class: "back-btn",
+          onClick: $setup.goBack
+        }, [
+          vue.createElementVNode("text", { class: "iconfont icon-arrow-left" })
+        ]),
+        vue.createElementVNode("text", { class: "header-title" }, "编辑个人简介"),
+        vue.createElementVNode("view", {
+          class: "save-btn",
+          onClick: $setup.saveChanges
+        }, [
+          vue.createElementVNode("text", null, "保存")
+        ])
+      ]),
+      vue.createCommentVNode(" 加载中显示 "),
+      $setup.loading ? (vue.openBlock(), vue.createElementBlock("view", {
+        key: 0,
+        class: "loading-container"
+      }, [
+        vue.createElementVNode("view", { class: "loading-circle" }),
+        vue.createElementVNode("text", { class: "loading-text" }, "加载中...")
+      ])) : (vue.openBlock(), vue.createElementBlock(
+        vue.Fragment,
+        { key: 1 },
+        [
+          vue.createCommentVNode(" 编辑表单 "),
+          vue.createElementVNode("view", { class: "content-scroll" }, [
+            vue.createElementVNode("view", { class: "form-section" }, [
+              vue.withDirectives(vue.createElementVNode(
+                "textarea",
+                {
+                  class: "bio-textarea",
+                  "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => $setup.userInfo.bio = $event),
+                  placeholder: "请输入您的个人简介，介绍自己的专业背景、技术特长、研究方向等（1000字以内）",
+                  maxlength: "1000",
+                  "auto-height": ""
+                },
+                null,
+                512
+                /* NEED_PATCH */
+              ), [
+                [vue.vModelText, $setup.userInfo.bio]
+              ]),
+              vue.createElementVNode(
+                "view",
+                { class: "text-count" },
+                vue.toDisplayString($setup.userInfo.bio ? $setup.userInfo.bio.length : 0) + "/1000",
+                1
+                /* TEXT */
+              )
+            ]),
+            vue.createElementVNode("view", { class: "tip-section" }, [
+              vue.createElementVNode("text", { class: "tip-title" }, "写一个好的个人简介"),
+              vue.createElementVNode("view", { class: "tip-list" }, [
+                vue.createElementVNode("view", { class: "tip-item" }, [
+                  vue.createElementVNode("text", { class: "dot" }, "•"),
+                  vue.createElementVNode("text", { class: "tip-text" }, "介绍您的学习背景和专业领域")
+                ]),
+                vue.createElementVNode("view", { class: "tip-item" }, [
+                  vue.createElementVNode("text", { class: "dot" }, "•"),
+                  vue.createElementVNode("text", { class: "tip-text" }, "突出您的核心技能和特长")
+                ]),
+                vue.createElementVNode("view", { class: "tip-item" }, [
+                  vue.createElementVNode("text", { class: "dot" }, "•"),
+                  vue.createElementVNode("text", { class: "tip-text" }, "分享您的研究兴趣或项目经验")
+                ]),
+                vue.createElementVNode("view", { class: "tip-item" }, [
+                  vue.createElementVNode("text", { class: "dot" }, "•"),
+                  vue.createElementVNode("text", { class: "tip-text" }, "提及您期望的团队合作方式")
+                ])
+              ])
+            ])
+          ])
+        ],
+        2112
+        /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */
+      ))
+    ]);
+  }
+  const PagesProfileEditBio = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["render", _sfc_render$5], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/edit-bio.vue"]]);
+  const _sfc_main$5 = {
+    __name: "edit-skills",
+    setup(__props, { expose: __expose }) {
+      __expose();
+      const userInfo = vue.ref({
+        skillTags: [],
+        realName: "",
+        schoolId: null,
+        major: "",
+        bio: "",
+        awardsHistory: []
+      });
+      const selectedTags = vue.ref([]);
+      const skillCategories = vue.ref({});
+      const currentCategory = vue.ref("");
+      const loading = vue.ref(true);
+      async function getUserProfile() {
+        try {
+          loading.value = true;
+          const res = await userApi.getUserProfile();
+          if (res.code === 200 && res.data) {
+            userInfo.value = res.data;
+            if (userInfo.value.skillTags && Array.isArray(userInfo.value.skillTags)) {
+              selectedTags.value = [...userInfo.value.skillTags];
+            }
+            formatAppLog("log", "at pages/profile/edit-skills.vue:110", "获取到用户资料:", userInfo.value);
+            await getSkillTags();
+          } else {
+            uni.showToast({
+              title: res.message || "获取资料失败",
+              icon: "none"
+            });
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/profile/edit-skills.vue:119", "获取用户资料失败:", error);
+          uni.showToast({
+            title: "获取个人资料失败",
+            icon: "none"
+          });
+        } finally {
+          loading.value = false;
+        }
+      }
+      async function getSkillTags() {
+        try {
+          const res = await userApi.getSkillTags();
+          if (res.code === 200 && res.data) {
+            skillCategories.value = res.data;
+            const categories = Object.keys(res.data);
+            if (categories.length > 0) {
+              currentCategory.value = categories[0];
+            }
+            formatAppLog("log", "at pages/profile/edit-skills.vue:140", "获取技能标签成功:", skillCategories.value);
+          } else {
+            formatAppLog("error", "at pages/profile/edit-skills.vue:142", "获取技能标签失败:", res.message);
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/profile/edit-skills.vue:145", "获取技能标签失败:", error);
+        }
+      }
+      function changeCategory(category) {
+        currentCategory.value = category;
+      }
+      function isTagSelected(tagName) {
+        return selectedTags.value.includes(tagName);
+      }
+      function toggleTag(tagName) {
+        const index = selectedTags.value.indexOf(tagName);
+        if (index === -1) {
+          if (selectedTags.value.length >= 10) {
+            uni.showToast({
+              title: "最多只能选择10个标签",
+              icon: "none"
+            });
+            return;
+          }
+          selectedTags.value.push(tagName);
+        } else {
+          removeTag(index);
+        }
+      }
+      function removeTag(index) {
+        selectedTags.value.splice(index, 1);
+      }
+      async function saveChanges() {
+        try {
+          uni.showLoading({
+            title: "保存中..."
+          });
+          const updateData = {
+            realName: userInfo.value.realName,
+            schoolId: userInfo.value.schoolId,
+            major: userInfo.value.major,
+            bio: userInfo.value.bio,
+            skillTags: selectedTags.value,
+            awardsHistory: userInfo.value.awardsHistory || []
+          };
+          const res = await userApi.updateUserProfile(updateData);
+          if (res.code === 200) {
+            uni.showToast({
+              title: "保存成功",
+              icon: "success"
+            });
+            setTimeout(() => {
+              goBack();
+            }, 1500);
+          } else {
+            uni.showToast({
+              title: res.message || "保存失败",
+              icon: "none"
+            });
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/profile/edit-skills.vue:216", "保存用户资料失败:", error);
+          uni.showToast({
+            title: "保存失败，请稍后再试",
+            icon: "none"
+          });
+        } finally {
+          uni.hideLoading();
+        }
+      }
+      function goBack() {
+        uni.navigateBack();
+      }
+      vue.onMounted(() => {
+        getUserProfile();
+      });
+      const __returned__ = { userInfo, selectedTags, skillCategories, currentCategory, loading, getUserProfile, getSkillTags, changeCategory, isTagSelected, toggleTag, removeTag, saveChanges, goBack, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, get userApi() {
+        return userApi;
+      } };
+      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
+      return __returned__;
+    }
+  };
+  function _sfc_render$4(_ctx, _cache, $props, $setup, $data, $options) {
+    return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
+      vue.createCommentVNode(" 顶部导航栏 "),
+      vue.createElementVNode("view", { class: "header" }, [
+        vue.createElementVNode("view", {
+          class: "back-btn",
+          onClick: $setup.goBack
+        }, [
+          vue.createElementVNode("text", { class: "iconfont icon-arrow-left" })
+        ]),
+        vue.createElementVNode("text", { class: "header-title" }, "编辑技能标签"),
+        vue.createElementVNode("view", {
+          class: "save-btn",
+          onClick: $setup.saveChanges
+        }, [
+          vue.createElementVNode("text", null, "保存")
+        ])
+      ]),
+      vue.createCommentVNode(" 加载中显示 "),
+      $setup.loading ? (vue.openBlock(), vue.createElementBlock("view", {
+        key: 0,
+        class: "loading-container"
+      }, [
+        vue.createElementVNode("view", { class: "loading-circle" }),
+        vue.createElementVNode("text", { class: "loading-text" }, "加载中...")
+      ])) : (vue.openBlock(), vue.createElementBlock(
+        vue.Fragment,
+        { key: 1 },
+        [
+          vue.createCommentVNode(" 编辑内容 "),
+          vue.createElementVNode("scroll-view", {
+            "scroll-y": "",
+            class: "content-scroll"
+          }, [
+            vue.createCommentVNode(" 已选标签区域 "),
+            vue.createElementVNode("view", { class: "selected-section" }, [
+              vue.createElementVNode("view", { class: "section-title" }, "已选择的标签"),
+              vue.createElementVNode("view", { class: "selected-tags" }, [
+                (vue.openBlock(true), vue.createElementBlock(
+                  vue.Fragment,
+                  null,
+                  vue.renderList($setup.selectedTags, (tag, index) => {
+                    return vue.openBlock(), vue.createElementBlock("view", {
+                      key: index,
+                      class: "tag selected-tag"
+                    }, [
+                      vue.createElementVNode(
+                        "text",
+                        null,
+                        vue.toDisplayString(tag),
+                        1
+                        /* TEXT */
+                      ),
+                      vue.createElementVNode("text", {
+                        class: "remove-icon",
+                        onClick: ($event) => $setup.removeTag(index)
+                      }, "×", 8, ["onClick"])
+                    ]);
+                  }),
+                  128
+                  /* KEYED_FRAGMENT */
+                )),
+                $setup.selectedTags.length === 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+                  key: 0,
+                  class: "empty-tips"
+                }, [
+                  vue.createElementVNode("text", null, "尚未选择任何标签，请从下方分类中选择")
+                ])) : vue.createCommentVNode("v-if", true)
+              ])
+            ]),
+            vue.createCommentVNode(" 标签分类区域 "),
+            vue.createElementVNode("view", { class: "categories-section" }, [
+              vue.createElementVNode("view", { class: "section-title" }, "选择技能标签"),
+              vue.createElementVNode("view", { class: "categories-tab" }, [
+                (vue.openBlock(true), vue.createElementBlock(
+                  vue.Fragment,
+                  null,
+                  vue.renderList(Object.keys($setup.skillCategories), (category, cIndex) => {
+                    return vue.openBlock(), vue.createElementBlock("view", {
+                      key: cIndex,
+                      class: vue.normalizeClass(["category-tab", { active: $setup.currentCategory === category }]),
+                      onClick: ($event) => $setup.changeCategory(category)
+                    }, [
+                      vue.createElementVNode(
+                        "text",
+                        null,
+                        vue.toDisplayString(category),
+                        1
+                        /* TEXT */
+                      )
+                    ], 10, ["onClick"]);
+                  }),
+                  128
+                  /* KEYED_FRAGMENT */
+                ))
+              ]),
+              vue.createCommentVNode(" 当前分类的标签列表 "),
+              vue.createElementVNode("view", { class: "tag-list" }, [
+                (vue.openBlock(true), vue.createElementBlock(
+                  vue.Fragment,
+                  null,
+                  vue.renderList($setup.skillCategories[$setup.currentCategory], (tag, tIndex) => {
+                    return vue.openBlock(), vue.createElementBlock("view", {
+                      key: tIndex,
+                      class: vue.normalizeClass(["tag", { active: $setup.isTagSelected(tag.tagName) }]),
+                      onClick: ($event) => $setup.toggleTag(tag.tagName)
+                    }, [
+                      vue.createElementVNode(
+                        "text",
+                        null,
+                        vue.toDisplayString(tag.tagName),
+                        1
+                        /* TEXT */
+                      )
+                    ], 10, ["onClick"]);
+                  }),
+                  128
+                  /* KEYED_FRAGMENT */
+                ))
+              ])
+            ]),
+            vue.createCommentVNode(" 提示信息 "),
+            vue.createElementVNode("view", { class: "tips-section" }, [
+              vue.createElementVNode("text", { class: "tip-text" }, "提示：精确的技能标签有助于AI更准确地为您推荐合适的团队")
+            ])
+          ])
+        ],
+        2112
+        /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */
+      ))
+    ]);
+  }
+  const PagesProfileEditSkills = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["render", _sfc_render$4], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/edit-skills.vue"]]);
+  const _sfc_main$4 = {
+    __name: "edit-awards",
+    setup(__props, { expose: __expose }) {
+      __expose();
+      const userInfo = vue.ref({
+        awardsHistory: [],
+        realName: "",
+        schoolId: null,
+        major: "",
+        bio: "",
+        skillTags: []
+      });
+      const awardsList = vue.ref([]);
+      const levelOptions = ["国家级", "省级", "市级", "校级", "院级", "其他"];
+      const levelIndex = vue.ref(0);
+      const editingAward = vue.ref({
+        awardName: "",
+        level: "",
+        organization: "",
+        awardTime: ""
+      });
+      const isEditing = vue.ref(false);
+      const editingIndex = vue.ref(-1);
+      const loading = vue.ref(true);
+      const awardPopup = vue.ref(null);
+      async function getUserProfile() {
+        try {
+          loading.value = true;
+          const res = await userApi.getUserProfile();
+          if (res.code === 200 && res.data) {
+            userInfo.value = res.data;
+            if (userInfo.value.awardsHistory && Array.isArray(userInfo.value.awardsHistory)) {
+              awardsList.value = [...userInfo.value.awardsHistory];
+            }
+            formatAppLog("log", "at pages/profile/edit-awards.vue:176", "获取到用户资料:", userInfo.value);
+          } else {
+            uni.showToast({
+              title: res.message || "获取资料失败",
+              icon: "none"
+            });
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/profile/edit-awards.vue:184", "获取用户资料失败:", error);
+          uni.showToast({
+            title: "获取个人资料失败",
+            icon: "none"
+          });
+        } finally {
+          loading.value = false;
+        }
+      }
+      function editAward(index) {
+        if (index >= 0 && index < awardsList.value.length) {
+          isEditing.value = true;
+          editingIndex.value = index;
+          editingAward.value = { ...awardsList.value[index] };
+          const level = editingAward.value.level;
+          const idx = levelOptions.indexOf(level);
+          levelIndex.value = idx >= 0 ? idx : 0;
+          showPopup();
+        }
+      }
+      function deleteAward(index) {
+        uni.showModal({
+          title: "删除确认",
+          content: "确定要删除这条获奖记录吗？",
+          success: function(res) {
+            if (res.confirm) {
+              awardsList.value.splice(index, 1);
+              uni.showToast({
+                title: "已删除",
+                icon: "success"
+              });
+            }
+          }
+        });
+      }
+      function showAwardForm(index) {
+        if (index === null) {
+          isEditing.value = false;
+          editingIndex.value = -1;
+          editingAward.value = {
+            awardName: "",
+            level: levelOptions[0],
+            organization: "",
+            awardTime: ""
+          };
+          levelIndex.value = 0;
+        }
+        showPopup();
+      }
+      function showPopup() {
+        if (awardPopup.value) {
+          awardPopup.value.open();
+        }
+      }
+      function closeAwardForm() {
+        if (awardPopup.value) {
+          awardPopup.value.close();
+        }
+      }
+      function onLevelChange(e) {
+        const index = e.detail.value;
+        levelIndex.value = index;
+        editingAward.value.level = levelOptions[index];
+      }
+      function onDateChange(e) {
+        editingAward.value.awardTime = e.detail.value;
+      }
+      function confirmAwardEdit() {
+        if (!editingAward.value.awardName || editingAward.value.awardName.trim() === "") {
+          uni.showToast({
+            title: "请输入奖项名称",
+            icon: "none"
+          });
+          return;
+        }
+        if (!editingAward.value.level) {
+          uni.showToast({
+            title: "请选择获奖级别",
+            icon: "none"
+          });
+          return;
+        }
+        if (!editingAward.value.organization || editingAward.value.organization.trim() === "") {
+          uni.showToast({
+            title: "请输入颁发机构",
+            icon: "none"
+          });
+          return;
+        }
+        if (!editingAward.value.awardTime) {
+          uni.showToast({
+            title: "请选择获奖时间",
+            icon: "none"
+          });
+          return;
+        }
+        if (isEditing.value && editingIndex.value >= 0) {
+          awardsList.value[editingIndex.value] = { ...editingAward.value };
+        } else {
+          awardsList.value.push({ ...editingAward.value });
+        }
+        closeAwardForm();
+        uni.showToast({
+          title: isEditing.value ? "修改成功" : "添加成功",
+          icon: "success"
+        });
+      }
+      async function saveChanges() {
+        try {
+          uni.showLoading({
+            title: "保存中..."
+          });
+          const updateData = {
+            realName: userInfo.value.realName,
+            schoolId: userInfo.value.schoolId,
+            major: userInfo.value.major,
+            bio: userInfo.value.bio,
+            skillTags: userInfo.value.skillTags || [],
+            awardsHistory: awardsList.value
+          };
+          const res = await userApi.updateUserProfile(updateData);
+          if (res.code === 200) {
+            uni.showToast({
+              title: "保存成功",
+              icon: "success"
+            });
+            setTimeout(() => {
+              goBack();
+            }, 1500);
+          } else {
+            uni.showToast({
+              title: res.message || "保存失败",
+              icon: "none"
+            });
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/profile/edit-awards.vue:355", "保存用户资料失败:", error);
+          uni.showToast({
+            title: "保存失败，请稍后再试",
+            icon: "none"
+          });
+        } finally {
+          uni.hideLoading();
+        }
+      }
+      function goBack() {
+        uni.navigateBack();
+      }
+      vue.onMounted(() => {
+        getUserProfile();
+      });
+      const __returned__ = { userInfo, awardsList, levelOptions, levelIndex, editingAward, isEditing, editingIndex, loading, awardPopup, getUserProfile, editAward, deleteAward, showAwardForm, showPopup, closeAwardForm, onLevelChange, onDateChange, confirmAwardEdit, saveChanges, goBack, ref: vue.ref, onMounted: vue.onMounted, get userApi() {
+        return userApi;
+      } };
+      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
+      return __returned__;
+    }
+  };
+  function _sfc_render$3(_ctx, _cache, $props, $setup, $data, $options) {
+    const _component_uni_popup = resolveEasycom(vue.resolveDynamicComponent("uni-popup"), __easycom_0$3);
+    return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
+      vue.createCommentVNode(" 顶部导航栏 "),
+      vue.createElementVNode("view", { class: "header" }, [
+        vue.createElementVNode("view", {
+          class: "back-btn",
+          onClick: $setup.goBack
+        }, [
+          vue.createElementVNode("text", { class: "iconfont icon-arrow-left" })
+        ]),
+        vue.createElementVNode("text", { class: "header-title" }, "编辑获奖经历"),
+        vue.createElementVNode("view", {
+          class: "save-btn",
+          onClick: $setup.saveChanges
+        }, [
+          vue.createElementVNode("text", null, "保存")
+        ])
+      ]),
+      vue.createCommentVNode(" 加载中显示 "),
+      $setup.loading ? (vue.openBlock(), vue.createElementBlock("view", {
+        key: 0,
+        class: "loading-container"
+      }, [
+        vue.createElementVNode("view", { class: "loading-circle" }),
+        vue.createElementVNode("text", { class: "loading-text" }, "加载中...")
+      ])) : (vue.openBlock(), vue.createElementBlock(
+        vue.Fragment,
+        { key: 1 },
+        [
+          vue.createCommentVNode(" 编辑内容 "),
+          vue.createElementVNode("scroll-view", {
+            "scroll-y": "",
+            class: "content-scroll"
+          }, [
+            vue.createCommentVNode(" 获奖列表 "),
+            vue.createElementVNode("view", { class: "awards-list" }, [
+              (vue.openBlock(true), vue.createElementBlock(
+                vue.Fragment,
+                null,
+                vue.renderList($setup.awardsList, (award, index) => {
+                  return vue.openBlock(), vue.createElementBlock("view", {
+                    key: index,
+                    class: "award-item"
+                  }, [
+                    vue.createElementVNode("view", { class: "award-content" }, [
+                      vue.createElementVNode("view", { class: "award-header" }, [
+                        vue.createElementVNode(
+                          "text",
+                          { class: "award-name" },
+                          vue.toDisplayString(award.awardName),
+                          1
+                          /* TEXT */
+                        ),
+                        vue.createElementVNode(
+                          "text",
+                          { class: "award-level" },
+                          vue.toDisplayString(award.level),
+                          1
+                          /* TEXT */
+                        )
+                      ]),
+                      vue.createElementVNode("view", { class: "award-detail" }, [
+                        vue.createElementVNode(
+                          "text",
+                          { class: "award-org" },
+                          vue.toDisplayString(award.organization),
+                          1
+                          /* TEXT */
+                        ),
+                        vue.createElementVNode(
+                          "text",
+                          { class: "award-time" },
+                          vue.toDisplayString(award.awardTime),
+                          1
+                          /* TEXT */
+                        )
+                      ])
+                    ]),
+                    vue.createElementVNode("view", { class: "award-actions" }, [
+                      vue.createElementVNode("view", {
+                        class: "action-btn edit-btn",
+                        onClick: ($event) => $setup.editAward(index)
+                      }, [
+                        vue.createElementVNode("text", { class: "iconfont icon-edit" })
+                      ], 8, ["onClick"]),
+                      vue.createElementVNode("view", {
+                        class: "action-btn delete-btn",
+                        onClick: ($event) => $setup.deleteAward(index)
+                      }, [
+                        vue.createElementVNode("text", { class: "iconfont icon-trash" })
+                      ], 8, ["onClick"])
+                    ])
+                  ]);
+                }),
+                128
+                /* KEYED_FRAGMENT */
+              )),
+              vue.createCommentVNode(" 没有获奖记录时显示 "),
+              $setup.awardsList.length === 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+                key: 0,
+                class: "empty-state"
+              }, [
+                vue.createElementVNode("text", null, "暂无获奖记录，点击下方添加按钮添加")
+              ])) : vue.createCommentVNode("v-if", true)
+            ]),
+            vue.createCommentVNode(" 添加按钮 "),
+            vue.createElementVNode("view", {
+              class: "add-btn",
+              onClick: _cache[0] || (_cache[0] = ($event) => $setup.showAwardForm(null))
+            }, [
+              vue.createElementVNode("text", { class: "iconfont icon-plus" }),
+              vue.createElementVNode("text", { class: "add-text" }, "添加获奖经历")
+            ])
+          ])
+        ],
+        2112
+        /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */
+      )),
+      vue.createCommentVNode(" 获奖经历编辑弹窗 "),
+      vue.createVNode(
+        _component_uni_popup,
+        {
+          ref: "awardPopup",
+          type: "center"
+        },
+        {
+          default: vue.withCtx(() => [
+            vue.createElementVNode("view", { class: "award-form" }, [
+              vue.createElementVNode("view", { class: "form-header" }, [
+                vue.createElementVNode(
+                  "text",
+                  { class: "form-title" },
+                  vue.toDisplayString($setup.isEditing ? "编辑获奖经历" : "添加获奖经历"),
+                  1
+                  /* TEXT */
+                ),
+                vue.createElementVNode("text", {
+                  class: "close-icon",
+                  onClick: $setup.closeAwardForm
+                }, "×")
+              ]),
+              vue.createElementVNode("view", { class: "form-body" }, [
+                vue.createElementVNode("view", { class: "form-item" }, [
+                  vue.createElementVNode("text", { class: "form-label" }, [
+                    vue.createTextVNode("奖项名称"),
+                    vue.createElementVNode("text", { class: "required" }, "*")
+                  ]),
+                  vue.withDirectives(vue.createElementVNode(
+                    "input",
+                    {
+                      class: "form-input",
+                      type: "text",
+                      "onUpdate:modelValue": _cache[1] || (_cache[1] = ($event) => $setup.editingAward.awardName = $event),
+                      placeholder: "请输入奖项名称",
+                      maxlength: "50"
+                    },
+                    null,
+                    512
+                    /* NEED_PATCH */
+                  ), [
+                    [vue.vModelText, $setup.editingAward.awardName]
+                  ])
+                ]),
+                vue.createElementVNode("view", { class: "form-item" }, [
+                  vue.createElementVNode("text", { class: "form-label" }, [
+                    vue.createTextVNode("获奖级别"),
+                    vue.createElementVNode("text", { class: "required" }, "*")
+                  ]),
+                  vue.createElementVNode("picker", {
+                    class: "form-picker",
+                    range: $setup.levelOptions,
+                    value: $setup.levelIndex,
+                    onChange: $setup.onLevelChange
+                  }, [
+                    vue.createElementVNode(
+                      "view",
+                      { class: "picker-text" },
+                      vue.toDisplayString($setup.editingAward.level || "请选择获奖级别"),
+                      1
+                      /* TEXT */
+                    )
+                  ], 40, ["value"])
+                ]),
+                vue.createElementVNode("view", { class: "form-item" }, [
+                  vue.createElementVNode("text", { class: "form-label" }, [
+                    vue.createTextVNode("颁发机构"),
+                    vue.createElementVNode("text", { class: "required" }, "*")
+                  ]),
+                  vue.withDirectives(vue.createElementVNode(
+                    "input",
+                    {
+                      class: "form-input",
+                      type: "text",
+                      "onUpdate:modelValue": _cache[2] || (_cache[2] = ($event) => $setup.editingAward.organization = $event),
+                      placeholder: "请输入颁发机构",
+                      maxlength: "50"
+                    },
+                    null,
+                    512
+                    /* NEED_PATCH */
+                  ), [
+                    [vue.vModelText, $setup.editingAward.organization]
+                  ])
+                ]),
+                vue.createElementVNode("view", { class: "form-item" }, [
+                  vue.createElementVNode("text", { class: "form-label" }, [
+                    vue.createTextVNode("获奖时间"),
+                    vue.createElementVNode("text", { class: "required" }, "*")
+                  ]),
+                  vue.createElementVNode("picker", {
+                    class: "form-picker",
+                    mode: "date",
+                    fields: "month",
+                    value: $setup.editingAward.awardTime,
+                    onChange: $setup.onDateChange
+                  }, [
+                    vue.createElementVNode(
+                      "view",
+                      { class: "picker-text" },
+                      vue.toDisplayString($setup.editingAward.awardTime || "请选择获奖时间"),
+                      1
+                      /* TEXT */
+                    )
+                  ], 40, ["value"])
+                ])
+              ]),
+              vue.createElementVNode("view", { class: "form-footer" }, [
+                vue.createElementVNode("button", {
+                  class: "cancel-btn",
+                  onClick: $setup.closeAwardForm
+                }, "取消"),
+                vue.createElementVNode("button", {
+                  class: "confirm-btn",
+                  onClick: $setup.confirmAwardEdit
+                }, "确认")
+              ])
+            ])
+          ]),
+          _: 1
+          /* STABLE */
+        },
+        512
+        /* NEED_PATCH */
+      )
+    ]);
+  }
+  const PagesProfileEditAwards = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["render", _sfc_render$3], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/edit-awards.vue"]]);
+  const wsConfig = {
+    url: env$1.wsUrl || "ws://localhost:8080/ws",
+    // 使用环境配置中的WebSocket地址
+    token: "",
+    // 身份验证token
+    debug: env$1.debug || false,
+    // 是否开启调试模式
+    autoReconnect: true,
+    // 是否自动重连
+    reconnectInterval: 5e3,
+    // 重连间隔时间（毫秒）
+    maxReconnectTimes: 5,
+    // 最大重连次数
+    heartbeat: true,
+    // 是否发送心跳包
+    heartbeatInterval: 3e4,
+    // 心跳间隔时间（毫秒）
+    heartbeatContent: "ping"
+    // 心跳包内容
+  };
+  let socketTask = null;
+  let isConnected = false;
+  let reconnectCount = 0;
+  let reconnectTimer = null;
+  let heartbeatTimer = null;
+  let messageCallback = null;
+  let openCallback = null;
+  let closeCallback = null;
+  let errorCallback = null;
+  function initConfig(options = {}) {
+    Object.assign(wsConfig, options);
+    log("WebSocket配置已初始化");
+  }
+  function connect(token) {
+    if (isConnected && socketTask) {
+      log("WebSocket已连接，无需重复连接");
+      return socketTask;
+    }
+    if (token) {
+      wsConfig.token = token;
+    }
+    const url = `${wsConfig.url}${wsConfig.token ? `?token=${wsConfig.token}` : ""}`;
+    log(`正在连接WebSocket: ${url}`);
+    try {
+      socketTask = uni.connectSocket({
+        url,
+        success: () => {
+          log("WebSocket连接创建成功");
+        },
+        fail: (err) => {
+          log("WebSocket连接创建失败", err);
+          handleError(err);
+        },
+        complete: () => {
+        }
+      });
+      socketTask.onOpen((res) => {
+        isConnected = true;
+        reconnectCount = 0;
+        log("WebSocket连接已打开", res);
+        if (wsConfig.heartbeat) {
+          startHeartbeat();
+        }
+        if (openCallback) {
+          openCallback(res);
+        }
+      });
+      socketTask.onMessage((res) => {
+        log("收到WebSocket消息", res.data);
+        if (res.data === "pong" && wsConfig.heartbeat) {
+          return;
+        }
+        if (messageCallback) {
+          messageCallback(res.data);
+        }
+      });
+      socketTask.onClose((res) => {
+        isConnected = false;
+        socketTask = null;
+        log("WebSocket连接已关闭", res);
+        clearTimeout(heartbeatTimer);
+        if (closeCallback) {
+          closeCallback(res);
+        }
+        if (wsConfig.autoReconnect) {
+          reconnect();
+        }
+      });
+      socketTask.onError((err) => {
+        log("WebSocket连接错误", err);
+        if (errorCallback) {
+          errorCallback(err);
+        }
+      });
+      return socketTask;
+    } catch (e) {
+      formatAppLog("error", "at utils/websocket.js:139", "创建WebSocket连接异常", e);
+      return null;
+    }
+  }
+  function send(data) {
+    if (!isConnected || !socketTask) {
+      log("WebSocket未连接，无法发送消息");
+      return false;
+    }
+    let sendData = data;
+    if (typeof data === "object" && !(data instanceof ArrayBuffer) && data !== null) {
+      sendData = JSON.stringify(data);
+    }
+    log("发送WebSocket消息", sendData);
+    socketTask.send({
+      data: sendData,
+      success: () => {
+        log("WebSocket消息发送成功");
+      },
+      fail: (err) => {
+        log("WebSocket消息发送失败", err);
+      }
+    });
+    return true;
+  }
+  function close(code = 1e3, reason = "主动关闭连接") {
+    if (!socketTask || !isConnected) {
+      log("WebSocket未连接，无法关闭");
+      return false;
+    }
+    clearTimeout(reconnectTimer);
+    clearTimeout(heartbeatTimer);
+    log(`正在关闭WebSocket连接: code=${code}, reason=${reason}`);
+    socketTask.close({
+      code,
+      reason,
+      success: () => {
+        log("WebSocket连接已关闭");
+        isConnected = false;
+        socketTask = null;
+      },
+      fail: (err) => {
+        log("WebSocket关闭失败", err);
+      }
+    });
+    return true;
+  }
+  function onMessage(callback) {
+    if (typeof callback === "function") {
+      messageCallback = callback;
+    }
+  }
+  function onOpen(callback) {
+    if (typeof callback === "function") {
+      openCallback = callback;
+    }
+  }
+  function onClose(callback) {
+    if (typeof callback === "function") {
+      closeCallback = callback;
+    }
+  }
+  function onError(callback) {
+    if (typeof callback === "function") {
+      errorCallback = callback;
+    }
+  }
+  function reconnect() {
+    if (reconnectCount >= wsConfig.maxReconnectTimes) {
+      log(`WebSocket重连次数已达上限(${wsConfig.maxReconnectTimes}次)，停止重连`);
+      return;
+    }
+    reconnectCount++;
+    log(`WebSocket ${reconnectCount}秒后尝试第${reconnectCount}次重连...`);
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(() => {
+      log(`正在进行第${reconnectCount}次重连...`);
+      connect();
+    }, wsConfig.reconnectInterval);
+  }
+  function startHeartbeat() {
+    clearTimeout(heartbeatTimer);
+    heartbeatTimer = setTimeout(() => {
+      if (isConnected) {
+        log("发送心跳包", wsConfig.heartbeatContent);
+        send(wsConfig.heartbeatContent);
+      }
+      startHeartbeat();
+    }, wsConfig.heartbeatInterval);
+  }
+  function handleError(err) {
+    formatAppLog("error", "at utils/websocket.js:295", "WebSocket错误:", err);
+  }
+  function log(message, data) {
+    if (wsConfig.debug) {
+      if (data) {
+        formatAppLog("log", "at utils/websocket.js:306", `[WebSocket] ${message}`, data);
+      } else {
+        formatAppLog("log", "at utils/websocket.js:308", `[WebSocket] ${message}`);
+      }
+    }
+  }
+  function isSocketConnected() {
+    return isConnected;
+  }
+  function getSocketTask() {
+    return socketTask;
+  }
+  const websocket = {
+    initConfig,
+    connect,
+    send,
+    close,
+    onMessage,
+    onOpen,
+    onClose,
+    onError,
+    isConnected: isSocketConnected,
+    getSocketTask
+  };
+  const notificationTypes = {
+    "system_announcement": "系统公告",
+    "team_invite": "团队邀请",
+    "team_application_received": "收到队伍申请",
+    "team_application_result": "队伍申请结果",
+    "task_application": "任务申请",
+    "task_update": "任务更新",
+    "team_application": "队伍申请",
+    "badge_application": "徽章申请"
+  };
+  let notificationCallback = null;
+  function initNotificationService(callback) {
+    if (typeof callback === "function") {
+      notificationCallback = callback;
+    }
+    websocket.onOpen((res) => {
+      formatAppLog("log", "at utils/notification-service.js:36", "通知服务: WebSocket连接已打开", res);
+      const token = getToken();
+      if (token) {
+        websocket.send({
+          type: "auth",
+          token
+        });
+      }
+    });
+    websocket.onMessage((data) => {
+      formatAppLog("log", "at utils/notification-service.js:49", "通知服务: 收到WebSocket消息", data);
+      try {
+        let message;
+        if (typeof data === "string") {
+          message = JSON.parse(data);
+        } else {
+          message = data;
+        }
+        if (message.typeId || message.type) {
+          const notification = parseNotification(message);
+          if (notificationCallback) {
+            notificationCallback(notification);
+          }
+        }
+      } catch (e) {
+        formatAppLog("error", "at utils/notification-service.js:70", "通知服务: 解析WebSocket消息失败", e);
+      }
+    });
+    websocket.onClose((res) => {
+      formatAppLog("log", "at utils/notification-service.js:75", "通知服务: WebSocket连接已关闭", res);
+    });
+    websocket.onError((err) => {
+      formatAppLog("error", "at utils/notification-service.js:79", "通知服务: WebSocket连接错误", err);
+    });
+    websocket.initConfig({
+      debug: true,
+      autoReconnect: true,
+      heartbeat: true
+    });
+    websocket.connect(getToken());
+  }
+  function parseNotification(message) {
+    return {
+      id: message.id || Date.now(),
+      // 如果没有id，使用时间戳
+      userId: message.userId,
+      title: message.title || "",
+      content: message.content || "",
+      typeId: message.typeId || message.type || "system_announcement",
+      typeName: getNotificationType(message.typeId || message.type),
+      category: message.category || null,
+      isRead: message.isRead || false,
+      createdAt: message.createdAt || (/* @__PURE__ */ new Date()).toISOString(),
+      relatedId: message.relatedId || null,
+      relatedType: message.relatedType || null,
+      dynamicData: message.dynamicData || null,
+      priority: message.priority || 0,
+      expireAt: message.expireAt || null,
+      // UI展示用属性
+      time: formatTime(message.createdAt || /* @__PURE__ */ new Date()),
+      avatar: getAvatarByType(message.typeId || message.type),
+      actions: getActionsForType(message.typeId || message.type, message.relatedType, message.relatedId)
+    };
+  }
+  function getAvatarByType(typeId) {
+    const avatarMap = {
+      "system_announcement": "/static/avatars/system.png",
+      "team_application_received": "/static/avatars/team.png",
+      "team_invite": "/static/avatars/team.png",
+      "task_application": "/static/avatars/task.png",
+      "task_update": "/static/avatars/task.png",
+      "badge_application": "/static/avatars/badge.png",
+      "friend_request": "/static/avatars/user.png"
+    };
+    return avatarMap[typeId] || "/static/avatars/system.png";
+  }
+  function getNotificationType(typeId) {
+    return notificationTypes[typeId] || "系统通知";
+  }
+  function getActionsForType(typeId, relatedType, relatedId) {
+    if (typeId === "system_announcement") {
+      return [{ name: "查看", type: "view", primary: true }];
+    } else if (typeId === "team_invite") {
+      return [
+        { name: "接受", type: "accept", primary: true },
+        { name: "拒绝", type: "reject", primary: false }
+      ];
+    } else if (typeId === "team_application_received") {
+      return [
+        { name: "接受", type: "accept", primary: true },
+        { name: "拒绝", type: "reject", primary: false }
+      ];
+    } else if (typeId.includes("task_application") || typeId.includes("team_application") || typeId.includes("badge_application")) {
+      return [{ name: "查看", type: "view", primary: true }];
+    }
+    return [{ name: "查看", type: "view", primary: true }];
+  }
+  function formatTime(dateStr) {
+    try {
+      const date = new Date(dateStr);
+      const now = /* @__PURE__ */ new Date();
+      const diff = now - date;
+      if (diff < 60 * 1e3) {
+        return "刚刚";
+      } else if (diff < 60 * 60 * 1e3) {
+        return Math.floor(diff / (60 * 1e3)) + "分钟前";
+      } else if (diff < 24 * 60 * 60 * 1e3) {
+        return Math.floor(diff / (60 * 60 * 1e3)) + "小时前";
+      } else if (diff < 30 * 24 * 60 * 60 * 1e3) {
+        return Math.floor(diff / (24 * 60 * 60 * 1e3)) + "天前";
+      } else {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+    } catch (e) {
+      formatAppLog("error", "at utils/notification-service.js:211", "格式化时间错误", e);
+      return dateStr;
+    }
+  }
+  function closeNotificationService() {
+    websocket.close();
+  }
+  async function markAsRead(notificationId) {
+    if (!notificationId)
+      return;
+    try {
+      await notificationsApi.markAsRead(notificationId);
+      websocket.send({
+        type: "notification_read",
+        notificationId
+      });
+      return true;
+    } catch (error) {
+      formatAppLog("error", "at utils/notification-service.js:242", "标记通知已读失败:", error);
+      return false;
+    }
+  }
+  async function markAllAsRead() {
+    try {
+      await notificationsApi.markAllAsRead();
+      websocket.send({
+        type: "notification_read_all"
+      });
+      return true;
+    } catch (error) {
+      formatAppLog("error", "at utils/notification-service.js:262", "标记所有通知已读失败:", error);
+      return false;
+    }
+  }
+  async function getUnreadCount() {
+    try {
+      const res = await notificationsApi.getUnreadCount();
+      if (res.code === 200 && res.data !== void 0) {
+        return res.data;
+      }
+      return 0;
+    } catch (error) {
+      formatAppLog("error", "at utils/notification-service.js:279", "获取未读通知数量失败:", error);
+      return 0;
+    }
+  }
+  const notificationService = {
+    initNotificationService,
+    closeNotificationService,
+    markAsRead,
+    markAllAsRead,
+    parseNotification,
+    formatTime,
+    getNotificationType,
+    getUnreadCount,
+    getAvatarByType,
+    getActionsForType
+  };
+  const _imports_0$1 = "/static/empty-notification.png";
+  const _sfc_main$3 = {
+    __name: "Xiaoxi",
+    setup(__props, { expose: __expose }) {
+      __expose();
+      const app = getApp();
+      const wsConnected = vue.ref(false);
+      const activeTab = vue.ref("unread");
+      const unreadCount = vue.ref(0);
+      const unreadNotifications = vue.ref([]);
+      const readNotifications = vue.ref([]);
+      const pagination = vue.ref({
+        current: 1,
+        size: 10,
+        total: 0,
+        pages: 0
+      });
+      const loading = vue.ref(false);
+      const refreshing = vue.ref(false);
+      const hasMore = vue.ref(true);
+      const isEditMode = vue.ref(false);
+      const selectedItems = vue.ref([]);
+      const isAllSelected = vue.computed(() => {
+        const currentList = activeTab.value === "unread" ? unreadNotifications.value : readNotifications.value;
+        return currentList.length > 0 && selectedItems.value.length === currentList.length;
+      });
+      function toggleEditMode() {
+        isEditMode.value = !isEditMode.value;
+        if (!isEditMode.value) {
+          selectedItems.value = [];
+        }
+      }
+      function toggleSelectItem(id) {
+        const index = selectedItems.value.indexOf(id);
+        if (index === -1) {
+          selectedItems.value.push(id);
+        } else {
+          selectedItems.value.splice(index, 1);
+        }
+      }
+      function toggleSelectAll() {
+        const currentList = activeTab.value === "unread" ? unreadNotifications.value : readNotifications.value;
+        if (isAllSelected.value) {
+          selectedItems.value = [];
+        } else {
+          selectedItems.value = currentList.map((item) => item.id);
+        }
+      }
+      function confirmBatchDelete() {
+        if (selectedItems.value.length === 0) {
+          uni.showToast({
+            title: "请先选择要删除的通知",
+            icon: "none"
+          });
+          return;
+        }
+        uni.showModal({
+          title: "删除通知",
+          content: `确定要删除选中的${selectedItems.value.length}条通知吗？`,
+          success: (res) => {
+            if (res.confirm) {
+              batchDeleteNotifications2(selectedItems.value);
+              toggleEditMode();
+            }
+          }
+        });
+      }
+      function handleNewNotification(notification) {
+        formatAppLog("log", "at pages/Xiaoxi/Xiaoxi.vue:263", "收到新通知", notification);
+        const newNotification = {
+          id: notification.id,
+          type: notification.typeName,
+          message: notification.content || notification.title,
+          time: notification.time,
+          avatar: getAvatarByType2(notification.typeId),
+          read: notification.isRead,
+          actions: notification.actions,
+          // 保存原始数据，用于后续处理
+          originalData: notification
+        };
+        if (!notification.isRead) {
+          unreadNotifications.value.unshift(newNotification);
+          unreadCount.value++;
+        }
+        readNotifications.value.unshift(newNotification);
+        uni.showToast({
+          title: "收到新通知",
+          icon: "none"
+        });
+      }
+      function getAvatarByType2(typeId) {
+        const avatarMap = {
+          "system_announcement": "/static/avatars/system.png",
+          "team_application_received": "/static/avatars/team.png",
+          "team_invite": "/static/avatars/team.png",
+          "task_application": "/static/avatars/task.png",
+          "task_update": "/static/avatars/task.png",
+          "badge_application": "/static/avatars/badge.png",
+          "friend_request": "/static/avatars/user.png"
+        };
+        return avatarMap[typeId] || "/static/avatars/system.png";
+      }
+      async function markAllAsRead2() {
+        try {
+          loading.value = true;
+          const res = await notificationsApi.markAllAsRead();
+          if (res.code === 200) {
+            unreadNotifications.value.forEach((item) => {
+              const index = readNotifications.value.findIndex((n) => n.id === item.id);
+              if (index !== -1) {
+                readNotifications.value[index].read = true;
+              }
+            });
+            unreadNotifications.value = [];
+            unreadCount.value = 0;
+            if (app && app.resetUnreadNotificationCount) {
+              app.resetUnreadNotificationCount();
+            }
+            uni.showToast({
+              title: "已全部标记为已读",
+              icon: "success"
+            });
+          } else {
+            uni.showToast({
+              title: res.message || "操作失败",
+              icon: "none"
+            });
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/Xiaoxi/Xiaoxi.vue:344", "标记全部已读失败:", error);
+          uni.showToast({
+            title: "操作失败，请稍后重试",
+            icon: "none"
+          });
+        } finally {
+          loading.value = false;
+        }
+      }
+      function handleAction(type, id) {
+        const notification = (activeTab.value === "unread" ? unreadNotifications.value : readNotifications.value).find((item) => item.id === id);
+        if (!notification)
+          return;
+        if (type === "accept") {
+          uni.showModal({
+            title: "接受申请",
+            content: `确定接受此${notification.type}？`,
+            success: async function(res) {
+              var _a, _b;
+              if (res.confirm) {
+                try {
+                  loading.value = true;
+                  const apiRes = await notificationsApi.handleNotificationAction(id, "accept", {
+                    relatedId: (_a = notification.originalData) == null ? void 0 : _a.relatedId,
+                    relatedType: (_b = notification.originalData) == null ? void 0 : _b.relatedType
+                  });
+                  if (apiRes.code === 200) {
+                    removeNotification(id);
+                    uni.showToast({
+                      title: "已接受",
+                      icon: "success"
+                    });
+                  } else {
+                    uni.showToast({
+                      title: apiRes.message || "操作失败",
+                      icon: "none"
+                    });
+                  }
+                } catch (error) {
+                  formatAppLog("error", "at pages/Xiaoxi/Xiaoxi.vue:392", "接受操作失败:", error);
+                  uni.showToast({
+                    title: "操作失败，请稍后重试",
+                    icon: "none"
+                  });
+                } finally {
+                  loading.value = false;
+                }
+              }
+            }
+          });
+        } else if (type === "reject") {
+          uni.showModal({
+            title: "拒绝申请",
+            content: `确定拒绝此${notification.type}？`,
+            success: async function(res) {
+              var _a, _b;
+              if (res.confirm) {
+                try {
+                  loading.value = true;
+                  const apiRes = await notificationsApi.handleNotificationAction(id, "reject", {
+                    relatedId: (_a = notification.originalData) == null ? void 0 : _a.relatedId,
+                    relatedType: (_b = notification.originalData) == null ? void 0 : _b.relatedType
+                  });
+                  if (apiRes.code === 200) {
+                    removeNotification(id);
+                    uni.showToast({
+                      title: "已拒绝",
+                      icon: "none"
+                    });
+                  } else {
+                    uni.showToast({
+                      title: apiRes.message || "操作失败",
+                      icon: "none"
+                    });
+                  }
+                } catch (error) {
+                  formatAppLog("error", "at pages/Xiaoxi/Xiaoxi.vue:433", "拒绝操作失败:", error);
+                  uni.showToast({
+                    title: "操作失败，请稍后重试",
+                    icon: "none"
+                  });
+                } finally {
+                  loading.value = false;
+                }
+              }
+            }
+          });
+        } else if (type === "view") {
+          navigateToDetail(notification);
+          removeNotification(id);
+        }
+      }
+      const importantNotificationTypes = [
+        "system_announcement",
+        // 系统公告
+        "team_invite",
+        // 团队邀请
+        "task_application"
+        // 任务申请
+      ];
+      function readNotificationAloud(notification) {
+        if (!notification || !notification.originalData || !importantNotificationTypes.includes(notification.originalData.typeId)) {
+          return;
+        }
+        const content = `${notification.type}：${notification.message}`;
+        if (window.speechSynthesis) {
+          const speech = new SpeechSynthesisUtterance();
+          speech.text = content;
+          speech.lang = "zh-CN";
+          speech.volume = 0.7;
+          speech.rate = 1;
+          speech.pitch = 1;
+          window.speechSynthesis.speak(speech);
+        }
+      }
+      function navigateToDetail(notification) {
+        if (!notification || !notification.originalData)
+          return;
+        markNotificationAsRead(notification.id);
+        readNotificationAloud(notification);
+        const typeId = notification.originalData.typeId;
+        const relatedId = notification.originalData.relatedId;
+        formatAppLog("log", "at pages/Xiaoxi/Xiaoxi.vue:499", "准备导航，通知类型:", typeId, "关联ID:", relatedId);
+        if (typeId === "team_invite" || typeId.includes("team_application")) {
+          if (typeId === "team_application_received") {
+            formatAppLog("log", "at pages/Xiaoxi/Xiaoxi.vue:506", "收到队伍申请，正在跳转到待我处理标签页");
+            const url = `/pages/application/application?tab=1&type=team&id=${relatedId}`;
+            formatAppLog("log", "at pages/Xiaoxi/Xiaoxi.vue:508", "跳转URL:", url);
+            uni.navigateTo({
+              url,
+              success: function() {
+                formatAppLog("log", "at pages/Xiaoxi/Xiaoxi.vue:512", "跳转成功");
+              },
+              fail: function(err) {
+                formatAppLog("error", "at pages/Xiaoxi/Xiaoxi.vue:515", "跳转失败:", err);
+              }
+            });
+          } else if (typeId === "team_application_result") {
+            uni.navigateTo({
+              url: `/pages/application/application?tab=0&type=team&id=${relatedId}`
+            });
+          } else {
+            uni.navigateTo({
+              url: `/pages/application/application?tab=0&type=team&id=${relatedId}`
+            });
+          }
+        } else if (typeId.includes("task_application") || typeId.includes("task_update")) {
+          uni.navigateTo({
+            url: `/pages/application/application?type=task&id=${relatedId}`
+          });
+        } else if (typeId === "system_announcement") {
+          uni.navigateTo({
+            url: `/pages/notification/detail?id=${notification.id}`
+          });
+        } else if (typeId === "badge_application") {
+          uni.navigateTo({
+            url: `/pages/application/application?type=badge&id=${relatedId}`
+          });
+        } else {
+          uni.navigateTo({
+            url: `/pages/application/application`
+          });
+        }
+      }
+      function handleNotificationView(notification, index) {
+        if (notification.read)
+          return;
+        notification.isReading = true;
+        notification.viewStartTime = Date.now();
+        notification.viewTimer = setTimeout(() => {
+          markNotificationAsRead(notification.id);
+        }, 2e3);
+      }
+      function handleNotificationLeave(notification) {
+        notification.isReading = false;
+        if (notification.viewTimer) {
+          clearTimeout(notification.viewTimer);
+          notification.viewTimer = null;
+        }
+        if (notification.read)
+          return;
+        if (notification.viewStartTime && Date.now() - notification.viewStartTime > 1e3) {
+          markNotificationAsRead(notification.id);
+        }
+      }
+      function isNotificationVisible(element) {
+        if (!element)
+          return false;
+        const rect = element.getBoundingClientRect();
+        const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+        return rect.top >= 0 && rect.bottom <= windowHeight && rect.height > 0;
+      }
+      function handleScroll() {
+        if (isEditMode.value)
+          return;
+        const notifications = activeTab.value === "unread" ? unreadNotifications.value : readNotifications.value;
+        const notificationElements = document.querySelectorAll(".notification-item");
+        notificationElements.forEach((element, index) => {
+          if (index < notifications.length && isNotificationVisible(element)) {
+            const notification = notifications[index];
+            if (!notification.read && !notification.scrollTimer) {
+              notification.scrollTimer = setTimeout(() => {
+                markNotificationAsRead(notification.id);
+                notification.scrollTimer = null;
+              }, 3e3);
+            }
+          }
+        });
+      }
+      async function markNotificationAsRead(id) {
+        const unreadIndex = unreadNotifications.value.findIndex((item) => item.id === id);
+        if (unreadIndex === -1) {
+          return;
+        }
+        try {
+          if (unreadIndex !== -1) {
+            const notification = unreadNotifications.value.splice(unreadIndex, 1)[0];
+            notification.read = true;
+            readNotifications.value.unshift(notification);
+            unreadCount.value--;
+            if (app && app.globalData) {
+              app.globalData.unreadNotificationCount = Math.max(0, app.globalData.unreadNotificationCount - 1);
+              if (app.updateMessageBadge) {
+                app.updateMessageBadge();
+              }
+            }
+          }
+          await notificationsApi.markAsRead(id);
+        } catch (error) {
+          formatAppLog("error", "at pages/Xiaoxi/Xiaoxi.vue:665", "标记已读失败:", error);
+        }
+      }
+      function monitorWebSocketStatus() {
+        const statusTimer = setInterval(() => {
+          wsConnected.value = websocket.isConnected();
+        }, 5e3);
+        vue.onUnmounted(() => {
+          clearInterval(statusTimer);
+        });
+      }
+      async function loadNotifications(refresh = false) {
+        if (loading.value)
+          return;
+        try {
+          loading.value = true;
+          if (refresh) {
+            pagination.value.current = 1;
+            refreshing.value = true;
+          }
+          const res = await notificationsApi.getNotificationList({
+            pageNum: pagination.value.current,
+            pageSize: pagination.value.size,
+            onlyUnread: activeTab.value === "unread",
+            // 未读标签页只请求未读通知
+            onlyRead: activeTab.value === "read"
+            // 已读标签页只请求已读通知
+          });
+          if (res.code === 200 && res.data) {
+            const notifications = (res.data.records || []).map((item) => {
+              return {
+                id: item.id,
+                type: item.typeName,
+                message: item.content || item.title,
+                time: formatTime2(item.createdAt),
+                avatar: getAvatarByType2(item.typeId),
+                read: item.isRead,
+                // 确保正确映射已读状态
+                actions: getActionsForNotification(item),
+                originalData: item,
+                // 添加UI状态属性
+                isReading: false,
+                viewStartTime: null,
+                viewTimer: null,
+                scrollTimer: null
+              };
+            });
+            pagination.value = {
+              current: res.data.current,
+              size: res.data.size,
+              total: res.data.total,
+              pages: res.data.pages
+            };
+            hasMore.value = pagination.value.current < pagination.value.pages;
+            if (refresh) {
+              if (activeTab.value === "unread") {
+                unreadNotifications.value = notifications.filter((item) => !item.read);
+              } else if (activeTab.value === "read") {
+                readNotifications.value = notifications.filter((item) => item.read);
+              }
+            } else {
+              if (activeTab.value === "unread") {
+                const newUnread = notifications.filter((item) => !item.read);
+                unreadNotifications.value = [...unreadNotifications.value, ...newUnread];
+              } else if (activeTab.value === "read") {
+                const newRead = notifications.filter((item) => item.read);
+                readNotifications.value = [...readNotifications.value, ...newRead];
+              }
+            }
+            if (activeTab.value === "unread" || refresh) {
+              unreadCount.value = activeTab.value === "unread" ? unreadNotifications.value.length : notifications.filter((item) => !item.read).length;
+              if (app && app.globalData) {
+                app.globalData.unreadNotificationCount = unreadCount.value;
+                updateTabBarBadge(unreadCount.value);
+              }
+            }
+          } else {
+            uni.showToast({
+              title: res.message || "获取通知失败",
+              icon: "none"
+            });
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/Xiaoxi/Xiaoxi.vue:778", "获取通知列表失败:", error);
+          uni.showToast({
+            title: "获取通知失败",
+            icon: "none"
+          });
+        } finally {
+          loading.value = false;
+          refreshing.value = false;
+        }
+      }
+      function updateTabBarBadge(count) {
+        if (!app || !app.updateMessageBadge)
+          return;
+        try {
+          app.updateMessageBadge();
+        } catch (error) {
+          try {
+            if (count > 0) {
+              uni.setTabBarBadge({
+                index: 4,
+                // 消息页面的TabBar索引，根据实际情况调整
+                text: count.toString()
+              }).catch((err) => {
+                formatAppLog("log", "at pages/Xiaoxi/Xiaoxi.vue:804", "设置TabBar徽标失败，可能不在TabBar页面", err);
+              });
+            } else {
+              uni.removeTabBarBadge({
+                index: 4
+              }).catch((err) => {
+                formatAppLog("log", "at pages/Xiaoxi/Xiaoxi.vue:811", "移除TabBar徽标失败，可能不在TabBar页面", err);
+              });
+            }
+          } catch (e) {
+            formatAppLog("log", "at pages/Xiaoxi/Xiaoxi.vue:816", "TabBar操作失败，可能不在TabBar页面");
+          }
+        }
+      }
+      function getActionsForNotification(notification) {
+        if (notification.typeId.includes("team_application") && !notification.isRead) {
+          return [
+            { name: "接受", type: "accept", primary: true },
+            { name: "拒绝", type: "reject", primary: false }
+          ];
+        } else if (notification.typeId === "team_invite" && !notification.isRead) {
+          return [
+            { name: "接受", type: "accept", primary: true },
+            { name: "拒绝", type: "reject", primary: false }
+          ];
+        } else {
+          return [{ name: "查看", type: "view", primary: true }];
+        }
+      }
+      function formatTime2(dateStr) {
+        try {
+          const date = new Date(dateStr);
+          const now = /* @__PURE__ */ new Date();
+          const diff = now - date;
+          if (diff < 60 * 1e3) {
+            return "刚刚";
+          } else if (diff < 60 * 60 * 1e3) {
+            return Math.floor(diff / (60 * 1e3)) + "分钟前";
+          } else if (diff < 24 * 60 * 60 * 1e3) {
+            return Math.floor(diff / (60 * 60 * 1e3)) + "小时前";
+          } else if (diff < 30 * 24 * 60 * 60 * 1e3) {
+            return Math.floor(diff / (24 * 60 * 60 * 1e3)) + "天前";
+          } else {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const day = String(date.getDate()).padStart(2, "0");
+            return `${year}-${month}-${day}`;
+          }
+        } catch (e) {
+          formatAppLog("error", "at pages/Xiaoxi/Xiaoxi.vue:869", "格式化时间错误", e);
+          return dateStr;
+        }
+      }
+      function switchTab(tab) {
+        if (activeTab.value === tab)
+          return;
+        activeTab.value = tab;
+        loadNotifications(true);
+      }
+      function onRefresh() {
+        loadNotifications(true);
+      }
+      function loadMore() {
+        if (loading.value || !hasMore.value)
+          return;
+        pagination.value.current++;
+        loadNotifications(false);
+      }
+      async function batchDeleteNotifications2(ids) {
+        if (!ids || ids.length === 0)
+          return;
+        try {
+          loading.value = true;
+          const res = await notificationsApi.batchDeleteNotifications(ids);
+          if (res.code === 200) {
+            ids.forEach((id) => {
+              const unreadIndex = unreadNotifications.value.findIndex((item) => item.id === id);
+              if (unreadIndex !== -1) {
+                unreadNotifications.value.splice(unreadIndex, 1);
+                unreadCount.value--;
+              }
+              const readIndex = readNotifications.value.findIndex((item) => item.id === id);
+              if (readIndex !== -1) {
+                readNotifications.value.splice(readIndex, 1);
+              }
+            });
+            if (app && app.globalData) {
+              app.globalData.unreadNotificationCount = unreadCount.value;
+              if (app.updateMessageBadge) {
+                app.updateMessageBadge();
+              }
+            }
+            uni.showToast({
+              title: "删除成功",
+              icon: "success"
+            });
+          } else {
+            uni.showToast({
+              title: res.message || "删除失败",
+              icon: "none"
+            });
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/Xiaoxi/Xiaoxi.vue:943", "批量删除通知失败:", error);
+          uni.showToast({
+            title: "操作失败，请稍后重试",
+            icon: "none"
+          });
+        } finally {
+          loading.value = false;
+        }
+      }
+      vue.onMounted(() => {
+        loadNotifications(true);
+        monitorWebSocketStatus();
+        const scrollView = document.querySelector(".notification-list");
+        if (scrollView) {
+          scrollView.addEventListener("scroll", handleScroll);
+        }
+        listenForNewNotifications();
+        formatAppLog("log", "at pages/Xiaoxi/Xiaoxi.vue:970", "通知页面加载完成");
+      });
+      function listenForNewNotifications() {
+        uni.$on("newNotification", (notification) => {
+          formatAppLog("log", "at pages/Xiaoxi/Xiaoxi.vue:977", "消息页面接收到新通知:", notification);
+          addNewNotificationToUI(notification);
+        });
+      }
+      function addNewNotificationToUI(notification) {
+        if (!notification)
+          return;
+        const newNotification = {
+          id: notification.id,
+          type: notification.typeName,
+          message: notification.content || notification.title,
+          time: notification.time || formatTime2(notification.createdAt || /* @__PURE__ */ new Date()),
+          avatar: getAvatarByType2(notification.typeId),
+          read: notification.isRead || false,
+          actions: notification.actions || getActionsForNotification(notification),
+          // 保存原始数据，用于后续处理
+          originalData: notification,
+          // UI状态属性
+          isReading: false,
+          viewStartTime: null,
+          viewTimer: null,
+          scrollTimer: null
+        };
+        if (!newNotification.read) {
+          const existingIndex = unreadNotifications.value.findIndex((item) => item.id === newNotification.id);
+          if (existingIndex === -1) {
+            unreadNotifications.value.unshift(newNotification);
+            unreadCount.value++;
+          }
+        } else {
+          const existingIndex = readNotifications.value.findIndex((item) => item.id === newNotification.id);
+          if (existingIndex === -1) {
+            readNotifications.value.unshift(newNotification);
+          }
+        }
+        playNotificationSound();
+      }
+      function playNotificationSound() {
+        try {
+          const audio = uni.createInnerAudioContext();
+          audio.src = "/static/sounds/notification.mp3";
+          audio.play();
+        } catch (error) {
+          formatAppLog("log", "at pages/Xiaoxi/Xiaoxi.vue:1034", "播放通知提示音失败", error);
+        }
+      }
+      vue.onUnmounted(() => {
+        const scrollView = document.querySelector(".notification-list");
+        if (scrollView) {
+          scrollView.removeEventListener("scroll", handleScroll);
+        }
+        const allNotifications = [...unreadNotifications.value, ...readNotifications.value];
+        allNotifications.forEach((notification) => {
+          if (notification.viewTimer)
+            clearTimeout(notification.viewTimer);
+          if (notification.scrollTimer)
+            clearTimeout(notification.scrollTimer);
+        });
+        uni.$off("newNotification");
+      });
+      const __returned__ = { app, wsConnected, activeTab, unreadCount, unreadNotifications, readNotifications, pagination, loading, refreshing, hasMore, isEditMode, selectedItems, isAllSelected, toggleEditMode, toggleSelectItem, toggleSelectAll, confirmBatchDelete, handleNewNotification, getAvatarByType: getAvatarByType2, markAllAsRead: markAllAsRead2, handleAction, importantNotificationTypes, readNotificationAloud, navigateToDetail, handleNotificationView, handleNotificationLeave, isNotificationVisible, handleScroll, markNotificationAsRead, monitorWebSocketStatus, loadNotifications, updateTabBarBadge, getActionsForNotification, formatTime: formatTime2, switchTab, onRefresh, loadMore, batchDeleteNotifications: batchDeleteNotifications2, listenForNewNotifications, addNewNotificationToUI, playNotificationSound, ref: vue.ref, onMounted: vue.onMounted, onUnmounted: vue.onUnmounted, computed: vue.computed, get notificationService() {
+        return notificationService;
+      }, get websocket() {
+        return websocket;
+      }, get notificationsApi() {
+        return notificationsApi;
+      } };
+      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
+      return __returned__;
+    }
+  };
+  function _sfc_render$2(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createElementVNode("view", { class: "header" }, [
         vue.createElementVNode("view", { class: "navbar" }, [
           vue.createElementVNode("view", { class: "title" }, "通知"),
-          vue.createElementVNode("view", {
-            class: "mark-read",
-            onClick: $setup.markAllAsRead
-          }, [
-            vue.createElementVNode("text", { class: "iconfont icon-check" }),
-            vue.createElementVNode("text", { class: "mark-text" }, "全部标记为已读")
+          vue.createElementVNode("view", { class: "actions" }, [
+            !$setup.isEditMode ? (vue.openBlock(), vue.createElementBlock("view", {
+              key: 0,
+              class: "mark-read",
+              onClick: $setup.markAllAsRead
+            }, [
+              vue.createElementVNode("text", { class: "iconfont icon-check" }),
+              vue.createElementVNode("text", { class: "mark-text" }, "全部标记为已读")
+            ])) : vue.createCommentVNode("v-if", true),
+            !$setup.isEditMode ? (vue.openBlock(), vue.createElementBlock("view", {
+              key: 1,
+              class: "edit-btn",
+              onClick: $setup.toggleEditMode
+            }, [
+              vue.createElementVNode("text", { class: "iconfont icon-edit" }),
+              vue.createElementVNode("text", { class: "edit-text" }, "编辑")
+            ])) : (vue.openBlock(), vue.createElementBlock("view", {
+              key: 2,
+              class: "edit-actions"
+            }, [
+              vue.createElementVNode("view", {
+                class: "cancel-btn",
+                onClick: $setup.toggleEditMode
+              }, [
+                vue.createElementVNode("text", null, "取消")
+              ]),
+              vue.createElementVNode("view", {
+                class: "delete-btn",
+                onClick: $setup.confirmBatchDelete
+              }, [
+                vue.createElementVNode("text", { class: "iconfont icon-delete" }),
+                vue.createElementVNode("text", null, "删除")
+              ])
+            ]))
           ])
-        ])
+        ]),
+        vue.createCommentVNode(" WebSocket连接状态指示器 "),
+        vue.createCommentVNode(` <view class="ws-status" :class="{ 'connected': wsConnected }">
+        <text class="ws-status-text">{{ wsConnected ? '实时消息已连接' : '实时消息未连接' }}</text>
+        <view class="ws-indicator"></view>
+      </view> `)
       ]),
       vue.createCommentVNode(" 标签页 "),
       vue.createElementVNode("view", { class: "tabs" }, [
@@ -16932,7 +20522,7 @@ if (uni.restoreGlobal) {
           "view",
           {
             class: vue.normalizeClass(["tab-item", $setup.activeTab === "unread" ? "tab-active" : ""]),
-            onClick: _cache[0] || (_cache[0] = ($event) => $setup.activeTab = "unread")
+            onClick: _cache[0] || (_cache[0] = ($event) => $setup.switchTab("unread"))
           },
           [
             vue.createElementVNode("text", null, "未读"),
@@ -16953,11 +20543,11 @@ if (uni.restoreGlobal) {
         vue.createElementVNode(
           "view",
           {
-            class: vue.normalizeClass(["tab-item", $setup.activeTab === "all" ? "tab-active" : ""]),
-            onClick: _cache[1] || (_cache[1] = ($event) => $setup.activeTab = "all")
+            class: vue.normalizeClass(["tab-item", $setup.activeTab === "read" ? "tab-active" : ""]),
+            onClick: _cache[1] || (_cache[1] = ($event) => $setup.switchTab("read"))
           },
           [
-            vue.createElementVNode("text", null, "全部")
+            vue.createElementVNode("text", null, "已读")
           ],
           2
           /* CLASS */
@@ -16966,24 +20556,59 @@ if (uni.restoreGlobal) {
       vue.createCommentVNode(" 通知列表 "),
       vue.createElementVNode("scroll-view", {
         "scroll-y": "",
-        class: "notification-list"
+        class: "notification-list",
+        "refresher-enabled": "",
+        "refresher-triggered": $setup.refreshing,
+        onRefresherrefresh: $setup.onRefresh,
+        onScrolltolower: $setup.loadMore
       }, [
+        vue.createCommentVNode(" 未读通知列表 "),
         $setup.activeTab === "unread" ? (vue.openBlock(), vue.createElementBlock("view", { key: 0 }, [
           (vue.openBlock(true), vue.createElementBlock(
             vue.Fragment,
             null,
             vue.renderList($setup.unreadNotifications, (item, index) => {
               return vue.openBlock(), vue.createElementBlock("view", {
-                class: "notification-item",
-                key: index
+                class: vue.normalizeClass(["notification-item unread", {
+                  "item-selected": $setup.isEditMode && $setup.selectedItems.includes(item.id),
+                  "reading": item.isReading
+                }]),
+                key: index,
+                onMouseenter: ($event) => !$setup.isEditMode && $setup.handleNotificationView(item, index),
+                onMouseleave: ($event) => !$setup.isEditMode && $setup.handleNotificationLeave(item),
+                onTouchstart: ($event) => !$setup.isEditMode && $setup.handleNotificationView(item, index),
+                onTouchend: ($event) => !$setup.isEditMode && $setup.handleNotificationLeave(item)
               }, [
+                $setup.isEditMode ? (vue.openBlock(), vue.createElementBlock("view", {
+                  key: 0,
+                  class: "select-box",
+                  onClick: vue.withModifiers(($event) => $setup.toggleSelectItem(item.id), ["stop"])
+                }, [
+                  vue.createElementVNode(
+                    "view",
+                    {
+                      class: vue.normalizeClass(["checkbox", { "checked": $setup.selectedItems.includes(item.id) }])
+                    },
+                    [
+                      $setup.selectedItems.includes(item.id) ? (vue.openBlock(), vue.createElementBlock("text", {
+                        key: 0,
+                        class: "iconfont icon-check"
+                      })) : vue.createCommentVNode("v-if", true)
+                    ],
+                    2
+                    /* CLASS */
+                  )
+                ], 8, ["onClick"])) : vue.createCommentVNode("v-if", true),
                 vue.createElementVNode("view", { class: "notification-avatar" }, [
                   vue.createElementVNode("image", {
                     src: item.avatar || "/static/default-avatar.png",
                     mode: "aspectFill"
                   }, null, 8, ["src"])
                 ]),
-                vue.createElementVNode("view", { class: "notification-content" }, [
+                vue.createElementVNode("view", {
+                  class: "notification-content",
+                  onClick: ($event) => $setup.isEditMode ? $setup.toggleSelectItem(item.id) : $setup.navigateToDetail(item)
+                }, [
                   vue.createElementVNode(
                     "view",
                     { class: "notification-type" },
@@ -17006,7 +20631,7 @@ if (uni.restoreGlobal) {
                     /* TEXT */
                   ),
                   vue.createCommentVNode(" 操作按钮 "),
-                  item.actions ? (vue.openBlock(), vue.createElementBlock("view", {
+                  !$setup.isEditMode && item.actions ? (vue.openBlock(), vue.createElementBlock("view", {
                     key: 0,
                     class: "notification-actions"
                   }, [
@@ -17017,86 +20642,113 @@ if (uni.restoreGlobal) {
                         return vue.openBlock(), vue.createElementBlock("button", {
                           key: idx,
                           class: vue.normalizeClass(["action-btn", action.primary ? "btn-primary" : "btn-default"]),
-                          onClick: ($event) => $setup.handleAction(action.type, item.id)
+                          onClick: vue.withModifiers(($event) => $setup.handleAction(action.type, item.id), ["stop"])
                         }, vue.toDisplayString(action.name), 11, ["onClick"]);
                       }),
                       128
                       /* KEYED_FRAGMENT */
                     ))
                   ])) : vue.createCommentVNode("v-if", true)
-                ])
-              ]);
+                ], 8, ["onClick"])
+              ], 42, ["onMouseenter", "onMouseleave", "onTouchstart", "onTouchend"]);
             }),
             128
             /* KEYED_FRAGMENT */
           ))
         ])) : vue.createCommentVNode("v-if", true),
-        $setup.activeTab === "all" ? (vue.openBlock(), vue.createElementBlock("view", { key: 1 }, [
+        vue.createCommentVNode(" 已读通知列表 "),
+        $setup.activeTab === "read" ? (vue.openBlock(), vue.createElementBlock("view", { key: 1 }, [
           (vue.openBlock(true), vue.createElementBlock(
             vue.Fragment,
             null,
-            vue.renderList($setup.allNotifications, (item, index) => {
-              return vue.openBlock(), vue.createElementBlock("view", {
-                class: "notification-item",
-                key: index
-              }, [
-                vue.createElementVNode("view", { class: "notification-avatar" }, [
-                  vue.createElementVNode("image", {
-                    src: item.avatar || "/static/default-avatar.png",
-                    mode: "aspectFill"
-                  }, null, 8, ["src"])
-                ]),
-                vue.createElementVNode("view", { class: "notification-content" }, [
-                  vue.createElementVNode(
-                    "view",
-                    { class: "notification-type" },
-                    vue.toDisplayString(item.type),
-                    1
-                    /* TEXT */
-                  ),
-                  vue.createElementVNode(
-                    "view",
-                    { class: "notification-message" },
-                    vue.toDisplayString(item.message),
-                    1
-                    /* TEXT */
-                  ),
-                  vue.createElementVNode(
-                    "view",
-                    { class: "notification-time" },
-                    vue.toDisplayString(item.time),
-                    1
-                    /* TEXT */
-                  ),
-                  vue.createCommentVNode(" 操作按钮 "),
-                  item.actions ? (vue.openBlock(), vue.createElementBlock("view", {
+            vue.renderList($setup.readNotifications, (item, index) => {
+              return vue.openBlock(), vue.createElementBlock(
+                "view",
+                {
+                  class: vue.normalizeClass(["notification-item read", {
+                    "item-selected": $setup.isEditMode && $setup.selectedItems.includes(item.id)
+                  }]),
+                  key: index
+                },
+                [
+                  $setup.isEditMode ? (vue.openBlock(), vue.createElementBlock("view", {
                     key: 0,
-                    class: "notification-actions"
+                    class: "select-box",
+                    onClick: vue.withModifiers(($event) => $setup.toggleSelectItem(item.id), ["stop"])
                   }, [
-                    (vue.openBlock(true), vue.createElementBlock(
-                      vue.Fragment,
-                      null,
-                      vue.renderList(item.actions, (action, idx) => {
-                        return vue.openBlock(), vue.createElementBlock("button", {
-                          key: idx,
-                          class: vue.normalizeClass(["action-btn", action.primary ? "btn-primary" : "btn-default"]),
-                          onClick: ($event) => $setup.handleAction(action.type, item.id)
-                        }, vue.toDisplayString(action.name), 11, ["onClick"]);
-                      }),
-                      128
-                      /* KEYED_FRAGMENT */
-                    ))
-                  ])) : vue.createCommentVNode("v-if", true)
-                ])
-              ]);
+                    vue.createElementVNode(
+                      "view",
+                      {
+                        class: vue.normalizeClass(["checkbox", { "checked": $setup.selectedItems.includes(item.id) }])
+                      },
+                      [
+                        $setup.selectedItems.includes(item.id) ? (vue.openBlock(), vue.createElementBlock("text", {
+                          key: 0,
+                          class: "iconfont icon-check"
+                        })) : vue.createCommentVNode("v-if", true)
+                      ],
+                      2
+                      /* CLASS */
+                    )
+                  ], 8, ["onClick"])) : vue.createCommentVNode("v-if", true),
+                  vue.createElementVNode("view", { class: "notification-avatar" }, [
+                    vue.createElementVNode("image", {
+                      src: item.avatar || "/static/default-avatar.png",
+                      mode: "aspectFill"
+                    }, null, 8, ["src"])
+                  ]),
+                  vue.createElementVNode("view", {
+                    class: "notification-content",
+                    onClick: ($event) => $setup.isEditMode ? $setup.toggleSelectItem(item.id) : $setup.navigateToDetail(item)
+                  }, [
+                    vue.createElementVNode(
+                      "view",
+                      { class: "notification-type" },
+                      vue.toDisplayString(item.type),
+                      1
+                      /* TEXT */
+                    ),
+                    vue.createElementVNode(
+                      "view",
+                      { class: "notification-message" },
+                      vue.toDisplayString(item.message),
+                      1
+                      /* TEXT */
+                    ),
+                    vue.createElementVNode(
+                      "view",
+                      { class: "notification-time" },
+                      vue.toDisplayString(item.time),
+                      1
+                      /* TEXT */
+                    )
+                  ], 8, ["onClick"])
+                ],
+                2
+                /* CLASS */
+              );
             }),
             128
             /* KEYED_FRAGMENT */
           ))
         ])) : vue.createCommentVNode("v-if", true),
-        vue.createCommentVNode(" 无通知状态 "),
-        $setup.activeTab === "unread" && $setup.unreadNotifications.length === 0 || $setup.activeTab === "all" && $setup.allNotifications.length === 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+        vue.createCommentVNode(" 加载更多 "),
+        $setup.loading && !$setup.refreshing ? (vue.openBlock(), vue.createElementBlock("view", {
           key: 2,
+          class: "loading-more"
+        }, [
+          vue.createElementVNode("text", null, "加载中...")
+        ])) : vue.createCommentVNode("v-if", true),
+        vue.createCommentVNode(" 无更多数据 "),
+        !$setup.loading && !$setup.hasMore && ($setup.activeTab === "unread" ? $setup.unreadNotifications.length > 0 : $setup.readNotifications.length > 0) ? (vue.openBlock(), vue.createElementBlock("view", {
+          key: 3,
+          class: "no-more"
+        }, [
+          vue.createElementVNode("text", null, "没有更多了")
+        ])) : vue.createCommentVNode("v-if", true),
+        vue.createCommentVNode(" 无通知状态 "),
+        !$setup.loading && ($setup.activeTab === "unread" && $setup.unreadNotifications.length === 0) || $setup.activeTab === "read" && $setup.readNotifications.length === 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+          key: 4,
           class: "empty-state"
         }, [
           vue.createElementVNode("image", {
@@ -17107,17 +20759,61 @@ if (uni.restoreGlobal) {
           vue.createElementVNode(
             "text",
             { class: "empty-text" },
-            "暂无" + vue.toDisplayString($setup.activeTab === "unread" ? "未读" : "") + "通知",
+            "暂无" + vue.toDisplayString($setup.activeTab === "unread" ? "未读" : "已读") + "通知",
             1
             /* TEXT */
           )
         ])) : vue.createCommentVNode("v-if", true)
-      ])
+      ], 40, ["refresher-triggered"]),
+      vue.createCommentVNode(" 底部批量操作栏 "),
+      $setup.isEditMode ? (vue.openBlock(), vue.createElementBlock("view", {
+        key: 0,
+        class: "bottom-action-bar"
+      }, [
+        vue.createElementVNode("view", {
+          class: "select-all",
+          onClick: $setup.toggleSelectAll
+        }, [
+          vue.createElementVNode(
+            "view",
+            {
+              class: vue.normalizeClass(["checkbox", { "checked": $setup.isAllSelected }])
+            },
+            [
+              $setup.isAllSelected ? (vue.openBlock(), vue.createElementBlock("text", {
+                key: 0,
+                class: "iconfont icon-check"
+              })) : vue.createCommentVNode("v-if", true)
+            ],
+            2
+            /* CLASS */
+          ),
+          vue.createElementVNode("text", null, "全选")
+        ]),
+        vue.createElementVNode(
+          "view",
+          {
+            class: vue.normalizeClass(["batch-delete", { "disabled": $setup.selectedItems.length === 0 }]),
+            onClick: $setup.confirmBatchDelete
+          },
+          [
+            vue.createElementVNode(
+              "text",
+              null,
+              "删除(" + vue.toDisplayString($setup.selectedItems.length) + ")",
+              1
+              /* TEXT */
+            )
+          ],
+          2
+          /* CLASS */
+        )
+      ])) : vue.createCommentVNode("v-if", true)
     ]);
   }
-  const PagesXiaoxiXiaoxi = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["render", _sfc_render$1], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/Xiaoxi/Xiaoxi.vue"]]);
+  const PagesXiaoxiXiaoxi = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["render", _sfc_render$2], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/Xiaoxi/Xiaoxi.vue"]]);
   const _imports_0 = "/static/images/empty.png";
-  const _sfc_main$1 = {
+  const _sfc_main$2 = {
     __name: "application",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -17135,8 +20831,7 @@ if (uni.restoreGlobal) {
       const currentRole = vue.ref("applicant");
       const tabs = vue.ref([
         { name: "我发起的", badge: 0, role: "applicant" },
-        { name: "待我处理", badge: 0, role: "creator" },
-        { name: "全部", badge: 0, role: "all" }
+        { name: "待我处理", badge: 0, role: "creator" }
       ]);
       const currentTab = vue.ref(0);
       const applicationTypes = vue.ref([
@@ -17210,8 +20905,78 @@ if (uni.restoreGlobal) {
         return filtered;
       });
       vue.onMounted(() => {
+        let query = {};
+        if (uni.getSystemInfoSync().platform === "h5") {
+          query = getQueryParams();
+        } else {
+          const instance = vue.getCurrentInstance();
+          if (instance && instance.proxy && instance.proxy.$mp && instance.proxy.$mp.query) {
+            query = instance.proxy.$mp.query;
+          }
+        }
+        handleUrlParams(query);
+        loadBadgeCount();
         loadApplications(true);
       });
+      function getQueryParams() {
+        const params = {};
+        const queryString = window.location.search.substring(1);
+        const pairs = queryString.split("&");
+        for (let i = 0; i < pairs.length; i++) {
+          const pair = pairs[i].split("=");
+          params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || "");
+        }
+        return params;
+      }
+      function handleUrlParams(query) {
+        formatAppLog("log", "at pages/application/application.vue:333", "处理URL参数:", query);
+        if (query.tab !== void 0) {
+          const tabIndex = parseInt(query.tab);
+          if (!isNaN(tabIndex) && tabIndex >= 0 && tabIndex < tabs.value.length) {
+            switchTab(tabIndex);
+          }
+        }
+        if (query.type) {
+          const type = query.type;
+          if (["task", "team", "badge", "all"].includes(type)) {
+            selectedType.value = type;
+          }
+        }
+        if (query.id) {
+          targetApplicationId.value = query.id;
+        }
+      }
+      const targetApplicationId = vue.ref(null);
+      function scrollToApplication() {
+        if (!targetApplicationId.value)
+          return;
+        setTimeout(() => {
+          const selector = `.application-card[data-id="${targetApplicationId.value}"]`;
+          const query = uni.createSelectorQuery();
+          query.select(selector).boundingClientRect();
+          query.selectViewport().scrollOffset();
+          query.exec((res) => {
+            if (res[0]) {
+              uni.pageScrollTo({
+                scrollTop: res[1].scrollTop + res[0].top - 100,
+                // 减去一些偏移，让元素不要太靠近顶部
+                duration: 300
+              });
+              highlightApplication(targetApplicationId.value);
+            }
+          });
+          targetApplicationId.value = null;
+        }, 500);
+      }
+      function highlightApplication(id) {
+        const element = document.querySelector(`.application-card[data-id="${id}"]`);
+        if (!element)
+          return;
+        element.classList.add("highlight-application");
+        setTimeout(() => {
+          element.classList.remove("highlight-application");
+        }, 3e3);
+      }
       function getCardTitle(item) {
         if (!item || !item.type)
           return "申请";
@@ -17258,8 +21023,6 @@ if (uni.restoreGlobal) {
             currentRole.value = "applicant";
           } else if (currentTab.value === 1) {
             currentRole.value = "creator";
-          } else {
-            currentRole.value = "all";
           }
           if (selectedType.value === "all" || selectedType.value === "task") {
             await loadTaskApplications(isRefresh);
@@ -17267,12 +21030,15 @@ if (uni.restoreGlobal) {
           if (selectedType.value === "all" || selectedType.value === "team") {
             await loadTeamApplications(isRefresh);
           }
-          if ((selectedType.value === "all" || selectedType.value === "badge") && currentTab.value !== 1) {
+          if ((selectedType.value === "all" || selectedType.value === "badge") && currentTab.value === 0) {
             await loadBadgeApplications(isRefresh);
           }
-          formatAppLog("log", "at pages/application/application.vue:367", "加载完成的应用列表数据：", applications.value);
+          formatAppLog("log", "at pages/application/application.vue:468", "加载完成的应用列表数据：", applications.value);
+          if (targetApplicationId.value) {
+            scrollToApplication();
+          }
         } catch (error) {
-          formatAppLog("error", "at pages/application/application.vue:370", "获取申请列表失败:", error);
+          formatAppLog("error", "at pages/application/application.vue:476", "获取申请列表失败:", error);
           uni.showToast({
             title: "网络异常，请稍后重试",
             icon: "none"
@@ -17293,11 +21059,9 @@ if (uni.restoreGlobal) {
           if (selectedStatus.value !== "all" && selectedStatus.value !== "processed") {
             params.status = selectedStatus.value;
           }
-          if (currentRole.value !== "all") {
-            params.role = currentRole.value;
-          }
+          params.role = currentRole.value;
           const res = await taskApplicationApi.getTaskApplicationList(params);
-          if (res.code === 200 && res.data) {
+          if (res && res.code === 200 && res.data) {
             const taskList = (res.data.list || []).map((item) => ({
               ...item,
               type: "task"
@@ -17312,16 +21076,13 @@ if (uni.restoreGlobal) {
             } else {
               applications.value = [...applications.value, ...taskList];
             }
-            if (res.data.pendingCount !== void 0) {
-              tabs.value[1].badge = res.data.pendingCount;
-            }
             if (selectedType.value === "task") {
               hasNoMore.value = !res.data.hasNext;
             }
-            formatAppLog("log", "at pages/application/application.vue:435", "任务申请列表:", taskList);
+            formatAppLog("log", "at pages/application/application.vue:535", "任务申请列表:", taskList);
           }
         } catch (error) {
-          formatAppLog("error", "at pages/application/application.vue:438", "获取任务申请列表失败:", error);
+          formatAppLog("error", "at pages/application/application.vue:538", "获取任务申请列表失败:", error);
           uni.showToast({
             title: "获取任务申请失败",
             icon: "none"
@@ -17342,10 +21103,8 @@ if (uni.restoreGlobal) {
             res = await teamApi.getMyApplications(params);
           } else if (currentRole.value === "creator" || currentRole.value === "leader") {
             res = await teamApi.getTeamApplications(params);
-          } else {
-            res = await teamApi.getMyApplications(params);
           }
-          if (res.code === 200 && res.data) {
+          if (res && res.code === 200 && res.data) {
             const teamList = (res.data.list || []).map((item) => ({
               ...item,
               type: "team"
@@ -17360,21 +21119,13 @@ if (uni.restoreGlobal) {
             } else {
               applications.value = [...applications.value, ...teamList];
             }
-            if (currentRole.value === "creator" || currentRole.value === "leader") {
-              const pendingCount = (res.data.list || []).filter((item) => item.status === "pending").length;
-              if (currentTab.value === 1) {
-                tabs.value[1].badge += pendingCount;
-              }
-            }
             if (selectedType.value === "team") {
               hasNoMore.value = !res.data.hasNext;
-            } else if (selectedType.value === "all") {
-              hasNoMore.value = hasNoMore.value && !res.data.hasNext;
             }
-            formatAppLog("log", "at pages/application/application.vue:509", "队伍申请列表:", teamList);
+            formatAppLog("log", "at pages/application/application.vue:594", "队伍申请列表:", teamList);
           }
         } catch (error) {
-          formatAppLog("error", "at pages/application/application.vue:512", "获取队伍申请列表失败:", error);
+          formatAppLog("error", "at pages/application/application.vue:597", "获取队伍申请列表失败:", error);
           uni.showToast({
             title: "获取队伍申请失败",
             icon: "none"
@@ -17390,14 +21141,23 @@ if (uni.restoreGlobal) {
           if (selectedStatus.value !== "all" && selectedStatus.value !== "processed") {
             params.status = selectedStatus.value;
           }
-          const res = await uni.request({
-            url: `${baseApiUrl2}/badge/approvals/my-applications`,
-            method: "GET",
-            data: params,
-            header: {
-              "Authorization": `Bearer ${uni.getStorageSync("token")}`
-            }
-          });
+          let res;
+          try {
+            res = await uni.request({
+              url: `${baseApiUrl2}/badge/approvals/my-applications`,
+              method: "GET",
+              data: params,
+              header: {
+                "Authorization": `Bearer ${uni.getStorageSync("token")}`
+              }
+            });
+          } catch (error) {
+            formatAppLog("error", "at pages/application/application.vue:630", "徽章申请请求失败:", error);
+            res = {
+              statusCode: 500,
+              data: null
+            };
+          }
           if (res.statusCode === 200 && res.data && res.data.code === 200) {
             const badgeList = (res.data.data.records || []).map((item) => ({
               ...item,
@@ -17425,18 +21185,45 @@ if (uni.restoreGlobal) {
               const totalPages = Math.ceil(res.data.data.total / pageSize.value);
               hasNoMore.value = currentPage.value >= totalPages;
             }
-            formatAppLog("log", "at pages/application/application.vue:580", "徽章申请列表:", badgeList);
+            formatAppLog("log", "at pages/application/application.vue:676", "徽章申请列表:", badgeList);
           }
         } catch (error) {
-          formatAppLog("error", "at pages/application/application.vue:583", "获取徽章申请列表失败:", error);
+          formatAppLog("error", "at pages/application/application.vue:679", "获取徽章申请列表失败:", error);
           uni.showToast({
             title: "获取徽章申请失败",
             icon: "none"
           });
         }
       }
+      async function loadBadgeCount() {
+        try {
+          const taskParams = { status: "pending", role: "creator", pageSize: 1 };
+          const taskRes = await taskApplicationApi.getTaskApplicationList(taskParams);
+          const teamParams = { status: "pending", pageSize: 1 };
+          const teamRes = await teamApi.getTeamApplications(teamParams);
+          let totalPending = 0;
+          if (taskRes && taskRes.code === 200 && taskRes.data && taskRes.data.pendingCount !== void 0) {
+            totalPending += taskRes.data.pendingCount;
+          }
+          if (teamRes && teamRes.code === 200 && teamRes.data) {
+            if (teamRes.data.pendingCount !== void 0) {
+              totalPending += teamRes.data.pendingCount;
+            } else if (teamRes.data.total !== void 0) {
+              totalPending += teamRes.data.total;
+            } else {
+              const pendingCount = (teamRes.data.list || []).filter((item) => item.status === "pending").length;
+              totalPending += pendingCount;
+            }
+          }
+          formatAppLog("log", "at pages/application/application.vue:718", "更新待处理数量角标:", totalPending);
+          tabs.value[1].badge = totalPending;
+        } catch (error) {
+          formatAppLog("error", "at pages/application/application.vue:724", "获取待处理数量失败:", error);
+        }
+      }
       function onRefresh() {
         refreshing.value = true;
+        loadBadgeCount();
         loadApplications(true);
       }
       function loadMore() {
@@ -17457,8 +21244,6 @@ if (uni.restoreGlobal) {
           currentRole.value = "applicant";
         } else if (index === 1) {
           currentRole.value = "creator";
-        } else {
-          currentRole.value = "all";
         }
         loadApplications(true);
       }
@@ -17558,6 +21343,7 @@ if (uni.restoreGlobal) {
                     icon: "success"
                   });
                   loadApplications(true);
+                  loadBadgeCount();
                 } else {
                   uni.showToast({
                     title: (result == null ? void 0 : result.message) || "操作失败",
@@ -17566,7 +21352,7 @@ if (uni.restoreGlobal) {
                 }
               } catch (error) {
                 uni.hideLoading();
-                formatAppLog("error", "at pages/application/application.vue:754", "处理申请失败:", error);
+                formatAppLog("error", "at pages/application/application.vue:898", "处理申请失败:", error);
                 uni.showToast({
                   title: "网络异常，请稍后重试",
                   icon: "none"
@@ -17615,6 +21401,7 @@ if (uni.restoreGlobal) {
                     icon: "success"
                   });
                   loadApplications(true);
+                  loadBadgeCount();
                 } else {
                   uni.showToast({
                     title: (result == null ? void 0 : result.message) || "操作失败",
@@ -17623,7 +21410,7 @@ if (uni.restoreGlobal) {
                 }
               } catch (error) {
                 uni.hideLoading();
-                formatAppLog("error", "at pages/application/application.vue:821", "取消申请失败:", error);
+                formatAppLog("error", "at pages/application/application.vue:968", "取消申请失败:", error);
                 uni.showToast({
                   title: "网络异常，请稍后重试",
                   icon: "none"
@@ -17668,7 +21455,7 @@ if (uni.restoreGlobal) {
       function goBack() {
         uni.navigateBack();
       }
-      const __returned__ = { baseApiUrl: baseApiUrl2, refreshing, loading, hasNoMore, currentPage, pageSize, loadMoreText, currentRole, tabs, currentTab, applicationTypes, getApplicationTypes, statusTypes, pendingStatusTypes, selectedType, selectedStatus, applications, filteredApplications, getCardTitle, getTypeClass, getApplicationClass, loadApplications, loadTaskApplications, loadTeamApplications, loadBadgeApplications, onRefresh, loadMore, switchTab, selectType, selectStatus, getStatusClass, formatDateTime, handleApplication, cancelApplication, createApplication, viewDetail, goBack, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, get taskApplicationApi() {
+      const __returned__ = { baseApiUrl: baseApiUrl2, refreshing, loading, hasNoMore, currentPage, pageSize, loadMoreText, currentRole, tabs, currentTab, applicationTypes, getApplicationTypes, statusTypes, pendingStatusTypes, selectedType, selectedStatus, applications, filteredApplications, getQueryParams, handleUrlParams, targetApplicationId, scrollToApplication, highlightApplication, getCardTitle, getTypeClass, getApplicationClass, loadApplications, loadTaskApplications, loadTeamApplications, loadBadgeApplications, loadBadgeCount, onRefresh, loadMore, switchTab, selectType, selectStatus, getStatusClass, formatDateTime, handleApplication, cancelApplication, createApplication, viewDetail, goBack, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, getCurrentInstance: vue.getCurrentInstance, get taskApplicationApi() {
         return taskApplicationApi;
       }, get teamApi() {
         return teamApi;
@@ -17679,7 +21466,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$1(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_uni_load_more = resolveEasycom(vue.resolveDynamicComponent("uni-load-more"), __easycom_0$2);
     return vue.openBlock(), vue.createElementBlock("view", { class: "application-container" }, [
       vue.createCommentVNode(" 固定区域 "),
@@ -17800,164 +21587,159 @@ if (uni.restoreGlobal) {
           vue.Fragment,
           null,
           vue.renderList($setup.filteredApplications, (item, index) => {
-            return vue.openBlock(), vue.createElementBlock(
-              "view",
-              {
-                key: index,
-                class: vue.normalizeClass(["application-card", [$setup.getApplicationClass(item.type), $setup.getStatusClass(item.status)]])
-              },
-              [
-                vue.createCommentVNode(" 状态角标 - 右上角 "),
-                vue.createElementVNode(
-                  "view",
-                  {
-                    class: vue.normalizeClass(["status-corner", $setup.getStatusClass(item.status)])
-                  },
-                  vue.toDisplayString(item.statusText),
-                  3
-                  /* TEXT, CLASS */
-                ),
-                vue.createElementVNode("view", { class: "card-content" }, [
-                  vue.createElementVNode("view", { class: "card-title" }, [
-                    vue.createTextVNode(
-                      vue.toDisplayString($setup.getCardTitle(item)) + " ",
-                      1
-                      /* TEXT */
-                    ),
-                    vue.createElementVNode(
-                      "text",
-                      {
-                        class: vue.normalizeClass(["type-tag", $setup.getTypeClass(item.type)])
-                      },
-                      vue.toDisplayString(item.type === "task" ? "任务" : item.type === "team" ? "队伍" : item.type === "badge" ? "徽章" : "未知"),
-                      3
-                      /* TEXT, CLASS */
-                    )
-                  ]),
-                  vue.createCommentVNode(" 如果当前角色是创建者，显示申请人信息 "),
-                  vue.createElementVNode("view", { class: "card-info" }, [
-                    $setup.currentRole === "creator" || $setup.currentRole === "leader" ? (vue.openBlock(), vue.createElementBlock("view", {
-                      key: 0,
-                      class: "info-item"
-                    }, [
-                      vue.createElementVNode("text", { class: "info-label" }, "申请人："),
-                      vue.createElementVNode(
-                        "text",
-                        { class: "info-value" },
-                        vue.toDisplayString(item.applicantName) + " " + vue.toDisplayString(item.applicantMajor ? "· " + item.applicantMajor : ""),
-                        1
-                        /* TEXT */
-                      )
-                    ])) : vue.createCommentVNode("v-if", true),
-                    item.type === "team" && item.roleName ? (vue.openBlock(), vue.createElementBlock("view", {
-                      key: 1,
-                      class: "info-item"
-                    }, [
-                      vue.createElementVNode("text", { class: "info-label" }, "申请角色："),
-                      vue.createElementVNode(
-                        "text",
-                        { class: "info-value" },
-                        vue.toDisplayString(item.roleName),
-                        1
-                        /* TEXT */
-                      )
-                    ])) : vue.createCommentVNode("v-if", true),
-                    vue.createElementVNode("view", { class: "info-item" }, [
-                      vue.createElementVNode("text", { class: "info-label" }, "申请时间："),
-                      vue.createElementVNode(
-                        "text",
-                        { class: "info-value" },
-                        vue.toDisplayString($setup.formatDateTime(item.appliedAt)),
-                        1
-                        /* TEXT */
-                      )
-                    ]),
-                    item.message ? (vue.openBlock(), vue.createElementBlock("view", {
-                      key: 2,
-                      class: "info-item"
-                    }, [
-                      vue.createElementVNode("text", { class: "info-label" }, "申请理由："),
-                      vue.createElementVNode(
-                        "text",
-                        { class: "info-value" },
-                        vue.toDisplayString(item.message),
-                        1
-                        /* TEXT */
-                      )
-                    ])) : vue.createCommentVNode("v-if", true),
-                    item.reviewNotes && item.status !== "pending" ? (vue.openBlock(), vue.createElementBlock("view", {
-                      key: 3,
-                      class: "info-item"
-                    }, [
-                      vue.createElementVNode("text", { class: "info-label" }, "审核备注："),
-                      vue.createElementVNode(
-                        "text",
-                        { class: "info-value" },
-                        vue.toDisplayString(item.reviewNotes),
-                        1
-                        /* TEXT */
-                      )
-                    ])) : vue.createCommentVNode("v-if", true)
-                  ])
-                ]),
-                vue.createCommentVNode(" 操作按钮: 创建者角色可批准/拒绝，申请者角色可取消申请 "),
-                ($setup.currentRole === "creator" || $setup.currentRole === "leader") && item.status === "pending" ? (vue.openBlock(), vue.createElementBlock("view", {
-                  key: 0,
-                  class: "card-footer"
-                }, [
-                  vue.createElementVNode("view", { class: "btn-group" }, [
-                    vue.createElementVNode("button", {
-                      class: "btn btn-detail",
-                      onClick: vue.withModifiers(($event) => $setup.viewDetail(item), ["stop"])
-                    }, "查看详情", 8, ["onClick"]),
-                    vue.createElementVNode("button", {
-                      class: "btn btn-reject",
-                      onClick: vue.withModifiers(($event) => $setup.handleApplication(item.id, "rejected", item.type), ["stop"])
-                    }, "拒绝", 8, ["onClick"]),
-                    vue.createElementVNode("button", {
-                      class: "btn btn-approve",
-                      onClick: vue.withModifiers(($event) => $setup.handleApplication(item.id, "approved", item.type), ["stop"])
-                    }, "通过", 8, ["onClick"])
-                  ])
-                ])) : $setup.currentRole === "applicant" && item.status === "pending" ? (vue.openBlock(), vue.createElementBlock("view", {
-                  key: 1,
-                  class: "card-footer"
-                }, [
-                  vue.createElementVNode("view", { class: "btn-group" }, [
-                    vue.createElementVNode("button", {
-                      class: "btn btn-detail",
-                      onClick: vue.withModifiers(($event) => $setup.viewDetail(item), ["stop"])
-                    }, "查看详情", 8, ["onClick"]),
-                    vue.createElementVNode("button", {
-                      class: "btn btn-reject",
-                      onClick: vue.withModifiers(($event) => $setup.cancelApplication(item.id, item.type), ["stop"])
-                    }, "取消申请", 8, ["onClick"])
-                  ])
-                ])) : (vue.openBlock(), vue.createElementBlock("view", {
-                  key: 2,
-                  class: "card-footer"
-                }, [
-                  vue.createElementVNode("view", { class: "btn-group" }, [
-                    vue.createElementVNode("button", {
-                      class: "btn btn-detail",
-                      onClick: vue.withModifiers(($event) => $setup.viewDetail(item), ["stop"])
-                    }, "查看详情", 8, ["onClick"])
-                  ]),
-                  item.reviewedAt ? (vue.openBlock(), vue.createElementBlock(
-                    "text",
-                    {
-                      key: 0,
-                      class: "process-time"
-                    },
-                    "处理时间：" + vue.toDisplayString($setup.formatDateTime(item.reviewedAt)),
+            return vue.openBlock(), vue.createElementBlock("view", {
+              key: index,
+              class: vue.normalizeClass(["application-card", [$setup.getApplicationClass(item.type), $setup.getStatusClass(item.status)]]),
+              "data-id": item.id
+            }, [
+              vue.createCommentVNode(" 状态角标 - 右上角 "),
+              vue.createElementVNode(
+                "view",
+                {
+                  class: vue.normalizeClass(["status-corner", $setup.getStatusClass(item.status)])
+                },
+                vue.toDisplayString(item.statusText),
+                3
+                /* TEXT, CLASS */
+              ),
+              vue.createElementVNode("view", { class: "card-content" }, [
+                vue.createElementVNode("view", { class: "card-title" }, [
+                  vue.createTextVNode(
+                    vue.toDisplayString($setup.getCardTitle(item)) + " ",
                     1
                     /* TEXT */
-                  )) : vue.createCommentVNode("v-if", true)
-                ]))
-              ],
-              2
-              /* CLASS */
-            );
+                  ),
+                  vue.createElementVNode(
+                    "text",
+                    {
+                      class: vue.normalizeClass(["type-tag", $setup.getTypeClass(item.type)])
+                    },
+                    vue.toDisplayString(item.type === "task" ? "任务" : item.type === "team" ? "队伍" : item.type === "badge" ? "徽章" : "未知"),
+                    3
+                    /* TEXT, CLASS */
+                  )
+                ]),
+                vue.createCommentVNode(" 如果当前角色是创建者，显示申请人信息 "),
+                vue.createElementVNode("view", { class: "card-info" }, [
+                  $setup.currentRole === "creator" || $setup.currentRole === "leader" ? (vue.openBlock(), vue.createElementBlock("view", {
+                    key: 0,
+                    class: "info-item"
+                  }, [
+                    vue.createElementVNode("text", { class: "info-label" }, "申请人："),
+                    vue.createElementVNode(
+                      "text",
+                      { class: "info-value" },
+                      vue.toDisplayString(item.applicantName) + " " + vue.toDisplayString(item.applicantMajor ? "· " + item.applicantMajor : ""),
+                      1
+                      /* TEXT */
+                    )
+                  ])) : vue.createCommentVNode("v-if", true),
+                  item.type === "team" && item.roleName ? (vue.openBlock(), vue.createElementBlock("view", {
+                    key: 1,
+                    class: "info-item"
+                  }, [
+                    vue.createElementVNode("text", { class: "info-label" }, "申请角色："),
+                    vue.createElementVNode(
+                      "text",
+                      { class: "info-value" },
+                      vue.toDisplayString(item.roleName),
+                      1
+                      /* TEXT */
+                    )
+                  ])) : vue.createCommentVNode("v-if", true),
+                  vue.createElementVNode("view", { class: "info-item" }, [
+                    vue.createElementVNode("text", { class: "info-label" }, "申请时间："),
+                    vue.createElementVNode(
+                      "text",
+                      { class: "info-value" },
+                      vue.toDisplayString($setup.formatDateTime(item.appliedAt)),
+                      1
+                      /* TEXT */
+                    )
+                  ]),
+                  item.message ? (vue.openBlock(), vue.createElementBlock("view", {
+                    key: 2,
+                    class: "info-item"
+                  }, [
+                    vue.createElementVNode("text", { class: "info-label" }, "申请理由："),
+                    vue.createElementVNode(
+                      "text",
+                      { class: "info-value" },
+                      vue.toDisplayString(item.message),
+                      1
+                      /* TEXT */
+                    )
+                  ])) : vue.createCommentVNode("v-if", true),
+                  item.reviewNotes && item.status !== "pending" ? (vue.openBlock(), vue.createElementBlock("view", {
+                    key: 3,
+                    class: "info-item"
+                  }, [
+                    vue.createElementVNode("text", { class: "info-label" }, "审核备注："),
+                    vue.createElementVNode(
+                      "text",
+                      { class: "info-value" },
+                      vue.toDisplayString(item.reviewNotes),
+                      1
+                      /* TEXT */
+                    )
+                  ])) : vue.createCommentVNode("v-if", true)
+                ])
+              ]),
+              vue.createCommentVNode(" 操作按钮: 创建者角色可批准/拒绝，申请者角色可取消申请 "),
+              ($setup.currentRole === "creator" || $setup.currentRole === "leader") && item.status === "pending" ? (vue.openBlock(), vue.createElementBlock("view", {
+                key: 0,
+                class: "card-footer"
+              }, [
+                vue.createElementVNode("view", { class: "btn-group" }, [
+                  vue.createElementVNode("button", {
+                    class: "btn btn-approve",
+                    onClick: vue.withModifiers(($event) => $setup.handleApplication(item.id, "approved", item.type), ["stop"])
+                  }, "通过", 8, ["onClick"]),
+                  vue.createElementVNode("button", {
+                    class: "btn btn-reject",
+                    onClick: vue.withModifiers(($event) => $setup.handleApplication(item.id, "rejected", item.type), ["stop"])
+                  }, "拒绝", 8, ["onClick"]),
+                  vue.createElementVNode("button", {
+                    class: "btn btn-detail",
+                    onClick: vue.withModifiers(($event) => $setup.viewDetail(item), ["stop"])
+                  }, "查看详情", 8, ["onClick"])
+                ])
+              ])) : $setup.currentRole === "applicant" && item.status === "pending" ? (vue.openBlock(), vue.createElementBlock("view", {
+                key: 1,
+                class: "card-footer"
+              }, [
+                vue.createElementVNode("view", { class: "btn-group" }, [
+                  vue.createElementVNode("button", {
+                    class: "btn btn-reject",
+                    onClick: vue.withModifiers(($event) => $setup.cancelApplication(item.id, item.type), ["stop"])
+                  }, "取消申请", 8, ["onClick"]),
+                  vue.createElementVNode("button", {
+                    class: "btn btn-detail",
+                    onClick: vue.withModifiers(($event) => $setup.viewDetail(item), ["stop"])
+                  }, "查看详情", 8, ["onClick"])
+                ])
+              ])) : (vue.openBlock(), vue.createElementBlock("view", {
+                key: 2,
+                class: "card-footer"
+              }, [
+                vue.createElementVNode("view", { class: "btn-group" }, [
+                  vue.createElementVNode("button", {
+                    class: "btn btn-detail",
+                    onClick: vue.withModifiers(($event) => $setup.viewDetail(item), ["stop"])
+                  }, "查看详情", 8, ["onClick"])
+                ]),
+                item.reviewedAt ? (vue.openBlock(), vue.createElementBlock(
+                  "text",
+                  {
+                    key: 0,
+                    class: "process-time"
+                  },
+                  "处理时间：" + vue.toDisplayString($setup.formatDateTime(item.reviewedAt)),
+                  1
+                  /* TEXT */
+                )) : vue.createCommentVNode("v-if", true)
+              ]))
+            ], 10, ["data-id"]);
           }),
           128
           /* KEYED_FRAGMENT */
@@ -17998,7 +21780,455 @@ if (uni.restoreGlobal) {
       ], 40, ["refresher-triggered"])
     ]);
   }
-  const PagesApplicationApplication = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["render", _sfc_render], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/application/application.vue"]]);
+  const PagesApplicationApplication = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["render", _sfc_render$1], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/application/application.vue"]]);
+  const _sfc_main$1 = {
+    data() {
+      return {
+        // 环境配置
+        env: env$1,
+        // 连接设置
+        serverUrl: env$1.wsUrl || "ws://localhost:8080/ws",
+        token: getToken() || "",
+        debug: env$1.debug || true,
+        autoReconnect: true,
+        heartbeat: true,
+        // 连接状态
+        isConnected: false,
+        // 消息发送
+        messageTypes: ["普通消息", "聊天消息", "认证消息"],
+        messageTypeIndex: 0,
+        receiverId: "",
+        messageContent: "",
+        // 消息记录
+        messages: [],
+        scrollTop: 0
+      };
+    },
+    // 页面加载时初始化
+    onLoad() {
+      this.setupWebSocketCallbacks();
+      this.addMessage("系统", `环境: ${this.env.env || "未知"}`);
+      this.addMessage("系统", `API地址: ${this.env.baseUrl || "未设置"}`);
+      this.addMessage("系统", `WebSocket地址: ${this.env.wsUrl || "未设置"}`);
+      this.addMessage("系统", `Token: ${this.token ? "已设置" : "未设置"}`);
+    },
+    // 页面卸载时断开连接
+    onUnload() {
+      this.disconnectWebSocket();
+    },
+    methods: {
+      // 设置WebSocket回调函数
+      setupWebSocketCallbacks() {
+        websocket.onOpen((res) => {
+          this.isConnected = true;
+          this.addMessage("系统", `WebSocket连接已打开`);
+        });
+        websocket.onClose((res) => {
+          this.isConnected = false;
+          this.addMessage("系统", `WebSocket连接已关闭: ${res.code || ""} ${res.reason || ""}`);
+        });
+        websocket.onError((err) => {
+          this.addMessage("错误", `WebSocket连接错误: ${err.errMsg || JSON.stringify(err)}`);
+        });
+        websocket.onMessage((data) => {
+          let message = data;
+          try {
+            if (typeof data === "string") {
+              message = JSON.parse(data);
+              message = JSON.stringify(message, null, 2);
+            }
+          } catch (e) {
+          }
+          this.addMessage("接收", message);
+        });
+      },
+      // 连接WebSocket
+      connectWebSocket() {
+        if (this.isConnected) {
+          uni.showToast({
+            title: "WebSocket已连接",
+            icon: "none"
+          });
+          return;
+        }
+        websocket.initConfig({
+          url: this.serverUrl,
+          token: this.token,
+          debug: this.debug,
+          autoReconnect: this.autoReconnect,
+          heartbeat: this.heartbeat
+        });
+        websocket.connect();
+        this.addMessage("系统", "正在连接WebSocket...");
+      },
+      // 断开WebSocket连接
+      disconnectWebSocket() {
+        if (!this.isConnected) {
+          uni.showToast({
+            title: "WebSocket未连接",
+            icon: "none"
+          });
+          return;
+        }
+        websocket.close();
+        this.addMessage("系统", "正在断开WebSocket连接...");
+      },
+      // 发送消息
+      sendMessage() {
+        if (!this.isConnected) {
+          uni.showToast({
+            title: "WebSocket未连接",
+            icon: "none"
+          });
+          return;
+        }
+        if (!this.messageContent) {
+          uni.showToast({
+            title: "消息内容不能为空",
+            icon: "none"
+          });
+          return;
+        }
+        let message;
+        switch (this.messageTypeIndex) {
+          case 0:
+            message = this.messageContent;
+            break;
+          case 1:
+            message = {
+              type: "chat",
+              to: this.receiverId,
+              content: this.messageContent,
+              timestamp: Date.now()
+            };
+            break;
+          case 2:
+            message = {
+              type: "auth",
+              token: this.token || this.messageContent
+            };
+            break;
+        }
+        const success = websocket.send(message);
+        if (success) {
+          this.addMessage("发送", typeof message === "object" ? JSON.stringify(message, null, 2) : message);
+          this.messageContent = "";
+        } else {
+          uni.showToast({
+            title: "消息发送失败",
+            icon: "none"
+          });
+        }
+      },
+      // 添加消息到记录
+      addMessage(type, content) {
+        const now = /* @__PURE__ */ new Date();
+        const time = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
+        let typeText = "";
+        switch (type) {
+          case "系统":
+            typeText = "系统消息";
+            break;
+          case "发送":
+            typeText = "发送消息";
+            break;
+          case "接收":
+            typeText = "接收消息";
+            break;
+          case "错误":
+            typeText = "错误消息";
+            break;
+          default:
+            typeText = type;
+        }
+        this.messages.push({
+          type,
+          typeText,
+          content,
+          time
+        });
+        if (this.messages.length > 100) {
+          this.messages.shift();
+        }
+        this.$nextTick(() => {
+          this.scrollTop = 9999999;
+        });
+      },
+      // 清空消息记录
+      clearMessages() {
+        this.messages = [];
+      },
+      // 调试模式切换
+      onDebugChange(e) {
+        this.debug = e.detail.value;
+      },
+      // 自动重连切换
+      onAutoReconnectChange(e) {
+        this.autoReconnect = e.detail.value;
+      },
+      // 心跳检测切换
+      onHeartbeatChange(e) {
+        this.heartbeat = e.detail.value;
+      },
+      // 消息类型切换
+      onMessageTypeChange(e) {
+        this.messageTypeIndex = e.detail.value;
+      }
+    }
+  };
+  function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+    return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
+      vue.createCommentVNode(" 顶部状态栏 "),
+      vue.createElementVNode(
+        "view",
+        {
+          class: vue.normalizeClass(["status-bar", [$data.isConnected ? "connected" : "disconnected"]])
+        },
+        [
+          vue.createElementVNode(
+            "text",
+            { class: "status-text" },
+            "WebSocket状态: " + vue.toDisplayString($data.isConnected ? "已连接" : "未连接"),
+            1
+            /* TEXT */
+          ),
+          vue.createElementVNode("view", { class: "status-indicator" })
+        ],
+        2
+        /* CLASS */
+      ),
+      vue.createCommentVNode(" 环境信息 "),
+      vue.createElementVNode("view", { class: "env-info" }, [
+        vue.createElementVNode(
+          "text",
+          { class: "env-title" },
+          "当前环境: " + vue.toDisplayString($data.env.env),
+          1
+          /* TEXT */
+        ),
+        vue.createElementVNode(
+          "text",
+          { class: "env-detail" },
+          "API地址: " + vue.toDisplayString($data.env.baseUrl),
+          1
+          /* TEXT */
+        ),
+        vue.createElementVNode(
+          "text",
+          { class: "env-detail" },
+          "WebSocket地址: " + vue.toDisplayString($data.env.wsUrl),
+          1
+          /* TEXT */
+        )
+      ]),
+      vue.createCommentVNode(" 连接设置区域 "),
+      vue.createElementVNode("view", { class: "connection-settings" }, [
+        vue.createElementVNode("view", { class: "form-item" }, [
+          vue.createElementVNode("text", { class: "label" }, "服务器地址"),
+          vue.withDirectives(vue.createElementVNode(
+            "input",
+            {
+              class: "input",
+              "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => $data.serverUrl = $event),
+              placeholder: "ws://服务器地址/ws"
+            },
+            null,
+            512
+            /* NEED_PATCH */
+          ), [
+            [vue.vModelText, $data.serverUrl]
+          ])
+        ]),
+        vue.createElementVNode("view", { class: "form-item" }, [
+          vue.createElementVNode("text", { class: "label" }, "Token"),
+          vue.withDirectives(vue.createElementVNode(
+            "input",
+            {
+              class: "input",
+              "onUpdate:modelValue": _cache[1] || (_cache[1] = ($event) => $data.token = $event),
+              placeholder: "可选，身份验证token"
+            },
+            null,
+            512
+            /* NEED_PATCH */
+          ), [
+            [vue.vModelText, $data.token]
+          ])
+        ]),
+        vue.createElementVNode("view", { class: "form-item checkbox-item" }, [
+          vue.createElementVNode("text", { class: "label" }, "调试模式"),
+          vue.createElementVNode("switch", {
+            checked: $data.debug,
+            onChange: _cache[2] || (_cache[2] = (...args) => $options.onDebugChange && $options.onDebugChange(...args)),
+            color: "#4CAF50"
+          }, null, 40, ["checked"])
+        ]),
+        vue.createElementVNode("view", { class: "form-item checkbox-item" }, [
+          vue.createElementVNode("text", { class: "label" }, "自动重连"),
+          vue.createElementVNode("switch", {
+            checked: $data.autoReconnect,
+            onChange: _cache[3] || (_cache[3] = (...args) => $options.onAutoReconnectChange && $options.onAutoReconnectChange(...args)),
+            color: "#4CAF50"
+          }, null, 40, ["checked"])
+        ]),
+        vue.createElementVNode("view", { class: "form-item checkbox-item" }, [
+          vue.createElementVNode("text", { class: "label" }, "心跳检测"),
+          vue.createElementVNode("switch", {
+            checked: $data.heartbeat,
+            onChange: _cache[4] || (_cache[4] = (...args) => $options.onHeartbeatChange && $options.onHeartbeatChange(...args)),
+            color: "#4CAF50"
+          }, null, 40, ["checked"])
+        ]),
+        vue.createCommentVNode(" 连接按钮 "),
+        vue.createElementVNode("view", { class: "button-group" }, [
+          vue.createElementVNode("button", {
+            class: "btn connect-btn",
+            onClick: _cache[5] || (_cache[5] = (...args) => $options.connectWebSocket && $options.connectWebSocket(...args)),
+            disabled: $data.isConnected
+          }, "连接", 8, ["disabled"]),
+          vue.createElementVNode("button", {
+            class: "btn disconnect-btn",
+            onClick: _cache[6] || (_cache[6] = (...args) => $options.disconnectWebSocket && $options.disconnectWebSocket(...args)),
+            disabled: !$data.isConnected
+          }, "断开", 8, ["disabled"])
+        ])
+      ]),
+      vue.createCommentVNode(" 消息发送区域 "),
+      vue.createElementVNode(
+        "view",
+        {
+          class: vue.normalizeClass(["message-sender", { "disabled": !$data.isConnected }])
+        },
+        [
+          vue.createElementVNode("view", { class: "form-item" }, [
+            vue.createElementVNode("text", { class: "label" }, "消息类型"),
+            vue.createElementVNode("picker", {
+              onChange: _cache[7] || (_cache[7] = (...args) => $options.onMessageTypeChange && $options.onMessageTypeChange(...args)),
+              value: $data.messageTypeIndex,
+              range: $data.messageTypes
+            }, [
+              vue.createElementVNode(
+                "view",
+                { class: "picker" },
+                vue.toDisplayString($data.messageTypes[$data.messageTypeIndex]),
+                1
+                /* TEXT */
+              )
+            ], 40, ["value", "range"])
+          ]),
+          $data.messageTypeIndex === 1 ? (vue.openBlock(), vue.createElementBlock("view", {
+            key: 0,
+            class: "form-item"
+          }, [
+            vue.createElementVNode("text", { class: "label" }, "接收者ID"),
+            vue.withDirectives(vue.createElementVNode(
+              "input",
+              {
+                class: "input",
+                "onUpdate:modelValue": _cache[8] || (_cache[8] = ($event) => $data.receiverId = $event),
+                placeholder: "接收者ID"
+              },
+              null,
+              512
+              /* NEED_PATCH */
+            ), [
+              [vue.vModelText, $data.receiverId]
+            ])
+          ])) : vue.createCommentVNode("v-if", true),
+          vue.createElementVNode("view", { class: "form-item" }, [
+            vue.createElementVNode("text", { class: "label" }, "消息内容"),
+            vue.withDirectives(vue.createElementVNode(
+              "textarea",
+              {
+                class: "textarea",
+                "onUpdate:modelValue": _cache[9] || (_cache[9] = ($event) => $data.messageContent = $event),
+                placeholder: "请输入消息内容"
+              },
+              null,
+              512
+              /* NEED_PATCH */
+            ), [
+              [vue.vModelText, $data.messageContent]
+            ])
+          ]),
+          vue.createElementVNode("button", {
+            class: "btn send-btn",
+            onClick: _cache[10] || (_cache[10] = (...args) => $options.sendMessage && $options.sendMessage(...args)),
+            disabled: !$data.isConnected || !$data.messageContent
+          }, "发送消息", 8, ["disabled"])
+        ],
+        2
+        /* CLASS */
+      ),
+      vue.createCommentVNode(" 消息记录区域 "),
+      vue.createElementVNode("view", { class: "message-log" }, [
+        vue.createElementVNode("view", { class: "log-header" }, [
+          vue.createElementVNode("text", { class: "log-title" }, "消息记录"),
+          vue.createElementVNode("button", {
+            class: "btn clear-btn",
+            onClick: _cache[11] || (_cache[11] = (...args) => $options.clearMessages && $options.clearMessages(...args))
+          }, "清空")
+        ]),
+        vue.createElementVNode("scroll-view", {
+          class: "log-content",
+          "scroll-y": "",
+          "scroll-top": $data.scrollTop
+        }, [
+          $data.messages.length === 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+            key: 0,
+            class: "empty-log"
+          }, [
+            vue.createElementVNode("text", null, "暂无消息记录")
+          ])) : vue.createCommentVNode("v-if", true),
+          (vue.openBlock(true), vue.createElementBlock(
+            vue.Fragment,
+            null,
+            vue.renderList($data.messages, (msg, index) => {
+              return vue.openBlock(), vue.createElementBlock(
+                "view",
+                {
+                  key: index,
+                  class: vue.normalizeClass(["message-item", msg.type])
+                },
+                [
+                  vue.createElementVNode("view", { class: "message-header" }, [
+                    vue.createElementVNode(
+                      "text",
+                      { class: "message-type" },
+                      vue.toDisplayString(msg.typeText),
+                      1
+                      /* TEXT */
+                    ),
+                    vue.createElementVNode(
+                      "text",
+                      { class: "message-time" },
+                      vue.toDisplayString(msg.time),
+                      1
+                      /* TEXT */
+                    )
+                  ]),
+                  vue.createElementVNode("view", { class: "message-content" }, [
+                    vue.createElementVNode(
+                      "text",
+                      { class: "message-text" },
+                      vue.toDisplayString(msg.content),
+                      1
+                      /* TEXT */
+                    )
+                  ])
+                ],
+                2
+                /* CLASS */
+              );
+            }),
+            128
+            /* KEYED_FRAGMENT */
+          ))
+        ], 8, ["scroll-top"])
+      ])
+    ]);
+  }
+  const PagesWebsocketTestIndex = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["render", _sfc_render], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/websocket-test/index.vue"]]);
   __definePage("pages/login/login", PagesLoginLogin);
   __definePage("pages/index/index", PagesIndexIndex);
   __definePage("pages/task-square/index", PagesTaskSquareIndex);
@@ -18007,28 +22237,107 @@ if (uni.restoreGlobal) {
   __definePage("pages/team/detail", PagesTeamDetail);
   __definePage("pages/team/list", PagesTeamList);
   __definePage("pages/team/create", PagesTeamCreate);
+  __definePage("pages/team/recommended", PagesTeamRecommended);
   __definePage("pages/competition/index", PagesCompetitionIndex);
   __definePage("pages/competition/create", PagesCompetitionCreate);
   __definePage("pages/competition/detail", PagesCompetitionDetail);
   __definePage("pages/profile/index", PagesProfileIndex);
+  __definePage("pages/profile/user-info", PagesProfileUserInfo);
+  __definePage("pages/profile/edit-basic-info", PagesProfileEditBasicInfo);
+  __definePage("pages/profile/edit-bio", PagesProfileEditBio);
+  __definePage("pages/profile/edit-skills", PagesProfileEditSkills);
+  __definePage("pages/profile/edit-awards", PagesProfileEditAwards);
   __definePage("pages/Xiaoxi/Xiaoxi", PagesXiaoxiXiaoxi);
   __definePage("pages/application/application", PagesApplicationApplication);
+  __definePage("pages/websocket-test/index", PagesWebsocketTestIndex);
   const _sfc_main = {
+    globalData: {
+      unreadNotificationCount: 0
+    },
     onLaunch: function() {
-      formatAppLog("warn", "at App.vue:4", "当前组件仅支持 uni_modules 目录结构 ，请升级 HBuilderX 到 3.1.0 版本以上！");
-      formatAppLog("log", "at App.vue:5", "App Launch");
+      formatAppLog("warn", "at App.vue:10", "当前组件仅支持 uni_modules 目录结构 ，请升级 HBuilderX 到 3.1.0 版本以上！");
+      formatAppLog("log", "at App.vue:11", "App Launch");
+      this.initGlobalNotificationService();
+      formatAppLog("log", "at App.vue:14", "App Launch");
+      try {
+        uni.removeStorageSync("ai_recommend_cache_time");
+        uni.removeStorageSync("ai_recommended_teams");
+        uni.removeStorageSync("ai_summary");
+        formatAppLog("log", "at App.vue:21", "应用启动时已清除AI推荐相关缓存");
+        const userInteractionState = uni.getStorageSync("userInteractionState");
+        if (userInteractionState) {
+          try {
+            const state2 = JSON.parse(userInteractionState);
+            state2.hasClickedAiRecommend = false;
+            uni.setStorageSync("userInteractionState", JSON.stringify(state2));
+            formatAppLog("log", "at App.vue:30", "已重置AI推荐点击状态");
+          } catch (e) {
+            formatAppLog("error", "at App.vue:32", "重置用户交互状态失败:", e);
+          }
+        }
+      } catch (e) {
+        formatAppLog("error", "at App.vue:36", "清除AI推荐缓存失败:", e);
+      }
     },
     onShow: function() {
-      formatAppLog("log", "at App.vue:8", "App Show");
+      formatAppLog("log", "at App.vue:41", "App Show");
     },
     onHide: function() {
-      formatAppLog("log", "at App.vue:11", "App Hide");
+      formatAppLog("log", "at App.vue:45", "App Hide");
+    },
+    methods: {
+      // 初始化全局通知服务
+      initGlobalNotificationService() {
+        const handleNewNotification = (notification) => {
+          formatAppLog("log", "at App.vue:53", "App收到新通知:", notification);
+          if (!notification.isRead) {
+            this.globalData.unreadNotificationCount++;
+          }
+          uni.showToast({
+            title: "收到新通知",
+            icon: "none"
+          });
+          this.updateMessageBadge();
+          uni.$emit("newNotification", notification);
+        };
+        notificationService.initNotificationService(handleNewNotification);
+      },
+      // 更新消息页面的TabBar角标
+      updateMessageBadge() {
+        const count = this.globalData.unreadNotificationCount;
+        try {
+          if (count > 0) {
+            uni.setTabBarBadge({
+              index: 4,
+              // 消息页面的TabBar索引，根据实际情况调整
+              text: count.toString()
+            }).catch((err) => {
+              formatAppLog("log", "at App.vue:88", "设置TabBar徽标失败，可能不在TabBar页面", err);
+            });
+          } else {
+            uni.removeTabBarBadge({
+              index: 4
+              // 消息页面的TabBar索引，根据实际情况调整
+            }).catch((err) => {
+              formatAppLog("log", "at App.vue:96", "移除TabBar徽标失败，可能不在TabBar页面", err);
+            });
+          }
+        } catch (error) {
+          formatAppLog("log", "at App.vue:101", "TabBar操作失败，可能不在TabBar页面", error);
+        }
+      },
+      // 重置未读通知计数
+      resetUnreadNotificationCount() {
+        this.globalData.unreadNotificationCount = 0;
+        this.updateMessageBadge();
+      }
     }
   };
   const App = /* @__PURE__ */ _export_sfc(_sfc_main, [["__file", "D:/Uniapp/htmlTest/赛创项目/App.vue"]]);
   getEnv();
   function createApp() {
     const app = vue.createVueApp(App);
+    app.config.globalProperties.$store = store;
     return {
       app
     };

@@ -117,6 +117,16 @@
   content: "\e7dc";
 }
 
+/* AI图标 */
+.icon-ai:before {
+  content: "\e6ab";
+}
+
+/* 刷新图标 */
+.icon-refresh:before {
+  content: "\e65e";
+}
+
 /* 自定义样式 */
 .picker-arrow {
   transform: rotate(-90deg);

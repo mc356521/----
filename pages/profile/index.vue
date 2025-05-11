@@ -2,28 +2,46 @@
   <view class="container">
     <!-- 顶部用户信息区 -->
     <view class="user-info-section">
-      <view class="user-header">
-        <image class="user-avatar" src="https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=200" mode="aspectFill"></image>
-        <view class="user-details">
-          <text class="user-name">李明</text>
-          <text class="user-id">学号: 2023114514</text>
-        </view>
-        <view class="edit-btn" @click="goToNotification">
-          <text class="iconfont icon-edit"></text>
-        </view>
+      <!-- 加载中显示 -->
+      <view class="loading-container" v-if="loading">
+        <view class="loading-circle"></view>
+        <text class="loading-text">加载中...</text>
       </view>
-      <view class="user-stats">
-        <view class="stat-item">
-          <text class="stat-value">4</text>
-          <text class="stat-label">参与竞赛</text>
+      
+      <view v-else>
+        <view class="user-header">
+          <view class="user-info-clickable" @click="goToUserInfo">
+            <image class="user-avatar" :src="userInfo.avatarUrl || 'https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=200'" mode="aspectFill"></image>
+            <view class="user-details">
+              <text class="user-name">{{ userInfo.realName }}</text>
+              <text class="user-id">学号: {{ userInfo.studentTeacherId }}</text>
+              <view class="user-school">
+                <text class="school-name">{{ userInfo.schoolName }}</text>
+                <text class="major-name">{{ userInfo.major }}</text>
+              </view>
+            </view>
+          </view>
+          <view class="edit-btn" @click="goToUserInfo">
+            <text class="iconfont icon-edit"></text>
+          </view>
         </view>
-        <view class="stat-item">
-          <text class="stat-value">2</text>
-          <text class="stat-label">我的团队</text>
-        </view>
-        <view class="stat-item">
-          <text class="stat-value">1</text>
-          <text class="stat-label">获得奖项</text>
+        <view class="user-stats">
+          <view class="stat-item" @click="navigateTo('myCompetitions')">
+            <text class="stat-value">4</text>
+            <text class="stat-label">参与竞赛</text>
+          </view>
+          <view class="stat-item" @click="navigateTo('myTeams')">
+            <text class="stat-value">2</text>
+            <text class="stat-label">我的团队</text>
+          </view>
+          <view class="stat-item" @click="navigateTo('myAwards')">
+            <text class="stat-value">{{ userInfo.awardsHistory ? userInfo.awardsHistory.length : 0 }}</text>
+            <text class="stat-label">获得奖项</text>
+          </view>
+          <view class="stat-item" @click="navigateTo('settings')">
+            <text class="stat-value credit-score">{{ userInfo.creditScore }}</text>
+            <text class="stat-label">信用分</text>
+          </view>
         </view>
       </view>
     </view>
@@ -51,6 +69,7 @@
           <text class="menu-text">申请管理</text>
           <text class="iconfont icon-arrow-left menu-arrow"></text>
         </view>
+     
       </view>
       
       <view class="menu-group">
@@ -87,8 +106,48 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import TabBar from '@/components/TabBar.vue';
+import userApi from '@/api/modules/user';
+import store from '@/store';
+
+// 用户信息状态
+const userInfo = ref({
+  realName: '加载中...',
+  phoneNumber: '',
+  schoolId: null,
+  schoolName: '',
+  role: '',
+  isVerified: false,
+  creditScore: 0,
+  major: '',
+  studentTeacherId: '加载中...',
+  avatarUrl: null,
+  bio: '',
+  skillTags: [],
+  awardsHistory: []
+});
+
+// 加载状态
+const loading = ref(true);
+
+// 获取用户个人资料
+async function getUserProfile() {
+  try {
+    const res = await userApi.getUserProfile();
+    
+    if (res.code === 200 && res.data) {
+      userInfo.value = res.data;
+      console.log('个人中心页获取到用户资料:', userInfo.value);
+    } else {
+      console.error('获取用户资料失败:', res.message);
+    }
+  } catch (error) {
+    console.error('获取用户资料失败:', error);
+  } finally {
+    loading.value = false;
+  }
+}
 
 // 导航到对应页面
 function navigateTo(page) {
@@ -112,6 +171,37 @@ function logout() {
     content: '确定要退出登录吗？',
     success: function (res) {
       if (res.confirm) {
+        // 清除全局状态
+        store.clearState();
+        
+        // 清除所有本地缓存
+        try {
+          // 清除指定的存储项
+          uni.removeStorageSync('userInteractionState');
+          uni.removeStorageSync('_DC_STAT_UUID');
+          uni.removeStorageSync('ai_recommend_cache_time');
+          uni.removeStorageSync('ai_recommended_teams');
+          uni.removeStorageSync('ai_summary');
+          uni.removeStorageSync('token');
+          
+          // 获取所有存储的key并删除
+          const keys = uni.getStorageInfoSync().keys;
+          console.log('准备清除所有缓存:', keys);
+          
+          keys.forEach(key => {
+            try {
+              uni.removeStorageSync(key);
+              console.log('已清除缓存:', key);
+            } catch (e) {
+              console.error('清除缓存失败:', key, e);
+            }
+          });
+          
+          console.log('所有缓存已清除');
+        } catch (e) {
+          console.error('清除缓存出错:', e);
+        }
+        
         uni.showToast({
           title: '已退出登录',
           icon: 'success',
@@ -132,6 +222,13 @@ function logout() {
 function goToNotification() {
   uni.navigateTo({
     url: '/pages/Xiaoxi/Xiaoxi'
+  });
+}
+
+// 跳转到个人资料页面
+function goToUserInfo() {
+  uni.navigateTo({
+    url: '/pages/profile/user-info'
   });
 }
 
@@ -164,6 +261,11 @@ function showPublishOptions() {
     }
   });
 }
+
+// 页面加载时获取用户资料
+onMounted(() => {
+  getUserProfile();
+});
 </script>
 
 <style lang="scss">
@@ -195,32 +297,98 @@ page {
   padding: 40rpx 30rpx 30rpx;
   margin-bottom: 20rpx;
   
+  // 加载中样式
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60rpx 0;
+    
+    .loading-circle {
+      width: 60rpx;
+      height: 60rpx;
+      border-radius: 50%;
+      border: 4rpx solid rgba($primary-color, 0.1);
+      border-top-color: $primary-color;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20rpx;
+    }
+    
+    .loading-text {
+      font-size: 26rpx;
+      color: $text-secondary;
+    }
+  }
+  
   .user-header {
     display: flex;
     align-items: center;
     margin-bottom: 30rpx;
     
-    .user-avatar {
-      width: 140rpx;
-      height: 140rpx;
-      border-radius: 50%;
-      margin-right: 30rpx;
-      border: 4rpx solid rgba(59, 130, 246, 0.2);
-    }
-    
-    .user-details {
+    .user-info-clickable {
+      display: flex;
+      align-items: center;
       flex: 1;
+      position: relative;
+      margin-right: 20rpx;
       
-      .user-name {
-        font-size: 36rpx;
-        font-weight: bold;
-        color: $text-color;
-        margin-bottom: 8rpx;
+      &:active {
+        opacity: 0.8;
       }
       
-      .user-id {
-        font-size: 24rpx;
-        color: $text-secondary;
+      &::after {
+        content: '';
+        position: absolute;
+        right: -14rpx;
+        top: 50%;
+        width: 14rpx;
+        height: 14rpx;
+        border-top: 3rpx solid $text-muted;
+        border-right: 3rpx solid $text-muted;
+        transform: translateY(-50%) rotate(45deg);
+        opacity: 0.5;
+      }
+      
+      .user-avatar {
+        width: 140rpx;
+        height: 140rpx;
+        border-radius: 50%;
+        margin-right: 30rpx;
+        border: 4rpx solid rgba(59, 130, 246, 0.2);
+        flex-shrink: 0;
+      }
+      
+      .user-details {
+        flex: 1;
+        min-width: 0;
+        
+        .user-name {
+          font-size: 36rpx;
+          font-weight: bold;
+          color: $text-color;
+          margin-bottom: 8rpx;
+          display: block;
+        }
+        
+        .user-id {
+          font-size: 24rpx;
+          color: $text-secondary;
+          margin-bottom: 6rpx;
+        }
+        
+        .user-school {
+          font-size: 24rpx;
+          color: $text-secondary;
+          
+          .school-name {
+            margin-right: 16rpx;
+          }
+          
+          .major-name {
+            color: $text-muted;
+          }
+        }
       }
     }
     
@@ -232,6 +400,13 @@ page {
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+      
+      &:active {
+        transform: scale(0.95);
+        background-color: rgba(59, 130, 246, 0.1);
+      }
       
       .iconfont {
         font-size: 32rpx;
@@ -250,12 +425,22 @@ page {
       display: flex;
       flex-direction: column;
       align-items: center;
+      position: relative;
+      transition: transform 0.2s;
+      
+      &:active {
+        transform: scale(0.95);
+      }
       
       .stat-value {
         font-size: 36rpx;
         font-weight: bold;
         color: $primary-color;
         margin-bottom: 8rpx;
+        
+        &.credit-score {
+          color: #10B981;
+        }
       }
       
       .stat-label {
@@ -318,5 +503,10 @@ page {
   color: #EF4444;
   font-size: 30rpx;
   font-weight: 500;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style>

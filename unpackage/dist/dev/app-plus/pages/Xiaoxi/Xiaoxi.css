@@ -25,13 +25,32 @@
   font-weight: bold;
   color: #333333;
 }
-.header .navbar .mark-read {
+.header .navbar .actions {
+  display: flex;
+  align-items: center;
+}
+.header .navbar .actions .mark-read, .header .navbar .actions .edit-btn {
   display: flex;
   align-items: center;
   font-size: 0.875rem;
   color: #4A90E2;
 }
-.header .navbar .mark-read .iconfont {
+.header .navbar .actions .mark-read .iconfont, .header .navbar .actions .edit-btn .iconfont {
+  margin-right: 0.25rem;
+  font-size: 1rem;
+}
+.header .navbar .actions .edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+.header .navbar .actions .edit-actions .cancel-btn, .header .navbar .actions .edit-actions .delete-btn {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  color: #4A90E2;
+}
+.header .navbar .actions .edit-actions .cancel-btn .iconfont, .header .navbar .actions .edit-actions .delete-btn .iconfont {
   margin-right: 0.25rem;
   font-size: 1rem;
 }
@@ -88,6 +107,33 @@
   background-color: #fff;
   margin-bottom: 0.0625rem;
   position: relative;
+  transition: background-color 0.3s ease;
+}
+.notification-item.item-selected {
+  background-color: rgba(74, 144, 226, 0.05);
+}
+.notification-item.unread {
+  border-left: 0.1875rem solid #4A90E2;
+  background-color: rgba(74, 144, 226, 0.03);
+}
+.notification-item.unread .notification-type {
+  font-weight: bold;
+}
+.notification-item.unread .notification-message {
+  font-weight: 500;
+}
+.notification-item.read {
+  border-left: 0.1875rem solid transparent;
+  opacity: 0.8;
+}
+.notification-item.read .notification-type {
+  font-weight: normal;
+}
+.notification-item.read .notification-message {
+  font-weight: normal;
+}
+.notification-item.reading {
+  background-color: rgba(74, 144, 226, 0.05);
 }
 .notification-item:after {
   content: "";
@@ -100,6 +146,30 @@
 }
 .notification-item:last-child:after {
   display: none;
+}
+.notification-item .select-box {
+  width: 1.875rem;
+  height: 1.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.3125rem;
+}
+.notification-item .select-box .checkbox {
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 0.0625rem solid #4A90E2;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.notification-item .select-box .checkbox.checked {
+  background-color: #4A90E2;
+}
+.notification-item .select-box .checkbox.checked .iconfont {
+  color: #fff;
+  font-size: 0.75rem;
 }
 .notification-item .notification-avatar {
   width: 2.5rem;
@@ -169,4 +239,78 @@
 .empty-state .empty-text {
   font-size: 0.875rem;
   color: #999999;
+}
+
+/* WebSocket状态指示器 */
+.ws-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 0.9375rem 0.3125rem;
+  font-size: 0.6875rem;
+  color: #FF6B6B;
+}
+.ws-status.connected {
+  color: #7ED321;
+}
+.ws-status .ws-status-text {
+  margin-right: 0.3125rem;
+}
+.ws-status .ws-indicator {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: #FF6B6B;
+}
+.connected .ws-status .ws-indicator {
+  background-color: #7ED321;
+}
+
+/* 加载更多和无更多数据 */
+.loading-more, .no-more {
+  text-align: center;
+  padding: 0.9375rem 0;
+  font-size: 0.75rem;
+  color: #999999;
+}
+
+/* 底部批量操作栏 */
+.bottom-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 0.9375rem;
+  background-color: #fff;
+}
+.bottom-action-bar .select-all {
+  display: flex;
+  align-items: center;
+  gap: 0.3125rem;
+  font-size: 0.875rem;
+  color: #4A90E2;
+}
+.bottom-action-bar .select-all .checkbox {
+  width: 1rem;
+  height: 1rem;
+  border: 0.0625rem solid #4A90E2;
+  border-radius: 0.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bottom-action-bar .select-all .checkbox.checked {
+  background-color: #4A90E2;
+}
+.bottom-action-bar .batch-delete {
+  padding: 0.3125rem 0.75rem;
+  font-size: 0.8125rem;
+  border-radius: 0.25rem;
+  background-color: #4A90E2;
+  color: #fff;
+  min-width: 3.75rem;
+  text-align: center;
+}
+.bottom-action-bar .batch-delete.disabled {
+  background-color: #f0f0f0;
+  color: #666666;
 }

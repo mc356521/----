@@ -138,6 +138,14 @@
 .icon-info-circle:before {
   content: "\e7dc";
 }
+/* AI图标 */
+.icon-ai:before {
+  content: "\e6ab";
+}
+/* 刷新图标 */
+.icon-refresh:before {
+  content: "\e65e";
+}
 .uni-border {
   border: 1px #F0F0F0 solid;
 }

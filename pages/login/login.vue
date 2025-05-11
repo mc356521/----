@@ -166,9 +166,26 @@ const selectedSchoolName = computed(() => {
   return `${provinceName} - ${schoolName}`;
 });
 
-// 在组件挂载时获取学校列表
+// 表单数据
+const loginForm = reactive({
+  phone: '',
+  password: ''
+});
+
+const registerForm = reactive({
+  phoneNumber: '',
+  password: '',
+  realName: '',
+  schoolId: 1,
+  role: 'student',
+  major: '',
+  studentTeacherId: ''
+});
+
+// 在组件挂载时获取学校列表并检查缓存的登录信息
 onMounted(async () => {
   try {
+    // 获取学校列表
     const result = await api.user.getSchools();
     if (result && result.data) {
       schools.value = result.data;
@@ -227,6 +244,39 @@ onMounted(async () => {
       icon: 'none'
     });
   }
+  
+  // 检查是否已经登录以及是否记住登录
+  const token = uni.getStorageSync('token');
+  const savedLoginInfo = uni.getStorageSync('loginInfo');
+  
+  if (token) {
+    // 已有token，检查token是否有效
+    try {
+      // 这里可以添加验证token的API调用
+      console.log('检测到已有token，尝试自动登录');
+      // 直接跳转到首页
+      uni.switchTab({
+        url: '/pages/index/index'
+      });
+      return;
+    } catch (error) {
+      console.error('自动登录失败，token可能已过期:', error);
+      // token无效，清除存储并继续正常登录流程
+      uni.removeStorageSync('token');
+    }
+  }
+  
+  // 如果有保存的登录信息，则填充表单
+  if (savedLoginInfo) {
+    try {
+      const loginInfo = JSON.parse(savedLoginInfo);
+      loginForm.phone = loginInfo.phone || '';
+      loginForm.password = loginInfo.password || '';
+      isRemember.value = true;
+    } catch (error) {
+      console.error('解析保存的登录信息失败:', error);
+    }
+  }
 });
 
 // 学校列选择变化处理
@@ -260,22 +310,6 @@ function onSchoolChange(e) {
   }
 }
 
-// 表单数据
-const loginForm = reactive({
-  phone: '',
-  password: ''
-});
-
-const registerForm = reactive({
-  phoneNumber: '',
-  password: '',
-  realName: '',
-  schoolId: 1,
-  role: 'student',
-  major: '',
-  studentTeacherId: ''
-});
-
 // 切换登录/注册
 function toggleRegister() {
   isRegistering.value = !isRegistering.value;
@@ -288,6 +322,21 @@ function toggleRemember() {
 
 function togglePasswordVisibility() {
   showPassword.value = !showPassword.value;
+}
+
+// 保存登录信息
+function saveLoginInfo() {
+  if (isRemember.value) {
+    // 保存登录信息到本地存储
+    const loginInfo = {
+      phone: loginForm.phone,
+      password: loginForm.password
+    };
+    uni.setStorageSync('loginInfo', JSON.stringify(loginInfo));
+  } else {
+    // 如果取消"记住我"，则清除已保存的登录信息
+    uni.removeStorageSync('loginInfo');
+  }
 }
 
 // 登录
@@ -323,18 +372,24 @@ async function handleLogin() {
     
     // 检查登录结果
     if (res && res.token) {
+      // 登录成功，保存token到本地存储
+      uni.setStorageSync('token', res.token);
+      
+      // 如果选择了"记住我"，保存登录信息
+      saveLoginInfo();
+      
       // 登录成功的情况
-    uni.showToast({
-      title: '登录成功',
-      icon: 'success'
-    });
-    
-    // 登录成功，跳转到首页
-    setTimeout(() => {
-      uni.switchTab({
-        url: '/pages/index/index'
+      uni.showToast({
+        title: '登录成功',
+        icon: 'success'
       });
-    }, 1500);
+    
+      // 登录成功，跳转到首页
+      setTimeout(() => {
+        uni.switchTab({
+          url: '/pages/index/index'
+        });
+      }, 1500);
     } else {
       // 登录失败但没有明确错误信息
       uni.showToast({

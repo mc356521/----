@@ -468,7 +468,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, nextTick } from 'vue';
 import teamApi from '@/api/modules/team';
 import competitionsApi from '@/api/modules/competitions';
 import dev from '../../config/env/dev';
@@ -531,11 +531,29 @@ async function getCompetitionsBasicInfo() {
       title: '加载中...'
     });
     
+    // 保存当前已选择的竞赛ID
+    const selectedId = form.competitionId;
+    // 保存当前的临时竞赛对象(如果存在)
+    let tempCompetition = null;
+    if (selectedId) {
+      tempCompetition = competitionList.value.find(item => item.id === selectedId);
+    }
+    
     const res = await competitionsApi.getCompetitionsBasicInfo();
     
     if (res && res.code === 200 && res.data) {
-      competitionList.value = res.data;
-      filteredCompetitionList.value = [...res.data];
+      // 检查API返回的数据中是否包含已选择的竞赛
+      const apiHasSelectedCompetition = res.data.some(item => item.id === selectedId);
+      
+      // 设置竞赛列表，但保留已选择的临时竞赛
+      if (selectedId && !apiHasSelectedCompetition && tempCompetition) {
+        // 如果API返回的列表中没有该竞赛，保留临时对象
+        competitionList.value = [...res.data, tempCompetition];
+      } else {
+        competitionList.value = res.data;
+      }
+      
+      filteredCompetitionList.value = [...competitionList.value];
       
       // 提取不重复的分类
       const categories = new Map();
@@ -551,6 +569,10 @@ async function getCompetitionsBasicInfo() {
       });
       
       competitionCategories.value = Array.from(categories.values());
+      
+      console.log('API请求结果:', res.data);
+      console.log('处理后的竞赛列表:', competitionList.value);
+      console.log('当前选中竞赛ID:', selectedId);
     } else {
       showToast('获取竞赛列表失败');
     }
@@ -870,10 +892,52 @@ async function submitTeam() {
 }
 
 // 页面加载时获取竞赛列表和教师列表
-onMounted(() => {
-  getCompetitionsBasicInfo();
-  getTeachersList();
-  getSkillTags();
+onMounted(async () => {
+  // 先检查URL参数中是否有竞赛ID
+  const pages = getCurrentPages();
+  const page = pages[pages.length - 1];
+  
+  if (page.$page && page.$page.options) {
+    const { competitionId, competitionName } = page.$page.options;
+    
+    if (competitionId) {
+      console.log('从URL获取到竞赛ID:', competitionId);
+      console.log('从URL获取到竞赛名称:', competitionName);
+      
+      // 设置关联竞赛ID
+      form.competitionId = competitionId;
+      
+      // 如果有竞赛名称，先设置临时竞赛对象到列表中
+      if (competitionName) {
+        // 从URL中解码竞赛名称
+        const decodedName = decodeURIComponent(competitionName);
+        console.log('解码后的竞赛名称:', decodedName);
+        
+        // 创建一个临时竞赛对象，用于显示
+        const tempCompetition = {
+          id: competitionId,
+          title: decodedName,
+          categoryId: 0,
+          categoryName: '未分类'
+        };
+        
+        // 立即添加到竞赛列表中
+        competitionList.value.push(tempCompetition);
+        filteredCompetitionList.value = [...competitionList.value];
+        console.log('已添加临时竞赛对象:', tempCompetition);
+        console.log('当前竞赛列表:', competitionList.value);
+      }
+    }
+  }
+  
+  // 然后获取竞赛和教师等数据
+  await getCompetitionsBasicInfo();
+  await getTeachersList();
+  await getSkillTags();
+  
+  // 等待DOM更新，然后初始化弹窗组件
+  await nextTick();
+  console.log('竞赛选择组件:', competitionPopup.value);
 });
 
 // 根据竞赛类别添加不同颜色

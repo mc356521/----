@@ -125,12 +125,30 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 0.9375rem;
+  padding: 1.25rem 0.9375rem;
+}
+.sticky-header .header-title .back-btn[data-v-965d9a70] {
+  width: 2.1875rem;
+  height: 2.1875rem;
+  border-radius: 50%;
+  background-color: #F3F4F6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.3125rem;
+}
+.sticky-header .header-title .back-btn .iconfont[data-v-965d9a70] {
+  font-size: 1.125rem;
+  color: #6B7280;
+}
+.sticky-header .header-title .back-btn[data-v-965d9a70]:active {
+  opacity: 0.7;
 }
 .sticky-header .header-title .section-title[data-v-965d9a70] {
   font-size: 1.125rem;
   font-weight: bold;
   color: #333333;
+  flex: 1;
 }
 .sticky-header .header-title .header-actions[data-v-965d9a70] {
   display: flex;
@@ -148,6 +166,30 @@
 .sticky-header .header-title .header-actions .action-btn .iconfont[data-v-965d9a70] {
   font-size: 1.125rem;
   color: #6B7280;
+}
+.sticky-header .header-title .header-actions .action-btn.message-btn[data-v-965d9a70] {
+  position: relative;
+}
+.sticky-header .header-title .header-actions .action-btn.message-btn .badge[data-v-965d9a70] {
+  position: absolute;
+  top: -0.46875rem;
+  right: -0.46875rem;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 0.5625rem;
+  background-color: #EF4444;
+  color: #fff;
+  font-size: 0.6875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.25rem;
+}
+.sticky-header .header-title .header-actions .action-btn.ai-recommend-btn[data-v-965d9a70] {
+  background: linear-gradient(135deg, #4facfe, #64f38c);
+}
+.sticky-header .header-title .header-actions .action-btn.ai-recommend-btn .iconfont[data-v-965d9a70] {
+  color: #fff;
 }
 .sticky-header .category-scroll[data-v-965d9a70] {
   width: 100%;
@@ -301,6 +343,14 @@
 }
 .icon-info-circle:before {
   content: "\e7dc";
+}
+/* AI图标 */
+.icon-ai:before {
+  content: "\e6ab";
+}
+/* 刷新图标 */
+.icon-refresh:before {
+  content: "\e65e";
 }
 body {
   background-color: #f8fafc;

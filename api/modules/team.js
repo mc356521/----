@@ -209,6 +209,20 @@ const teamApi = {
       url: '/teams/my',
       method: 'GET'
     });
+  },
+  
+  /**
+   * 获取AI智能推荐的队伍
+   * @param {Object} params - 查询参数
+   * @param {Boolean} params.useCache - 是否使用服务器端缓存的结果
+   * @returns {Promise} 智能推荐队伍的Promise对象
+   */
+  getRecommendedTeams(params = { useCache: true }) {
+    return request({
+      url: '/teams/recommend',
+      method: 'GET',
+      params
+    });
   }
 };
 
