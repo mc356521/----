@@ -1,0 +1,1 @@
+import{u as s}from"./user.BA7q8pkn.js";import{t}from"./team.VNekZ19c.js";import{c as o}from"./competitions.CeqcXiK9.js";import{t as a}from"./taskApplications.MAaxBfY8.js";const i={user:s,team:t,competitions:o,taskApplications:a};export{i as a};
