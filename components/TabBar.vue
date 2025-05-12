@@ -5,8 +5,8 @@
       :class="{ active: activeTab === 'home' }" 
       @click="switchTab('home')"
     >
-      <text class="iconfont icon-home"></text>
-      <text class="tab-text">首页</text>
+      <SvgIcon :name="activeTab === 'home' ? 'Shouyexuanzhong' : 'Shouye'"  />
+      <text class="tab-text" :class="{ 'active-text': activeTab === 'home' }">首页</text>
       <view v-if="activeTab === 'home'" class="active-indicator"></view>
     </view>
     <view 
@@ -14,14 +14,14 @@
       :class="{ active: activeTab === 'competition' }" 
       @click="switchTab('competition')"
     >
-      <text class="iconfont icon-trophy"></text>
-      <text class="tab-text">竞赛</text>
+      <SvgIcon :name="activeTab === 'competition' ? 'jingshaixuanzhong' : 'jingshai'"  />
+      <text class="tab-text" :class="{ 'active-text': activeTab === 'competition' }">竞赛</text>
       <view v-if="activeTab === 'competition'" class="active-indicator"></view>
     </view>
  
     <view class="publish-btn-container">
       <view class="publish-btn pulse" @click="showPublishOptions">
-        <text class="iconfont icon-plus"></text>
+        <SvgIcon :name="activeTab === 'publish' ? 'chuangjiantubiao' : 'chuangjiantubiao'"  />
       </view>
 
     </view>
@@ -30,8 +30,8 @@
       :class="{ active: activeTab === 'team' }" 
       @click="switchTab('team')"
     >
-      <text class="iconfont icon-users"></text>
-      <text class="tab-text">队伍</text>
+      <SvgIcon :name="activeTab === 'team' ? 'duiwutubiaoxuanzhong' : 'duiwutubiao'"  />
+      <text class="tab-text" :class="{ 'active-text': activeTab === 'team' }">队伍</text>
       <view v-if="activeTab === 'team'" class="active-indicator"></view>
     </view>
     <view 
@@ -39,8 +39,8 @@
       :class="{ active: activeTab === 'profile' }" 
       @click="switchTab('profile')"
     >
-      <text class="iconfont icon-user"></text>
-      <text class="tab-text">我的</text>
+      <SvgIcon :name="activeTab === 'profile' ? 'wodexuanzhong' : 'wode'"  />
+      <text class="tab-text" :class="{ 'active-text': activeTab === 'profile' }">我的</text>
       <view v-if="activeTab === 'profile'" class="active-indicator"></view>
     </view>
   </view>
@@ -49,6 +49,7 @@
 <script setup>
 import { defineProps, defineEmits, computed, ref, onMounted } from 'vue';
 import userApi from '@/api/modules/user';
+import SvgIcon from '@/components/SvgIcon.vue';
 
 const props = defineProps({
   activeTab: {
@@ -283,24 +284,21 @@ $text-muted: #36364e;
       font-size: 22rpx;
       color: $text-muted;
       margin-top: 6rpx;
+      
+      &.active-text {
+        color: #1296db;
+        font-weight: 500;
+      }
     }
     
     &.active {
-      .iconfont,
-      .tab-text {
+      .iconfont {
         color: $primary-color;
         font-weight: 500;
       }
     }
     
-    .active-indicator {
-      position: absolute;
-      bottom: 10rpx;
-      width: 40rpx;
-      height: 6rpx;
-      background-color: $primary-color;
-      border-radius: 3rpx;
-    }
+
   }
   
   .publish-btn-container {

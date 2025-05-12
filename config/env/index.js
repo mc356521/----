@@ -13,7 +13,7 @@ const envConfigs = {
 };
 
 // 默认开发环境
-const defaultEnv = 'test';
+const defaultEnv = 'dev';
 
 /**
  * 获取当前环境配置

@@ -83,23 +83,7 @@ function batchDeleteNotifications(ids) {
   });
 }
 
-/**
- * 处理通知相关操作
- * @param {Number|String} notificationId 通知ID
- * @param {String} action 操作类型：accept/reject
- * @param {Object} data 附加数据
- * @returns {Promise} 请求Promise
- */
-function handleNotificationAction(notificationId, action, data = {}) {
-  return request({
-    url: `/notifications/${notificationId}/action`,
-    method: 'POST',
-    data: {
-      action,
-      ...data
-    }
-  });
-}
+
 
 export default {
   getNotificationList,
@@ -108,5 +92,4 @@ export default {
   markAllAsRead,
   deleteNotification,
   batchDeleteNotifications,
-  handleNotificationAction
 }; 

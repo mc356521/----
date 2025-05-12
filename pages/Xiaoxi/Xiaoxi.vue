@@ -3,15 +3,16 @@
     <!-- 顶部导航栏 -->
     <view class="header">
       <view class="navbar">
+        <SvgIcon name="back" size="20" @click="goBack"></SvgIcon>
         <view class="title">通知</view>
-        <view class="actions">
+        <view class="actions" >
           <view v-if="!isEditMode" class="mark-read" @click="markAllAsRead">
-          <text class="iconfont icon-check"></text>
           <text class="mark-text">全部标记为已读</text>
+          <SvgIcon name="yidubiaoji" size="20"></SvgIcon>
         </view>
           <view v-if="!isEditMode" class="edit-btn" @click="toggleEditMode">
-            <text class="iconfont icon-edit"></text>
             <text class="edit-text">编辑</text>
+            <SvgIcon name="bianji" size="20"></SvgIcon>
           </view>
           <view v-else class="edit-actions">
             <view class="cancel-btn" @click="toggleEditMode">
@@ -66,7 +67,8 @@
           :key="index"
           :class="{
             'item-selected': isEditMode && selectedItems.includes(item.id),
-            'reading': item.isReading
+            'reading': item.isReading,
+            'processed': isProcessedApplication(item)
           }"
           @mouseenter="!isEditMode && handleNotificationView(item, index)"
           @mouseleave="!isEditMode && handleNotificationLeave(item)"
@@ -87,7 +89,7 @@
             <view class="notification-time">{{ item.time }}</view>
             
             <!-- 操作按钮 -->
-            <view class="notification-actions" v-if="!isEditMode && item.actions">
+            <view class="notification-actions" v-if="!isEditMode && item.actions && !isProcessedApplication(item)">
               <button 
                 v-for="(action, idx) in item.actions" 
                 :key="idx"
@@ -108,7 +110,8 @@
           v-for="(item, index) in readNotifications" 
           :key="index"
           :class="{
-            'item-selected': isEditMode && selectedItems.includes(item.id)
+            'item-selected': isEditMode && selectedItems.includes(item.id),
+            'processed': isProcessedApplication(item)
           }"
         >
           <view class="select-box" v-if="isEditMode" @click.stop="toggleSelectItem(item.id)">
@@ -165,7 +168,10 @@ import { ref, onMounted, onUnmounted, computed } from 'vue';
 import notificationService from '@/utils/notification-service';
 import websocket from '@/utils/websocket';
 import notificationsApi from '@/api/modules/notifications';
-
+import teamApi from '@/api/modules/team';
+import taskApplicationsApi from '@/api/modules/taskApplications';
+import tasksApi from '@/api/modules/tasks';
+import SvgIcon from '@/components/SvgIcon.vue';
 // 获取App实例
 const app = getApp();
 
@@ -359,32 +365,129 @@ function handleAction(type, id) {
                         readNotifications.value).find(item => item.id === id);
   if (!notification) return;
   
-  if (type === 'accept') {
+  // 获取通知的类型ID和相关ID
+  const typeId = notification.originalData?.typeId;
+  const relatedId = notification.originalData?.relatedId;
+  
+  // 处理任务状态变更操作
+  if (type.startsWith('task_')) {
+    const statusMap = {
+      'task_ongoing': 'ongoing',
+      'task_completed': 'completed',
+      'task_ended': 'ended',
+      'task_recruiting': 'recruiting',
+      'task_cancel': 'canceled'
+    };
+    
+    const status = statusMap[type];
+    if (!status || !relatedId) {
+      uni.showToast({
+        title: '操作失败：缺少必要参数',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    // 如果是取消任务，需要获取取消原因
+    if (status === 'canceled') {
+      uni.showModal({
+        title: '取消任务',
+        content: '确定要取消该任务吗？',
+        editable: true,
+        placeholderText: '请填写取消原因',
+        success: async (res) => {
+          if (res.confirm && res.content) {
+            const apiRes = await updateTaskStatus(relatedId, status, res.content);
+            handleTaskStatusUpdateResult(apiRes, id);
+          } else if (res.confirm) {
+            uni.showToast({
+              title: '取消原因不能为空',
+              icon: 'none'
+            });
+          }
+        }
+      });
+      return;
+    }
+    
+    // 其他状态变更，显示确认对话框
+    const statusTextMap = {
+      'recruiting': '招募中',
+      'ongoing': '进行中',
+      'completed': '已完成',
+      'ended': '已结束',
+      'canceled': '已取消'
+    };
+    
     uni.showModal({
-      title: '接受申请',
-      content: `确定接受此${notification.type}？`,
+      title: `更改状态为"${statusTextMap[status] || status}"`,
+      content: `确定要将任务状态更改为"${statusTextMap[status] || status}"吗？`,
+      success: async (res) => {
+        if (res.confirm) {
+          const apiRes = await updateTaskStatus(relatedId, status);
+          handleTaskStatusUpdateResult(apiRes, id);
+        }
+      }
+    });
+    return;
+  }
+  
+  // 处理接受操作
+  if (type === 'accept') {
+    let title = '接受申请';
+    let content = `确定接受此${notification.type}？`;
+    
+    // 根据通知类型设置不同的提示内容
+    if (typeId && typeId.includes('team_application')) {
+      title = '接受入队申请';
+      content = '确定接受该成员加入队伍吗？';
+    } else if (typeId && typeId.includes('task')) {
+      title = '接受任务申请';
+      content = '确定接受该用户的任务申请吗？';
+    }
+    
+    uni.showModal({
+      title: title,
+      content: content,
       success: async function(res) {
         if (res.confirm) {
           try {
             loading.value = true;
             
-            // 调用API处理通知操作
-            const apiRes = await notificationsApi.handleNotificationAction(id, 'accept', {
-              relatedId: notification.originalData?.relatedId,
-              relatedType: notification.originalData?.relatedType
-            });
+            let apiRes = null;
             
-            if (apiRes.code === 200) {
-          // 从未读列表中移除
-          removeNotification(id);
+            // 根据通知类型调用不同的API
+            if (typeId && typeId.includes('team_application') && relatedId) {
+              // 调用队伍申请API
+              apiRes = await teamApi.handleApplication(relatedId, {
+                status: 'approved',
+                reviewNotes: '欢迎加入我们的队伍！'
+              });
+            } else if (typeId && typeId.includes('task_application') && relatedId) {
+              // 调用任务申请API
+              apiRes = await taskApplicationsApi.updateTaskApplication(relatedId, {
+                status: 'approved',
+                reviewNotes: '申请已通过，欢迎参与任务！'
+              });
+            } else {
+              // 通用通知处理
+              apiRes = await notificationsApi.handleNotificationAction(id, 'accept', {
+                relatedId: notification.originalData?.relatedId,
+                relatedType: notification.originalData?.relatedType
+              });
+            }
+            
+            if (apiRes && (apiRes.code === 200 || apiRes.status === 200)) {
+              // 从未读列表中移除
+              removeNotification(id);
               
-          uni.showToast({
+              uni.showToast({
                 title: '已接受',
-            icon: 'success'
-          });
+                icon: 'success'
+              });
             } else {
               uni.showToast({
-                title: apiRes.message || '操作失败',
+                title: (apiRes && apiRes.message) || '操作失败',
                 icon: 'none'
               });
             }
@@ -401,33 +504,62 @@ function handleAction(type, id) {
       }
     });
   } else if (type === 'reject') {
+    let title = '拒绝申请';
+    let content = `确定拒绝此${notification.type}？`;
+    
+    // 根据通知类型设置不同的提示内容
+    if (typeId && typeId.includes('team_application')) {
+      title = '拒绝入队申请';
+      content = '确定拒绝该成员加入队伍吗？';
+    } else if (typeId && typeId.includes('task')) {
+      title = '拒绝任务申请';
+      content = '确定拒绝该用户的任务申请吗？';
+    }
+    
     uni.showModal({
-      title: '拒绝申请',
-      content: `确定拒绝此${notification.type}？`,
+      title: title,
+      content: content,
       success: async function(res) {
         if (res.confirm) {
           try {
             loading.value = true;
             
-            // 调用API处理通知操作
-            const apiRes = await notificationsApi.handleNotificationAction(id, 'reject', {
-              relatedId: notification.originalData?.relatedId,
-              relatedType: notification.originalData?.relatedType
-            });
+            let apiRes = null;
             
-            if (apiRes.code === 200) {
-          // 从未读列表中移除
-          removeNotification(id);
+            // 根据通知类型调用不同的API
+            if (typeId && typeId.includes('team_application') && relatedId) {
+              // 调用队伍申请API
+              apiRes = await teamApi.handleApplication(relatedId, {
+                status: 'rejected',
+                reviewNotes: '抱歉，当前不符合队伍需求'
+              });
+            } else if (typeId && typeId.includes('task_application') && relatedId) {
+              // 调用任务申请API
+              apiRes = await taskApplicationsApi.updateTaskApplication(relatedId, {
+                status: 'rejected',
+                reviewNotes: '抱歉，当前不符合任务要求'
+              });
+            } else {
+              // 通用通知处理
+              apiRes = await notificationsApi.handleNotificationAction(id, 'reject', {
+                relatedId: notification.originalData?.relatedId,
+                relatedType: notification.originalData?.relatedType
+              });
+            }
+            
+            if (apiRes && (apiRes.code === 200 || apiRes.status === 200)) {
+              // 从未读列表中移除
+              removeNotification(id);
               
-          uni.showToast({
+              uni.showToast({
                 title: '已拒绝',
                 icon: 'none'
               });
             } else {
               uni.showToast({
-                title: apiRes.message || '操作失败',
-            icon: 'none'
-          });
+                title: (apiRes && apiRes.message) || '操作失败',
+                icon: 'none'
+              });
             }
           } catch (error) {
             console.error('拒绝操作失败:', error);
@@ -445,8 +577,26 @@ function handleAction(type, id) {
     // 导航到相应页面
     navigateToDetail(notification);
     
-      // 从未读列表中移除
-      removeNotification(id);
+    // 从未读列表中移除
+    removeNotification(id);
+  }
+}
+
+// 处理任务状态更新结果
+function handleTaskStatusUpdateResult(apiRes, notificationId) {
+  if (apiRes && (apiRes.code === 200 || apiRes.status === 200)) {
+    // 标记通知为已读
+    removeNotification(notificationId);
+    
+    uni.showToast({
+      title: '任务状态已更新',
+      icon: 'success'
+    });
+  } else {
+    uni.showToast({
+      title: (apiRes && apiRes.message) || '操作失败',
+      icon: 'none'
+    });
   }
 }
 
@@ -482,7 +632,9 @@ function readNotificationAloud(notification) {
     window.speechSynthesis.speak(speech);
   }
 }
-
+function goBack() {
+  uni.navigateBack();
+}
 // 根据通知类型导航到相应页面
 function navigateToDetail(notification) {
   if (!notification || !notification.originalData) return;
@@ -819,19 +971,130 @@ function updateTabBarBadge(count) {
   }
 }
 
+// 检查通知是否是已处理的申请
+function isProcessedApplication(notification) {
+  if (!notification) return false;
+  
+  // 检查通知类型ID
+  if (notification.typeId) {
+    if (notification.typeId.includes('approved') || 
+        notification.typeId.includes('rejected') ||
+        notification.typeId.includes('result') ||
+        notification.typeId.includes('processed')) {
+      return true;
+    }
+  }
+  
+  // 检查原始数据中的处理状态
+  if (notification.originalData) {
+    if (notification.originalData.isProcessed || 
+        notification.originalData.status === 'approved' ||
+        notification.originalData.status === 'rejected' ||
+        notification.originalData.status === 'canceled') {
+      return true;
+    }
+  }
+  
+  // 检查消息内容
+  if (notification.message) {
+    const processedKeywords = ['已批准', '已接受', '已拒绝', '已处理', '已取消', 
+                              '已同意', '已完成', '已结束', '批准了', '拒绝了'];
+    
+    for (const keyword of processedKeywords) {
+      if (notification.message.includes(keyword)) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
+// 检查当前用户是否为通知相关实体的创建者/管理者
+function isCreatorOrManager(notification) {
+  if (!notification || !notification.originalData) return false;
+  
+  return notification.originalData.isCreator || 
+         notification.originalData.isManager || 
+         notification.originalData.role === 'leader' ||
+         notification.originalData.role === 'creator' ||
+         notification.originalData.role === 'admin';
+}
+
 // 根据通知信息获取操作按钮
 function getActionsForNotification(notification) {
-  if (notification.typeId.includes('team_application') && !notification.isRead) {
+  // 如果通知表示已处理的申请，只显示查看按钮
+  if (isProcessedApplication(notification)) {
+    return [{ name: '查看', type: 'view', primary: true }];
+  }
+  
+  // 团队申请相关
+  if (notification.typeId && notification.typeId.includes('team_application') && !notification.isRead) {
+    // 作为申请者，已发出的申请只显示查看按钮
+    if (notification.typeId.includes('sent') || 
+        (notification.originalData && notification.originalData.role === 'applicant') ||
+        !isCreatorOrManager(notification)) {
+      return [{ name: '查看', type: 'view', primary: true }];
+    }
+    
+    // 作为队长，收到的申请显示接受和拒绝按钮
     return [
       { name: '接受', type: 'accept', primary: true },
       { name: '拒绝', type: 'reject', primary: false }
     ];
-  } else if (notification.typeId === 'team_invite' && !notification.isRead) {
+  } 
+  // 队伍邀请相关
+  else if (notification.typeId === 'team_invite' && !notification.isRead) {
+    // 如果是队长发出的邀请，只显示查看按钮
+    if (notification.originalData && notification.originalData.role === 'leader') {
+      return [{ name: '查看', type: 'view', primary: true }];
+    }
+    
+    // 收到的邀请显示接受和拒绝按钮
     return [
       { name: '接受', type: 'accept', primary: true },
       { name: '拒绝', type: 'reject', primary: false }
     ];
-  } else {
+  } 
+  // 任务申请相关
+  else if (notification.typeId && notification.typeId.includes('task_application') && !notification.isRead) {
+    // 除非作为任务发布者收到的申请，其他情况只显示查看按钮
+    if (!notification.typeId.includes('received') || 
+        !isCreatorOrManager(notification) ||
+        (notification.originalData && notification.originalData.role === 'applicant')) {
+      return [{ name: '查看', type: 'view', primary: true }];
+    }
+    
+    // 作为任务发布者，收到的申请显示接受和拒绝按钮
+    return [
+      { name: '接受', type: 'accept', primary: true },
+      { name: '拒绝', type: 'reject', primary: false }
+    ];
+  }
+  // 任务状态更新通知（对于任务创建者给出更多操作选项）
+  else if (notification.typeId && notification.typeId.includes('task_update') && 
+           isCreatorOrManager(notification) && !notification.isRead) {
+    const currentStatus = notification.originalData?.taskStatus;
+    
+    // 根据当前任务状态提供不同的操作选项
+    if (currentStatus === 'recruiting') {
+      return [
+        { name: '开始进行', type: 'task_ongoing', primary: true },
+        { name: '取消任务', type: 'task_cancel', primary: false },
+        { name: '查看详情', type: 'view', primary: false }
+      ];
+    } else if (currentStatus === 'ongoing') {
+      return [
+        { name: '标记完成', type: 'task_completed', primary: true },
+        { name: '结束任务', type: 'task_ended', primary: false },
+        { name: '查看详情', type: 'view', primary: false }
+      ];
+    } else {
+      return [{ name: '查看详情', type: 'view', primary: true }];
+    }
+  }
+  // 默认情况下只提供查看选项
+  else {
     return [{ name: '查看', type: 'view', primary: true }];
   }
 }
@@ -1055,6 +1318,54 @@ onUnmounted(() => {
   // 移除全局通知事件监听
   uni.$off('newNotification');
 });
+
+// 从通知列表中移除通知
+function removeNotification(id) {
+  if (!id) return;
+  
+  // 从未读列表中移除
+  const unreadIndex = unreadNotifications.value.findIndex(item => item.id === id);
+  if (unreadIndex !== -1) {
+    // 如果是未读通知，移到已读列表
+    const notification = unreadNotifications.value.splice(unreadIndex, 1)[0];
+    notification.read = true;
+    readNotifications.value.unshift(notification);
+    unreadCount.value--;
+    
+    // 更新全局未读通知计数
+    if (app && app.globalData) {
+      app.globalData.unreadNotificationCount = Math.max(0, app.globalData.unreadNotificationCount - 1);
+      
+      // 更新TabBar角标
+      if (app.updateMessageBadge) {
+        app.updateMessageBadge();
+      }
+    }
+  }
+}
+
+// 更新任务状态
+async function updateTaskStatus(taskId, status, cancelReason = '') {
+  if (!taskId) return null;
+  
+  try {
+    const data = {
+      status: status
+    };
+    
+    // 如果是取消状态，添加取消原因
+    if (status === 'canceled' && cancelReason) {
+      data.cancelReason = cancelReason;
+    }
+    
+    // 调用API更新任务状态
+    const response = await tasksApi.updateTaskStatus(taskId, data);
+    return response;
+  } catch (error) {
+    console.error('更新任务状态失败:', error);
+    return null;
+  }
+}
 </script>
 
 <style lang="scss">
@@ -1083,7 +1394,7 @@ $border-color: #eeeeee;
   .navbar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+
     height: 100rpx;
     padding: 0 30rpx;
     
@@ -1096,7 +1407,8 @@ $border-color: #eeeeee;
     .actions {
       display: flex;
       align-items: center;
-      
+      gap: 60rpx;
+      margin-left: 180rpx;
       .mark-read, .edit-btn {
       display: flex;
       align-items: center;
@@ -1228,6 +1540,22 @@ $border-color: #eeeeee;
     background-color: rgba($primary-color, 0.05);
   }
   
+  // 已处理的申请通知样式
+  &.processed {
+    .notification-type:after {
+      content: '(已处理)';
+      font-size: 24rpx;
+      color: $secondary-color;
+      margin-left: 8rpx;
+      font-weight: normal;
+    }
+    
+    &.unread {
+      border-left-color: $secondary-color;
+      background-color: rgba($secondary-color, 0.03);
+    }
+  }
+  
   &:after {
     content: '';
     position: absolute;
@@ -1236,10 +1564,6 @@ $border-color: #eeeeee;
     right: 30rpx;
     height: 2rpx;
     background-color: $border-color;
-  }
-  
-  &:last-child:after {
-    display: none;
   }
   
   .select-box {

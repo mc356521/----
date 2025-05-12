@@ -3,7 +3,7 @@
     <!-- 顶部导航栏 -->
     <view class="header">
       <view class="back-btn" @click="goBack">
-        <text class="iconfont icon-arrow-left"></text>
+        <SvgIcon name="back" size="20"></SvgIcon>
       </view>
       <text class="header-title">个人资料</text>
       <view class="right-placeholder"></view>
@@ -34,7 +34,7 @@
         <view class="card-header">
           <text class="card-title">基本信息</text>
           <view class="edit-btn" @click="editBasicInfo">
-            <text class="iconfont icon-edit"></text>
+            <SvgIcon name="bianji" size="20"></SvgIcon>
             <text class="edit-text">编辑</text>
           </view>
         </view>
@@ -80,7 +80,7 @@
         <view class="card-header">
           <text class="card-title">个人简介</text>
           <view class="edit-btn" @click="editBio">
-            <text class="iconfont icon-edit"></text>
+            <SvgIcon name="bianji" size="20"></SvgIcon>
             <text class="edit-text">编辑</text>
           </view>
         </view>
@@ -95,7 +95,7 @@
         <view class="card-header">
           <text class="card-title">技能标签</text>
           <view class="edit-btn" @click="editSkills">
-            <text class="iconfont icon-edit"></text>
+            <SvgIcon name="bianji" size="20"></SvgIcon>
             <text class="edit-text">编辑</text>
           </view>
         </view>
@@ -115,7 +115,7 @@
         <view class="card-header">
           <text class="card-title">获奖经历</text>
           <view class="edit-btn" @click="editAwards">
-            <text class="iconfont icon-edit"></text>
+            <SvgIcon name="bianji" size="20"></SvgIcon>
             <text class="edit-text">编辑</text>
           </view>
         </view>
@@ -140,7 +140,7 @@
     
     <!-- 悬浮刷新按钮 -->
     <view class="refresh-btn" @click="refreshUserInfo">
-      <text class="iconfont icon-refresh" :class="{ 'refreshing': isRefreshing }"></text>
+      <SvgIcon name="shuaxin" size="40"></SvgIcon>
     </view>
   </view>
 </template>
@@ -148,7 +148,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import userApi from '@/api/modules/user';
-
+import SvgIcon from '@/components/SvgIcon.vue';
 // 用户信息状态
 const userInfo = ref({
   realName: '',
@@ -237,19 +237,166 @@ async function refreshUserInfo() {
 
 // 更换头像
 function changeAvatar() {
-  uni.chooseImage({
-    count: 1,
-    sizeType: ['compressed'],
-    sourceType: ['album', 'camera'],
-    success: function (res) {
-      const tempFilePath = res.tempFilePaths[0];
+  try {
+    // 图片选择配置
+    const imageOptions = {
+      count: 1, // 最多可以选择的图片张数
+      sizeType: ['compressed'], // 压缩图
+      sourceType: ['album', 'camera'], // 从相册选择或拍照
+      success: function(res) {
+        try {
+          console.log('选择图片成功:', res);
+          const tempFilePath = res.tempFilePaths[0];
+          
+          // 检查图片格式 - 改进格式识别逻辑
+          let fileExt = '';
+          try {
+            // 尝试从路径中提取扩展名
+            const extMatch = tempFilePath.match(/\.([a-zA-Z0-9]+)$/);
+            if (extMatch && extMatch[1]) {
+              fileExt = extMatch[1].toLowerCase();
+            }
+          } catch (e) {
+            console.error('提取文件扩展名失败:', e);
+          }
+          
+          console.log('文件路径:', tempFilePath);
+          console.log('识别到的扩展名:', fileExt);
+          
+          const allowedExts = ['jpg', 'jpeg', 'png'];
+          
+          // 如果无法从文件名识别扩展名，或者扩展名是png/jpg/jpeg，则允许上传
+          // 真正的格式验证会在服务器端进行
+          if (fileExt && !allowedExts.includes(fileExt)) {
+            uni.showToast({
+              title: '仅支持JPG、JPEG和PNG格式',
+              icon: 'none'
+            });
+            return;
+          }
+          
+          // 直接上传，不使用预览
+          uni.showModal({
+            title: '确认上传',
+            content: '是否将选择的图片设为头像？',
+            confirmColor: '#3B82F6',
+            success: function(modalRes) {
+              if (modalRes.confirm) {
+                try {
+                  uploadAvatar(tempFilePath);
+                } catch (uploadErr) {
+                  console.error('启动上传过程出错:', uploadErr);
+                  uni.showToast({
+                    title: '上传初始化失败',
+                    icon: 'none'
+                  });
+                }
+              }
+            }
+          });
+        } catch (innerErr) {
+          console.error('处理选中的图片时出错:', innerErr);
+          uni.showToast({
+            title: '处理图片错误',
+            icon: 'none'
+          });
+        }
+      },
+      fail: function(err) {
+        console.error('选择图片失败:', err);
+        uni.showToast({
+          title: '选择图片失败',
+          icon: 'none'
+        });
+      },
+      complete: function() {
+        console.log('选择图片操作完成');
+      }
+    };
+    
+    // 选择图片
+    uni.chooseImage(imageOptions);
+  } catch (err) {
+    console.error('调用选择图片API出错:', err);
+    uni.showToast({
+      title: '选择图片功能异常',
+      icon: 'none'
+    });
+  }
+}
+
+// 上传头像到服务器
+function uploadAvatar(filePath) {
+  // 显示上传中提示
+  const loadingText = '上传中';
+  let dots = '';
+  let loadingTimer = null;
+  
+  // 创建动态加载效果
+  uni.showLoading({
+    title: loadingText,
+    mask: true
+  });
+  
+  loadingTimer = setInterval(() => {
+    dots = dots.length >= 3 ? '' : dots + '.';
+    uni.showLoading({
+      title: loadingText + dots,
+      mask: true
+    });
+  }, 500);
+  
+  // 调用上传头像API
+  userApi.uploadAvatar(filePath, (progress) => {
+    console.log('上传进度:', progress);
+    
+    // 更新loading文字
+    if (progress > 0) {
+      uni.showLoading({
+        title: `上传中 ${progress}%`,
+        mask: true
+      });
+    }
+  }).then(res => {
+    // 清除loading计时器
+    if (loadingTimer) {
+      clearInterval(loadingTimer);
+    }
+    uni.hideLoading();
+    
+    if (res.code === 200 && res.data) {
+      // 更新头像显示
+      userInfo.value.avatarUrl = res.data.avatarUrl;
       
-      // 这里一般会有上传图片到服务器的逻辑
+      // 标记头像已更新，以便在返回时通知父页面刷新
+      uni.setStorageSync('avatar_updated', true);
+      
+      // 立即刷新本页面的头像显示
+      // 重新获取用户资料
+      getUserProfile();
+      
       uni.showToast({
-        title: '头像上传功能开发中',
+        title: '头像上传成功',
+        icon: 'success'
+      });
+    } else {
+      uni.showToast({
+        title: res.message || '头像上传失败',
         icon: 'none'
       });
     }
+  }).catch(error => {
+    // 清除loading计时器
+    if (loadingTimer) {
+      clearInterval(loadingTimer);
+    }
+    uni.hideLoading();
+    
+    console.error('头像上传失败:', error);
+    uni.showToast({
+      title: '头像上传失败',
+      icon: 'none'
+    });
   });
 }
 
@@ -283,6 +430,30 @@ function editAwards() {
 
 // 返回
 function goBack() {
+  // 判断是否上传了新头像
+  const avatarUpdated = uni.getStorageSync('avatar_updated');
+  
+  if (avatarUpdated) {
+    // 清除标记
+    uni.removeStorageSync('avatar_updated');
+    
+    // 设置页面返回数据，通知上一页刷新头像
+    const pages = getCurrentPages();
+    if (pages.length > 1) {
+      const prevPage = pages[pages.length - 2];
+      if (prevPage && prevPage.$vm) {
+        // 尝试调用上一页的刷新方法
+        if (typeof prevPage.$vm.refreshUserInfo === 'function') {
+          // 直接调用上一页的刷新方法
+          prevPage.$vm.refreshUserInfo();
+        } else {
+          // 不要直接设置属性，而是使用事件通信
+          uni.$emit('profileUpdated');
+        }
+      }
+    }
+  }
+  
   uni.navigateBack();
 }
 
@@ -579,7 +750,7 @@ page {
   width: 90rpx;
   height: 90rpx;
   border-radius: 50%;
-  background-color: $primary-color;
+
   display: flex;
   justify-content: center;
   align-items: center;

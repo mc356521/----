@@ -4,7 +4,7 @@
     <view class="sticky-header">
       <view class="nav-bar">
         <view class="back-btn" @click="goBack">
-          <text class="iconfont icon-arrow-left"></text>
+          <image :src="icons.back" class="icon-btn"></image>
         </view>
         <text class="page-title">发布竞赛</text>
         <view class="draft-btn" @click="saveDraft">草稿箱</view>
@@ -300,6 +300,7 @@
 import { ref, reactive, onMounted } from 'vue';
 import competitionsApi from '@/api/modules/competitions';
 import userApi from '@/api/modules/user';
+import { icons } from '@/static/svg/icons.js';
 
 // 表单数据
 const form = reactive({
@@ -712,7 +713,17 @@ page {
 }
 
 .back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 10rpx;
+  width: 80rpx;
+  height: 80rpx;
+}
+
+.icon-btn {
+  width: 60rpx;
+  height: 60rpx;
 }
 
 .page-title {

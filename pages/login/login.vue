@@ -19,15 +19,14 @@
       <view class="login-form" v-if="!isRegistering">
         <view class="input-field">
           <view class="input-content">
-            <text class="iconfont icon-user"></text>
+            <SvgIcon name="zhanghao"  class="input-icon" />
             <input type="text" placeholder="学号/手机号" class="form-input" v-model="loginForm.phone" />
           </view>
         </view>
         
         <view class="input-field">
-			
           <view class="input-content">
-            <text class="iconfont icon-user"></text>
+            <SvgIcon name="mima"  class="input-icon" />
             <input type="text" placeholder="密码" class="form-input" v-model="loginForm.password" :password="showPassword" />
             <text class="iconfont" :class="showPassword ? 'icon-eye-slash' : 'icon-eye'" @click="togglePasswordVisibility"></text>
           </view>
@@ -49,14 +48,14 @@
       <view class="login-form" v-else>
         <view class="input-field">
           <view class="input-content">
-            <text class="iconfont icon-mobile"></text>
+            <SvgIcon name="zhanghao"  class="input-icon" />
             <input type="text" placeholder="手机号" class="form-input" v-model="registerForm.phoneNumber" />
           </view>
         </view>
         
         <view class="input-field">
           <view class="input-content">
-            <text class="iconfont icon-lock"></text>
+            <SvgIcon name="mima"  class="input-icon" />
             <input type="text" placeholder="密码" class="form-input" v-model="registerForm.password" :password="showPassword" />
             <text class="iconfont" :class="showPassword ? 'icon-eye-slash' : 'icon-eye'" @click="togglePasswordVisibility"></text>
           </view>
@@ -64,7 +63,7 @@
         
         <view class="input-field">
           <view class="input-content">
-            <text class="iconfont icon-user"></text>
+            <SvgIcon name="mingzi"  class="input-icon" />
             <input type="text" placeholder="真实姓名" class="form-input" v-model="registerForm.realName" />
           </view>
         </view>
@@ -72,11 +71,11 @@
         <!-- 学校选择 -->
         <view class="input-field">
           <view class="input-content">
-            <text class="iconfont icon-graduation"></text>
+            <SvgIcon name="school"  class="input-icon" />
             <picker mode="multiSelector" @change="onSchoolChange" @columnchange="onSchoolColumnChange" :value="schoolMultiIndex" :range="schoolMultiArray" range-key="name" class="school-picker">
               <view class="picker-content">
                 <text class="picker-text">{{selectedSchoolName || '请选择学校（省份-学校）'}}</text>
-                <text class="iconfont icon-arrow-left picker-arrow"></text>
+                <SvgIcon name="xiazhankai"  class="input-icon" />
               </view>
             </picker>
           </view>
@@ -84,14 +83,14 @@
         
         <view class="input-field">
           <view class="input-content">
-            <text class="iconfont icon-graduation"></text>
+            <SvgIcon name="zhuanye"  class="input-icon" />
             <input type="text" placeholder="专业" class="form-input" v-model="registerForm.major" />
           </view>
         </view>
         
         <view class="input-field">
           <view class="input-content">
-            <text class="iconfont icon-graduation"></text>
+            <SvgIcon name="studentuser"  class="input-icon" />
             <input type="text" placeholder="学号" class="form-input" v-model="registerForm.studentTeacherId" />
           </view>
         </view>
@@ -110,13 +109,13 @@
         
         <view class="social-buttons">
           <view class="social-btn" @click="socialLogin('wechat')" hover-class="social-btn-hover">
-            <text class="iconfont icon-weixin"></text>
+            <image src="../../static/image/Lianxi/weixin.png" mode="aspectFit" class="social-icon"></image>
           </view>
           <view class="social-btn" @click="socialLogin('qq')" hover-class="social-btn-hover">
-            <text class="iconfont icon-qq"></text>
+            <image src="../../static/image/Lianxi/qq.png" mode="aspectFit" class="social-icon"></image>
           </view>
           <view class="social-btn" @click="socialLogin('phone')" hover-class="social-btn-hover">
-            <text class="iconfont icon-mobile"></text>
+                  <image src="../../static/image/Lianxi/Shouji.png" mode="aspectFit" class="social-icon"></image>
           </view>
         </view>
       </view>
@@ -135,6 +134,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue';
 import api from '@/api';
+import SvgIcon from '@/components/SvgIcon.vue';
 
 // 响应式状态
 const isRemember = ref(false);
@@ -545,7 +545,6 @@ page {
 }
 
 .top-image {
-  margin-top: 30rpx;
   margin-bottom: 60rpx;
 }
 
@@ -594,6 +593,12 @@ page {
   display: flex;
   flex-direction: row;
   align-items: center;
+}
+
+.input-icon {
+  width: 40rpx;
+  height: 40rpx;
+  margin-right: 20rpx;
 }
 
 .iconfont {
@@ -723,6 +728,11 @@ page {
   font-size: 40rpx;
   color: #333;
   margin-right: 0;
+}
+
+.social-icon {
+  width: 70rpx;
+  height: 70rpx;
 }
 
 .social-btn .icon-weixin {

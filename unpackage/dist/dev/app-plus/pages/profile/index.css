@@ -1,3 +1,27 @@
+
+.svg-icon-container[data-v-4c110535] {
+  display: inline-block;
+  vertical-align: middle;
+  position: relative;
+  overflow: hidden;
+}
+.svg-content[data-v-4c110535] {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.svg-content svg[data-v-4c110535] {
+  width: 100%;
+  height: 100%;
+}
+.svg-image[data-v-4c110535] {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 /* 水平间距 */
 /* 水平间距 */
 /* 导入主题变量 */
@@ -58,18 +82,13 @@
   color: #36364e;
   margin-top: 0.1875rem;
 }
-.tab-bar .tab-item.active .iconfont[data-v-89ca1f91],
-.tab-bar .tab-item.active .tab-text[data-v-89ca1f91] {
-  color: #3B82F6;
+.tab-bar .tab-item .tab-text.active-text[data-v-89ca1f91] {
+  color: #1296db;
   font-weight: 500;
 }
-.tab-bar .tab-item .active-indicator[data-v-89ca1f91] {
-  position: absolute;
-  bottom: 0.3125rem;
-  width: 1.25rem;
-  height: 0.1875rem;
-  background-color: #3B82F6;
-  border-radius: 0.09375rem;
+.tab-bar .tab-item.active .iconfont[data-v-89ca1f91] {
+  color: #3B82F6;
+  font-weight: 500;
 }
 .tab-bar .publish-btn-container[data-v-89ca1f91] {
   display: flex;

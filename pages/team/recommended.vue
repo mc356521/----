@@ -26,7 +26,7 @@
         <view class="section-header">
           <text class="section-title">为您推荐的队伍</text>
           <view class="refresh-btn" @click="refreshRecommendations">
-            <text class="iconfont icon-refresh"></text>
+            <SvgIcon name="shuaxin" size="20"/>
           </view>
         </view>
         
@@ -42,7 +42,7 @@
             :team="team"
             :index="index"
             :show-match="true"
-            @detail="viewTeamDetail">
+            @detail="viewTeamDetail" style="font-size: 30rpx;" >
           </team-card>
         </view>
         
@@ -62,12 +62,13 @@ import HeaderBar from '@/components/HeaderBar.vue';
 import TeamCard from '@/components/team/TeamCard.vue';
 import TabBar from '@/components/TabBar.vue';
 import teamApi from '@/api/modules/team';
-
+import SvgIcon from '@/components/SvgIcon.vue';
 export default {
   components: {
     HeaderBar,
     TeamCard,
-    TabBar
+    TabBar,
+    SvgIcon
   },
   
   data() {
@@ -78,12 +79,38 @@ export default {
       aiSummary: '',
       
       // HeaderBar占位高度
-      headerPlaceholderHeight: '120rpx'
+      headerPlaceholderHeight: '120rpx',
+      
+      // 缓存有效时间（3小时，单位：毫秒）
+      cacheValidDuration: 3 * 60 * 60 * 1000
     };
   },
   
   // 生命周期钩子 - 页面加载
   onLoad() {
+    // 检查用户是否已登录
+    const token = uni.getStorageSync('token');
+    if (!token) {
+      console.log('用户未登录，无法访问AI推荐页面');
+      uni.showModal({
+        title: '需要登录',
+        content: '查看AI智能推荐需要先登录账号',
+        confirmText: '去登录',
+        cancelText: '返回',
+        success: (res) => {
+          if (res.confirm) {
+            uni.navigateTo({
+              url: '/pages/login/login'
+            });
+          } else {
+            // 返回上一页
+            uni.navigateBack();
+          }
+        }
+      });
+      return;
+    }
+    
     // 先尝试读取缓存
     const cacheLoaded = this.checkCacheAndLoad();
     
@@ -114,8 +141,19 @@ export default {
       try {
         const cachedTeams = uni.getStorageSync('ai_recommended_teams');
         const cachedSummary = uni.getStorageSync('ai_summary');
+        const cachedTime = uni.getStorageSync('ai_recommend_cache_time');
         
-        // 如果存在缓存数据
+        // 检查缓存有效期
+        const now = Date.now();
+        const isExpired = !cachedTime || (now - Number(cachedTime) > this.cacheValidDuration);
+        
+        if (isExpired) {
+          console.log('缓存已过期，需要重新获取数据。过期时间:', 
+            cachedTime ? new Date(Number(cachedTime)).toLocaleString() : '无缓存时间');
+          return false;
+        }
+        
+        // 如果存在缓存数据且未过期
         if (cachedTeams) {
           try {
             const parsedTeams = JSON.parse(cachedTeams);
@@ -124,7 +162,7 @@ export default {
               this.recommendedTeams = parsedTeams;
               this.aiSummary = cachedSummary || '根据您的专业、技能和兴趣，我们为您推荐了以下最匹配的团队';
               this.loading = false; // 立即关闭加载状态
-              console.log('组件初始化时使用缓存数据:', parsedTeams.length, '个推荐队伍');
+              console.log('组件初始化时使用缓存数据:', parsedTeams.length, '个推荐队伍，缓存时间:', new Date(Number(cachedTime)).toLocaleString());
               return true; // 表示成功加载了缓存
             }
           } catch (e) {
@@ -159,19 +197,33 @@ export default {
           // 检查是否有缓存
           let cachedTeams = null;
           let cachedSummary = null;
+          let cachedTime = null;
           
           try {
             cachedTeams = uni.getStorageSync('ai_recommended_teams');
             cachedSummary = uni.getStorageSync('ai_summary');
+            cachedTime = uni.getStorageSync('ai_recommend_cache_time');
+            
+            // 检查缓存是否过期
+            const now = Date.now();
+            const isExpired = !cachedTime || (now - Number(cachedTime) > this.cacheValidDuration);
             
             // 调试日志
             console.log('缓存状态检查:');
             console.log('- 缓存数据存在:', !!cachedTeams);
+            console.log('- 缓存时间:', cachedTime ? new Date(Number(cachedTime)).toLocaleString() : '无缓存时间');
+            console.log('- 缓存是否过期:', isExpired);
+            
+            // 如果缓存已过期，不使用缓存
+            if (isExpired) {
+              console.log('缓存已过期，需要重新获取数据');
+              cachedTeams = null;
+            }
           } catch (e) {
             console.error('读取缓存出错:', e);
           }
           
-          // 如果有缓存，直接使用缓存数据
+          // 如果有缓存且未过期，直接使用缓存数据
           if (cachedTeams) {
             console.log('使用缓存的AI推荐数据');
             try {
@@ -212,11 +264,17 @@ export default {
           this.aiSummary = res.data.aiSummary || '根据您的专业、技能和兴趣，我们为您推荐了以下最匹配的团队';
           console.log('获取到新的AI推荐队伍数据:', this.recommendedTeams.length, '个队伍');
           
-          // 将数据存入本地缓存
+          // 将数据存入本地缓存，并记录缓存时间
           try {
+            // 保存推荐团队数据
             uni.setStorageSync('ai_recommended_teams', JSON.stringify(this.recommendedTeams));
+            // 保存AI摘要
             uni.setStorageSync('ai_summary', this.aiSummary);
-            console.log('AI推荐数据缓存成功');
+            // 保存缓存时间戳
+            const currentTime = Date.now();
+            uni.setStorageSync('ai_recommend_cache_time', currentTime.toString());
+            
+            console.log('AI推荐数据缓存成功，缓存时间:', new Date(currentTime).toLocaleString());
           } catch (e) {
             console.error('缓存AI推荐数据失败:', e);
           }
@@ -226,6 +284,7 @@ export default {
           if (!forceRefresh) {
             try {
               const cachedTeams = uni.getStorageSync('ai_recommended_teams');
+              // 不管缓存是否过期，在请求失败的情况下都尝试使用
               if (cachedTeams) {
                 const parsedTeams = JSON.parse(cachedTeams);
                 if (Array.isArray(parsedTeams) && parsedTeams.length > 0) {
@@ -242,7 +301,7 @@ export default {
       } catch (error) {
         console.error('获取AI推荐队伍失败:', error);
         
-        // 尝试从缓存加载作为备用
+        // 尝试从缓存加载作为备用，在出错情况下不考虑缓存过期
         if (!forceRefresh) {
           try {
             const cachedTeams = uni.getStorageSync('ai_recommended_teams');
@@ -276,14 +335,13 @@ export default {
 
     // 刷新推荐
     refreshRecommendations() {
-      uni.showLoading({
-        title: '刷新推荐中...'
-      });
+  
       
       // 清除缓存
       try {
         uni.removeStorageSync('ai_recommended_teams');
         uni.removeStorageSync('ai_summary');
+        uni.removeStorageSync('ai_recommend_cache_time');
         console.log('已清除AI推荐缓存，准备获取新数据');
       } catch (e) {
         console.error('清除缓存失败:', e);
@@ -318,7 +376,8 @@ export default {
       uni.switchTab({
         url: '/pages/profile/index'
       });
-    }
+    },
+    
   }
 }
 </script>
@@ -383,6 +442,7 @@ export default {
       font-size: 32rpx;
       font-weight: bold;
       color: #333;
+      margin-left: 20rpx;
     }
     
     .refresh-btn {

@@ -22,7 +22,7 @@
             </view>
           </view>
           <view class="edit-btn" @click="goToUserInfo">
-            <text class="iconfont icon-edit"></text>
+            <SvgIcon name="bianji">22</SvgIcon>
           </view>
         </view>
         <view class="user-stats">
@@ -56,12 +56,12 @@
         </view>
         <view class="menu-item" @click="navigateTo('myTeams')">
           <text class="iconfont icon-users menu-icon"></text>
-          <text class="menu-text">我的团队</text>
+          <text class="menu-text">实物奖励</text>
           <text class="iconfont icon-arrow-left menu-arrow"></text>
         </view>
         <view class="menu-item" @click="navigateTo('myAwards')">
           <text class="iconfont icon-star menu-icon"></text>
-          <text class="menu-text">我的获奖</text>
+          <text class="menu-text">勋章申请</text>
           <text class="iconfont icon-arrow-left menu-arrow"></text>
         </view>
         <view class="menu-item" @click="navigateTo('applications')">
@@ -107,10 +107,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import TabBar from '@/components/TabBar.vue';
 import userApi from '@/api/modules/user';
 import store from '@/store';
-
+import SvgIcon from '@/components/SvgIcon.vue';
 // 用户信息状态
 const userInfo = ref({
   realName: '加载中...',
@@ -130,10 +131,13 @@ const userInfo = ref({
 
 // 加载状态
 const loading = ref(true);
+// 是否需要刷新用户信息
+const needRefreshUserInfo = ref(false);
 
 // 获取用户个人资料
 async function getUserProfile() {
   try {
+    loading.value = true;
     const res = await userApi.getUserProfile();
     
     if (res.code === 200 && res.data) {
@@ -147,6 +151,12 @@ async function getUserProfile() {
   } finally {
     loading.value = false;
   }
+}
+
+// 刷新用户信息（可以被其他页面调用）
+function refreshUserInfo() {
+  console.log('刷新用户信息');
+  getUserProfile();
 }
 
 // 导航到对应页面
@@ -171,37 +181,18 @@ function logout() {
     content: '确定要退出登录吗？',
     success: function (res) {
       if (res.confirm) {
+       
         // 清除全局状态
         store.clearState();
-        
-        // 清除所有本地缓存
-        try {
-          // 清除指定的存储项
+      
+
           uni.removeStorageSync('userInteractionState');
           uni.removeStorageSync('_DC_STAT_UUID');
           uni.removeStorageSync('ai_recommend_cache_time');
           uni.removeStorageSync('ai_recommended_teams');
           uni.removeStorageSync('ai_summary');
           uni.removeStorageSync('token');
-          
-          // 获取所有存储的key并删除
-          const keys = uni.getStorageInfoSync().keys;
-          console.log('准备清除所有缓存:', keys);
-          
-          keys.forEach(key => {
-            try {
-              uni.removeStorageSync(key);
-              console.log('已清除缓存:', key);
-            } catch (e) {
-              console.error('清除缓存失败:', key, e);
-            }
-          });
-          
-          console.log('所有缓存已清除');
-        } catch (e) {
-          console.error('清除缓存出错:', e);
-        }
-        
+
         uni.showToast({
           title: '已退出登录',
           icon: 'success',
@@ -265,6 +256,22 @@ function showPublishOptions() {
 // 页面加载时获取用户资料
 onMounted(() => {
   getUserProfile();
+  
+  // 监听头像更新事件
+  uni.$on('profileUpdated', () => {
+    console.log('收到profileUpdated事件，刷新用户信息');
+    refreshUserInfo();
+  });
+});
+
+// 页面显示时检查是否需要刷新
+onShow(() => {
+  // 检查是否有头像更新标记
+  const avatarUpdated = uni.getStorageSync('avatar_updated');
+  if (avatarUpdated) {
+    uni.removeStorageSync('avatar_updated');
+    refreshUserInfo();
+  }
 });
 </script>
 

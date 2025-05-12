@@ -24,7 +24,7 @@
               <view class="swiper-overlay">
                 <text class="swiper-title">中国大学生计算机设计大赛(第18届)</text>
                 <view class="swiper-date">
-                  <text class="iconfont icon-calendar date-icon"></text>
+                  <image :src="icons.baoming" class="date-icon"></image>
                   <text class="date-text">报名截止：5月15日</text>
                 </view>
               </view>
@@ -36,7 +36,7 @@
               <view class="swiper-overlay">
                 <text class="swiper-title">挑战杯创业计划大赛</text>
                 <view class="swiper-date">
-                  <text class="iconfont icon-calendar date-icon"></text>
+                  <image :src="icons.baoming" class="date-icon"></image>
                   <text class="date-text">报名截止：6月10日</text>
                 </view>
               </view>
@@ -48,7 +48,7 @@
               <view class="swiper-overlay">
                 <text class="swiper-title">创青春创业大赛</text>
                 <view class="swiper-date">
-                  <text class="iconfont icon-calendar date-icon"></text>
+                  <image :src="icons.baoming" class="date-icon"></image>
                   <text class="date-text">报名截止：7月5日</text>
                 </view>
               </view>
@@ -62,25 +62,25 @@
         <view class="menu-grid">
           <view class="menu-item animate__animated animate__fadeInUp" style="animation-delay: 0.1s" @click="navigateTo('task-square')">
             <view class="menu-icon blue">
-              <text class="iconfont icon-trophy"></text>
+              <SvgIcon name="weituo" size="40"></SvgIcon>
             </view>
             <text class="menu-text">校园委托</text>
           </view>
           <view class="menu-item animate__animated animate__fadeInUp" style="animation-delay: 0.2s" @click="navigateTo('findPartner')">
             <view class="menu-icon green">
-              <text class="iconfont icon-users"></text>
+              <SvgIcon name="xunzhaoduiyou" size="40"></SvgIcon>
             </view>
             <text class="menu-text">寻找队友</text>
           </view>
           <view class="menu-item animate__animated animate__fadeInUp" style="animation-delay: 0.3s" @click="navigateTo('project')">
             <view class="menu-icon purple">
-              <text class="iconfont icon-project"></text>
+              <SvgIcon name="xiangmuzhanshi" size="30"></SvgIcon>
             </view>
             <text class="menu-text">项目展示</text>
           </view>
           <view class="menu-item animate__animated animate__fadeInUp" style="animation-delay: 0.4s" @click="navigateTo('schedule')">
             <view class="menu-icon orange">
-              <text class="iconfont icon-calendar"></text>
+              <SvgIcon name="rchenganpan" size="30"></SvgIcon>
             </view>
             <text class="menu-text">日程安排</text>
           </view>
@@ -91,7 +91,10 @@
       <!-- 热门竞赛 -->
       <view class="section">
         <view class="section-header">
-          <text class="section-title animate__animated animate__fadeInLeft">热门竞赛</text>
+          <view class="title-with-icon">
+            <text class="section-title animate__animated animate__fadeInLeft">热门竞赛</text>
+            <SvgIcon name="remen" class="title-hot-icon"></SvgIcon>
+          </view>
           <text class="view-all animate__animated animate__fadeInRight" @click="viewAll('competition')">查看全部</text>
         </view>
         <view class="competition-list">
@@ -99,7 +102,7 @@
           <view class="competition-item card-hover animate__animated animate__fadeInUp" style="animation-delay: 0.1s" @click="viewDetail('competition', competition.id)" v-for="competition in competitionsList" :key="competition.id">
             <view class="competition-flex">
               <view class="competition-image-container">
-                <image class="competition-image" :src="competition.coverImageUrl || 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800'" mode="aspectFill"></image>
+                <image class="competition-image" :src="coverImageUrl || 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800'" mode="aspectFill"></image>
               </view>
               <view class="competition-content">
                 <view class="flex-between">
@@ -114,11 +117,11 @@
                 </view>
                 <view class="competition-info">
                   <view class="info-item">
-                    <text class="iconfont icon-clock"></text>
+                    <SvgIcon name="baoming" class="info-icon"></SvgIcon>
                     <text class="info-text">报名截止: {{ competition.registrationDeadlineFormatted }}</text>
                   </view>
                   <view class="info-item">
-                    <text class="iconfont icon-team"></text>
+                    <SvgIcon name="Baominrenshu" class="info-icon"></SvgIcon>
                     <text class="info-text">{{ competition.teamSize }}-{{ competition.teamMax }}人/队</text>
                   </view>
                 </view>
@@ -131,9 +134,13 @@
       <!-- 推荐队伍 -->
       <view class="section">
         <view class="section-header">
-          <text class="section-title animate__animated animate__fadeInLeft">热门队伍</text>
+          <view class="title-with-icon">
+            <text class="section-title animate__animated animate__fadeInLeft">热门队伍</text>
+            <image :src="icons.remen" class="title-hot-icon"></image>
+          </view>
+
           <view class="ai-recommend-btn" @click="showAiRecommendPopup" @longpress="resetAiRecommendForTesting">
-            <text class="iconfont icon-ai"></text>
+            <image :src="icons.zhinnegtuijzudui" class="ai-icon"></image>
             <text class="ai-text">AI智能推荐</text>
           </view>
         </view>
@@ -201,63 +208,6 @@
         </view>
       </view>
     </uni-popup>
-
-    <!-- 添加AI推荐弹窗 -->
-    <uni-popup ref="aiRecommendPopup" type="center">
-      <view class="ai-popup">
-        <view class="popup-header">
-          <text class="popup-title">AI智能推荐</text>
-          <text class="close-icon" @click="closeAiRecommendPopup">×</text>
-        </view>
-        
-        <view class="popup-content">
-          <!-- 分析中动画 -->
-          <view v-if="aiAnalyzing" class="ai-analyzing">
-            <view class="ai-icon-container">
-              <text class="iconfont icon-ai ai-icon"></text>
-            </view>
-            <view class="analyzing-text">
-              <text>{{ aiAnalyzingTexts[currentTextIndex] }}</text>
-            </view>
-            <view class="loading-dots">
-              <view class="dot"></view>
-              <view class="dot"></view>
-              <view class="dot"></view>
-            </view>
-          </view>
-          
-          <!-- 推荐结果 -->
-          <view v-else>
-            <!-- AI分析摘要 -->
-            <view class="ai-summary" v-if="aiSummary">
-              <view class="summary-header">
-                <text class="summary-title">✨ AI分析结果</text>
-              </view>
-              <text class="summary-content">{{ aiSummary }}</text>
-            </view>
-            
-            <!-- 推荐队伍列表 -->
-            <scroll-view class="recommend-teams-scroll" scroll-y>
-              <view v-if="recommendedTeams.length > 0" class="recommend-teams">
-                <team-card
-                  v-for="(team, index) in recommendedTeams.slice(0, 3)" 
-                  :key="team.id"
-                  :team="team"
-                  :index="index"
-                  :show-match="true"
-                  @detail="viewRecommendedTeam"
-                  @apply="joinTeam"
-                ></team-card>
-              </view>
-              
-              <view v-else class="empty-recommend">
-                <text>暂无推荐结果，请完善个人资料后再试</text>
-              </view>
-            </scroll-view>
-          </view>
-        </view>
-      </view>
-    </uni-popup>
   </view>
 </template>
 
@@ -270,7 +220,8 @@ import TabBar from '@/components/TabBar.vue';
 import HeaderBar from '@/components/HeaderBar.vue';
 import api from '@/api';
 import store from '@/store';
-
+import { icons } from '@/static/svg/icons.js';
+import SvgIcon from '@/components/SvgIcon.vue';
 // HeaderBar引用
 const headerBarRef = ref(null);
 
@@ -302,7 +253,6 @@ const availableRoles = ref([]);
 const loadingRoles = ref(false);
 
 // AI推荐弹窗状态
-const aiRecommendPopup = ref(null);
 const aiAnalyzing = ref(false);
 const aiAnalyzingTexts = [
   '正在分析您的个人资料...',
@@ -354,6 +304,32 @@ async function getRecommendedTeams() {
       return;
     }
     
+    // 检查本地缓存是否存在且未过期
+    try {
+      const cachedTime = uni.getStorageSync('ai_recommend_cache_time');
+      const cachedTeams = uni.getStorageSync('ai_recommended_teams');
+      const cachedSummary = uni.getStorageSync('ai_summary');
+      
+      // 如果有缓存时间，检查是否过期
+      if (cachedTime && cachedTeams) {
+        const now = Date.now();
+        const cacheValidDuration = 3 * 60 * 60 * 1000; // 3小时
+        const isExpired = now - Number(cachedTime) > cacheValidDuration;
+        
+        if (!isExpired) {
+          // 缓存未过期，使用缓存数据
+          recommendedTeams.value = JSON.parse(cachedTeams);
+          aiSummary.value = cachedSummary || '';
+          console.log('主页加载未过期的AI推荐缓存数据', recommendedTeams.value.length, '个队伍');
+          return; // 直接返回，不再请求新数据
+        } else {
+          console.log('AI推荐缓存已过期，需要重新请求');
+        }
+      }
+    } catch (e) {
+      console.error('检查AI推荐缓存状态失败:', e);
+    }
+    
     const res = await teamApi.getRecommendedTeams();
     if (res.code === 200 && res.data) {
       // 为每个队伍添加匹配度信息
@@ -372,8 +348,14 @@ async function getRecommendedTeams() {
       
       // 将数据存入本地缓存
       try {
+        // 保存推荐团队数据
         uni.setStorageSync('ai_recommended_teams', JSON.stringify(recommendedTeams.value));
+        // 保存AI摘要
         uni.setStorageSync('ai_summary', aiSummary.value);
+        // 保存缓存时间戳
+        const currentTime = Date.now();
+        uni.setStorageSync('ai_recommend_cache_time', currentTime.toString());
+        console.log('主页保存AI推荐数据缓存成功，缓存时间:', new Date(currentTime).toLocaleString());
       } catch (e) {
         console.error('缓存AI推荐数据失败:', e);
       }
@@ -397,9 +379,9 @@ async function getRecommendedTeams() {
 
 // 页面跳转方法
 function navigateTo(page) {
-  if (page === 'competition') {
-    uni.navigateTo({
-      url: '/pages/competition/index'
+  if (page === 'findPartner') {
+    uni.switchTab({
+      url: '/pages/team/list'
     });
   } else if (page === 'task-square') {
     uni.switchTab({
@@ -644,6 +626,25 @@ watch(showApplyModal, (newVal) => {
 
 // 显示AI推荐弹窗
 function showAiRecommendPopup() {
+  // 检查用户是否已登录
+  const token = uni.getStorageSync('token');
+  if (!token) {
+    console.log('用户未登录，无法使用AI推荐功能');
+    uni.showModal({
+      title: '需要登录',
+      content: '使用AI推荐功能需要先登录账号',
+      confirmText: '去登录',
+      success: (res) => {
+        if (res.confirm) {
+          uni.navigateTo({
+            url: '/pages/login/login'
+          });
+        }
+      }
+    });
+    return;
+  }
+
   // 获取用户是否已点击过AI推荐的状态
   const hasClickedAiRecommend = store.getState('hasClickedAiRecommend');
   
@@ -660,26 +661,11 @@ function showAiRecommendPopup() {
   aiAnalyzing.value = true;
   currentTextIndex.value = 0;
   
-  try {
-    // 显示弹窗
-    if (aiRecommendPopup.value) {
-      aiRecommendPopup.value.open();
-    } else {
-      console.error('AI推荐弹窗引用获取失败');
-      uni.showToast({
-        title: '正在分析中...',
-        icon: 'loading',
-        mask: true,
-        duration: 2000
-      });
-    }
-  } catch (error) {
-    console.error('打开AI弹窗失败:', error);
-    uni.showLoading({
-      title: aiAnalyzingTexts[0],
-      mask: true
-    });
-  }
+  // 使用uni.showLoading来显示加载状态
+  uni.showLoading({
+    title: aiAnalyzingTexts[currentTextIndex.value],
+    mask: true
+  });
   
   // 清除现有定时器
   if (aiAnalyzingTimer) {
@@ -691,13 +677,11 @@ function showAiRecommendPopup() {
   aiAnalyzingTimer = setInterval(() => {
     currentTextIndex.value = (currentTextIndex.value + 1) % aiAnalyzingTexts.length;
     
-    // 如果没有成功显示弹窗，则使用loading提示
-    if (!aiRecommendPopup.value || !aiRecommendPopup.value.showPopup) {
-      uni.showLoading({
-        title: aiAnalyzingTexts[currentTextIndex.value],
-        mask: true
-      });
-    }
+    // 使用uni.showLoading更新提示文本
+    uni.showLoading({
+      title: aiAnalyzingTexts[currentTextIndex.value],
+      mask: true
+    });
     
     // 最后一个文本时停止动画，显示结果
     if (currentTextIndex.value === aiAnalyzingTexts.length - 1) {
@@ -705,15 +689,8 @@ function showAiRecommendPopup() {
         clearInterval(aiAnalyzingTimer);
         aiAnalyzingTimer = null;
         
-        // 隐藏loading和弹窗
+        // 隐藏loading
         uni.hideLoading();
-        try {
-          if (aiRecommendPopup.value) {
-            aiRecommendPopup.value.close();
-          }
-        } catch (error) {
-          console.error('关闭AI弹窗失败:', error);
-        }
         
         // 标记用户已经点击过AI推荐
         store.updateState('hasClickedAiRecommend', true);
@@ -736,7 +713,7 @@ function showAiRecommendPopup() {
 
 // 关闭AI推荐弹窗
 function closeAiRecommendPopup() {
-  console.log('关闭AI推荐弹窗');
+  console.log('关闭AI推荐分析');
   
   // 清除定时器
   if (aiAnalyzingTimer) {
@@ -750,18 +727,13 @@ function closeAiRecommendPopup() {
   // 重置分析状态
   aiAnalyzing.value = false;
   currentTextIndex.value = 0;
-  
-  // 如果是首次分析中被手动关闭，不设置已点击标记
-  // 这样下次点击仍然会显示分析动画
 }
 
 // 查看推荐队伍详情
 function viewRecommendedTeam(id) {
-  closeAiRecommendPopup();
+  // 不再需要关闭弹窗
   viewDetail('team', id);
 }
-
-
 
 // 重置AI推荐状态（开发测试用）
 function resetAiRecommendForTesting() {
@@ -791,37 +763,6 @@ onMounted(() => {
   // 获取状态栏高度
   const statusBarHeight = uni.getSystemInfoSync().statusBarHeight;
   console.log('状态栏高度:', statusBarHeight);
-  
-  // 获取弹窗引用
-  nextTick(() => {
-    try {
-      const instance = getCurrentInstance();
-      if (instance && instance.proxy) {
-        // 通过proxy获取refs
-        aiRecommendPopup.value = instance.proxy.$refs.aiRecommendPopup;
-        console.log('获取到弹窗引用:', aiRecommendPopup.value ? '成功' : '失败');
-      } else {
-        console.error('获取getCurrentInstance()失败或无proxy属性');
-      }
-    } catch (e) {
-      console.error('获取弹窗引用出错:', e);
-    }
-  });
-  
-  // 确保在300ms后再次尝试获取弹窗引用（有时nextTick可能不足够）
-  setTimeout(() => {
-    if (!aiRecommendPopup.value) {
-      try {
-        const instance = getCurrentInstance();
-        if (instance && instance.proxy) {
-          aiRecommendPopup.value = instance.proxy.$refs.aiRecommendPopup;
-          console.log('延迟获取到弹窗引用:', aiRecommendPopup.value ? '成功' : '失败');
-        }
-      } catch (e) {
-        console.error('延迟获取弹窗引用出错:', e);
-      }
-    }
-  }, 300);
   
   // 检查全局状态中是否有AI推荐点击记录
   const hasClickedAiRecommend = store.getState('hasClickedAiRecommend');
@@ -860,6 +801,14 @@ onMounted(() => {
   0% { transform: scale(1); }
   50% { transform: scale(1.05); }
   100% { transform: scale(1); }
+}
+
+@keyframes sparkle {
+  0% { opacity: 1; filter: drop-shadow(0 0 2rpx #e74d15); }
+  25% { opacity: 0.9; filter: drop-shadow(0 0 5rpx #e74d15); transform: scale(1.05); }
+  50% { opacity: 0.8; filter: drop-shadow(0 0 10rpx #e74d15); transform: scale(1.1); }
+  75% { opacity: 0.9; filter: drop-shadow(0 0 5rpx #e74d15); transform: scale(1.05); }
+  100% { opacity: 1; filter: drop-shadow(0 0 2rpx #e74d15); }
 }
 
 @keyframes pop {
@@ -982,9 +931,9 @@ page {
           margin-top: 8rpx;
           
           .date-icon {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 22rpx;
-            margin-right: 6rpx;
+            width: 28rpx;
+            height: 28rpx;
+            margin-right: 8rpx;
           }
           
           .date-text {
@@ -1066,10 +1015,23 @@ page {
   @include flex-between;
   position: relative;
   
-  .section-title {
-    font-size: 32rpx;
-    font-weight: bold;
-    color: $text-color;
+  .title-with-icon {
+    display: flex;
+    align-items: center;
+    
+    .section-title {
+      font-size: 32rpx;
+      font-weight: bold;
+      color: $text-color;
+    }
+    
+    .title-hot-icon {
+      width: 36rpx;
+      height: 36rpx;
+      margin-left: 8rpx;
+      margin-bottom: 15rpx;
+      filter: drop-shadow(0 0 4rpx #e74d15);
+    }
   }
   
   .view-all {
@@ -1087,12 +1049,20 @@ page {
     border-radius: 20rpx;
     box-shadow: 0 4rpx 8rpx rgba(79, 172, 254, 0.2);
     
-    .iconfont {
-      color: white;
-      font-size: 24rpx;
-      margin-right: 6rpx;
+    .hot-icon {
+      width: 32rpx;
+      height: 32rpx;
+      margin-right: 8rpx;
+      animation: sparkle 1.2s infinite;
+      filter: drop-shadow(0 0 4rpx #e74d15);
     }
-    
+    .ai-icon {
+      width: 32rpx;
+      height: 32rpx;
+      margin-right: 8rpx;
+
+      filter: drop-shadow(0 0 4rpx #e74d15);
+    }
     .ai-text {
       color: white;
       font-size: 24rpx;
@@ -1134,7 +1104,7 @@ page {
       
       .competition-content {
         flex: 1;
-        padding: 20rpx;
+        padding: 20rpx ;
         
         .competition-title {
          width: 300rpx;
@@ -1186,7 +1156,7 @@ page {
           margin-top: 12rpx;
           
           .tag {
-            font-size: 20rpx;
+            font-size: 24rpx;
             padding: 4rpx 12rpx;
             border-radius: 30rpx;
             margin-right: 10rpx;
@@ -1217,15 +1187,15 @@ page {
             display: flex;
             align-items: center;
             
-            .iconfont {
-              color: $text-muted;
-              font-size: 22rpx;
-              margin-right: 6rpx;
+            .info-icon {
+              width: 32rpx;
+              height: 32rpx;
+              margin-right: 8rpx;
             }
             
             .info-text {
               color: $text-muted;
-              font-size: 22rpx;
+              font-size: 23rpx;
             }
           }
         }

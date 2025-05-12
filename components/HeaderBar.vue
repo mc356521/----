@@ -2,16 +2,16 @@
   <view class="sticky-header">
     <view class="header-title">
       <view class="back-btn" @click="goBack" v-if="!isTabBarPage">
-        <text class="iconfont icon-back"></text>
+        <SvgIcon name="back" size="25" />
       </view>
       <text class="section-title">{{ title }}</text>
       <view class="header-actions">
 
         <view class="action-btn" @click="onSearch" v-if="showSearch">
-          <text class="iconfont icon-search"></text>
+          <SvgIcon name="sousuo" size="25" />
         </view>
         <view class="action-btn message-btn" @click="onFilter" v-if="showFilter">
-          <text class="iconfont icon-message"></text>
+          <SvgIcon name="xiaoxi" size="34" />
           <view class="badge" v-if="unreadCount > 0">{{ unreadCount > 99 ? '99+' : unreadCount }}</view>
         </view>
         <slot name="actions"></slot>
@@ -39,6 +39,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import notificationsApi from '@/api/modules/notifications';
+import SvgIcon from '@/components/SvgIcon.vue';
 
 // tabBar页面路径列表
 const tabBarPages = [
@@ -131,18 +132,24 @@ function selectCategory(index) {
 
 // 返回按钮点击事件
 function goBack() {
+  // 先发出事件，让父组件有机会处理返回行为
   emit('back');
   
-  // 默认返回行为
-  const pages = getCurrentPages();
-  if (pages.length > 1) {
-    uni.navigateBack();
-  } else {
-    // 如果没有上一页，跳转到首页
-    uni.switchTab({
-      url: '/pages/index/index'
-    });
-  }
+  // 检查是否有上一页，如果有才执行默认返回行为
+  // 这里延迟执行默认行为，给父组件留出处理时间
+  setTimeout(() => {
+    const pages = getCurrentPages();
+    const currentPage = pages[pages.length - 1];
+    
+    // 检查是否因为父组件已经处理了返回导致页面发生了变化
+    const newPages = getCurrentPages();
+    // 如果页面数量或当前页面已经变化，说明父组件已处理
+    if (newPages.length !== pages.length || newPages[newPages.length - 1] !== currentPage) {
+      return; // 父组件已处理，不再执行默认行为
+    }
+    
+   
+  }, 100); // 延迟100ms，给父组件留出处理时间
 }
 
 // 获取未读消息数量 - 从API直接获取
@@ -254,13 +261,13 @@ onUnmounted(() => {
   
   .header-title {
     @include flex-between;
-    padding: 40rpx $spacing-lg;
+    padding: 40rpx $spacing-lg  5rpx  $spacing-lg;
     
     .back-btn {
       width: 70rpx;
       height: 70rpx;
       border-radius: 50%;
-      background-color: $tag-gray-bg;
+   
       display: flex;
       align-items: center;
       justify-content: center;
@@ -288,16 +295,20 @@ onUnmounted(() => {
       gap: $spacing-md;
       
       .action-btn {
-        width: 70rpx;
-        height: 70rpx;
+        width: 50rpx;
+        height: 50rpx;
         border-radius: 50%;
         background-color: $tag-gray-bg;
         display: flex;
         align-items: center;
         justify-content: center;
-      
+        
         .iconfont {
           font-size: 36rpx;
+          color: $text-secondary;
+        }
+        
+        :deep(.svg-icon) {
           color: $text-secondary;
         }
         

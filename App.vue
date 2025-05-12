@@ -9,16 +9,49 @@ export default {
 	onLaunch: function() {
 		console.warn('当前组件仅支持 uni_modules 目录结构 ，请升级 HBuilderX 到 3.1.0 版本以上！')
 		console.log('App Launch')
+		
+		// 检查用户是否已登录
+		const token = uni.getStorageSync('token');
+		if (!token) {
+			console.log('用户未登录，跳转到登录页面');
+			// 等待应用初始化完成后再跳转
+			setTimeout(() => {
+				uni.reLaunch({
+					url: '/pages/login/login'
+				});
+			}, 300);
+			return; // 未登录不执行后续初始化
+		}
+		
 		// 初始化全局通知服务
 		this.initGlobalNotificationService();
 		console.log('App Launch')
   
-  // 清除AI推荐相关的缓存数据
+  // 检查AI推荐相关的缓存数据是否过期
   try {
-    uni.removeStorageSync('ai_recommend_cache_time');
-    uni.removeStorageSync('ai_recommended_teams');
-    uni.removeStorageSync('ai_summary');
-    console.log('应用启动时已清除AI推荐相关缓存');
+    // 缓存有效时间（3小时，单位：毫秒）
+    const cacheValidDuration = 3 * 60 * 60 * 1000;
+    
+    // 获取缓存时间
+    const cachedTime = uni.getStorageSync('ai_recommend_cache_time');
+    
+    // 如果没有缓存时间或者缓存已过期，则清除缓存
+    if(cachedTime) {
+      const now = Date.now();
+      const isExpired = now - Number(cachedTime) > cacheValidDuration;
+      
+      if(isExpired) {
+        console.log('AI推荐缓存已过期，清除缓存数据。缓存时间:', new Date(Number(cachedTime)).toLocaleString());
+        uni.removeStorageSync('ai_recommend_cache_time');
+        uni.removeStorageSync('ai_recommended_teams');
+        uni.removeStorageSync('ai_summary');
+        console.log('已清除过期的AI推荐相关缓存');
+      } else {
+        console.log('AI推荐缓存未过期，保留缓存数据。缓存时间:', new Date(Number(cachedTime)).toLocaleString());
+      }
+    } else {
+      console.log('未找到AI推荐缓存时间记录');
+    }
     
     // 重置用户交互状态中的AI推荐点击状态
     const userInteractionState = uni.getStorageSync('userInteractionState');
@@ -33,7 +66,7 @@ export default {
       }
     }
   } catch (e) {
-    console.error('清除AI推荐缓存失败:', e);
+    console.error('处理AI推荐缓存失败:', e);
   }
 	},
 	
@@ -43,6 +76,13 @@ export default {
 	
 	onHide: function() {
 		console.log('App Hide')
+		// 应用关闭或进入后台时清除userInteractionState缓存
+		try {
+			uni.removeStorageSync('userInteractionState');
+			console.log('应用关闭/隐藏，已清除userInteractionState缓存');
+		} catch (e) {
+			console.error('清除userInteractionState缓存失败:', e);
+		}
 	},
 	
 	methods: {

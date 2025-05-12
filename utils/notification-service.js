@@ -24,11 +24,34 @@ let notificationCallback = null;
 /**
  * 初始化WebSocket通知服务
  * @param {Function} callback 接收到新通知时的回调函数
+ * @returns {Boolean} 是否成功初始化
  */
 function initNotificationService(callback) {
   // 保存回调函数
   if (typeof callback === 'function') {
     notificationCallback = callback;
+  }
+  
+  // 获取当前token
+  const token = getToken();
+  if (!token) {
+    console.warn('通知服务初始化失败: 用户未登录或无效的token');
+    // 没有token不初始化WebSocket，重定向到登录页面
+    setTimeout(() => {
+      try {
+        const pages = getCurrentPages();
+        // 如果当前不在登录页面，才跳转
+        if (pages.length === 0 || !pages[pages.length - 1].route.includes('login')) {
+          console.log('无效的登录状态，准备跳转到登录页面');
+          uni.navigateTo({
+            url: '/pages/login/login'
+          });
+        }
+      } catch (e) {
+        console.error('跳转到登录页面失败:', e);
+      }
+    }, 500);
+    return false;
   }
   
   // 设置WebSocket回调
@@ -38,10 +61,13 @@ function initNotificationService(callback) {
     // 发送认证消息
     const token = getToken();
     if (token) {
+      console.log('通知服务: 发送认证消息');
       websocket.send({
         type: 'auth',
         token: token
       });
+    } else {
+      console.warn('通知服务: 无法发送认证消息，token不存在');
     }
   });
   
@@ -83,11 +109,15 @@ function initNotificationService(callback) {
   websocket.initConfig({
     debug: true,
     autoReconnect: true,
-    heartbeat: true
+    heartbeat: true,
+    token: token // 直接在配置中设置token
   });
   
   // 连接WebSocket
-  websocket.connect(getToken());
+  const socketTask = websocket.connect(token);
+  
+  // 返回初始化成功
+  return !!socketTask;
 }
 
 /**

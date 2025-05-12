@@ -1,3 +1,27 @@
+
+.svg-icon-container[data-v-4c110535] {
+  display: inline-block;
+  vertical-align: middle;
+  position: relative;
+  overflow: hidden;
+}
+.svg-content[data-v-4c110535] {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.svg-content svg[data-v-4c110535] {
+  width: 100%;
+  height: 100%;
+}
+.svg-image[data-v-4c110535] {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 /* 水平间距 */
 /* 水平间距 */
 /* 导入主题变量 */
@@ -58,18 +82,13 @@
   color: #36364e;
   margin-top: 0.1875rem;
 }
-.tab-bar .tab-item.active .iconfont[data-v-89ca1f91],
-.tab-bar .tab-item.active .tab-text[data-v-89ca1f91] {
-  color: #3B82F6;
+.tab-bar .tab-item .tab-text.active-text[data-v-89ca1f91] {
+  color: #1296db;
   font-weight: 500;
 }
-.tab-bar .tab-item .active-indicator[data-v-89ca1f91] {
-  position: absolute;
-  bottom: 0.3125rem;
-  width: 1.25rem;
-  height: 0.1875rem;
-  background-color: #3B82F6;
-  border-radius: 0.09375rem;
+.tab-bar .tab-item.active .iconfont[data-v-89ca1f91] {
+  color: #3B82F6;
+  font-weight: 500;
 }
 .tab-bar .publish-btn-container[data-v-89ca1f91] {
   display: flex;
@@ -125,13 +144,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.25rem 0.9375rem;
+  padding: 1.25rem 0.9375rem 0.15625rem 0.9375rem;
 }
 .sticky-header .header-title .back-btn[data-v-965d9a70] {
   width: 2.1875rem;
   height: 2.1875rem;
   border-radius: 50%;
-  background-color: #F3F4F6;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -155,8 +173,8 @@
   gap: 0.75rem;
 }
 .sticky-header .header-title .header-actions .action-btn[data-v-965d9a70] {
-  width: 2.1875rem;
-  height: 2.1875rem;
+  width: 1.5625rem;
+  height: 1.5625rem;
   border-radius: 50%;
   background-color: #F3F4F6;
   display: flex;
@@ -165,6 +183,9 @@
 }
 .sticky-header .header-title .header-actions .action-btn .iconfont[data-v-965d9a70] {
   font-size: 1.125rem;
+  color: #6B7280;
+}
+.sticky-header .header-title .header-actions .action-btn[data-v-965d9a70] .svg-icon {
   color: #6B7280;
 }
 .sticky-header .header-title .header-actions .action-btn.message-btn[data-v-965d9a70] {
@@ -368,7 +389,7 @@ body {
 }
 .competition-content {
   flex: 1;
-  padding: 2.5rem 0.9375rem 4.6875rem 0.9375rem;
+  padding: 1.875rem 0.9375rem 4.6875rem 0.9375rem;
   box-sizing: border-box;
   width: 100%;
 }
@@ -548,12 +569,12 @@ body {
 .competition-list .competition-card .card-content .card-tags {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  flex-wrap: wrap;
   margin-bottom: 0.625rem;
 }
 .competition-list .competition-card .card-content .card-tags .category-tag {
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.25rem;
+  padding: 0.125rem 0;
+  border-radius: 0.1875rem;
   font-size: 0.6875rem;
 }
 .competition-list .competition-card .card-content .card-tags .category-tag.tag-orange {
@@ -573,15 +594,21 @@ body {
   color: #7C3AED;
 }
 .competition-list .competition-card .card-content .card-tags .level-tag, .competition-list .competition-card .card-content .card-tags .team-tag {
-  font-size: 0.6875rem;
-  color: #344347;
-}
-.competition-list .competition-card .card-content .card-tags .team-tag {
   display: flex;
   align-items: center;
+  font-size: 0.78125rem;
+  color: #344347;
+  margin-right: 0.8125rem;
 }
-.competition-list .competition-card .card-content .card-tags .team-tag .iconfont {
-  margin-right: 0.125rem;
+.competition-list .competition-card .card-content .card-tags .level-tag .icon-image, .competition-list .competition-card .card-content .card-tags .team-tag .icon-image {
+  width: 0.9375rem;
+  height: 0.9375rem;
+  margin-right: 0.1875rem;
+}
+.competition-list .competition-card .card-content .card-tags .level-tag .icon-image2, .competition-list .competition-card .card-content .card-tags .team-tag .icon-image2 {
+  width: 0.9375rem;
+  height: 0.9375rem;
+  margin-right: 0.1875rem;
 }
 .competition-list .competition-card .card-content .card-footer {
   display: flex;
@@ -602,11 +629,18 @@ body {
   color: #344347;
 }
 .competition-list .competition-card .card-content .card-footer .action-btn {
+  display: flex;
+  align-items: center;
   padding: 0.25rem 0.625rem;
   border-radius: 3.125rem;
   background-color: #2679cc;
   color: white;
   font-size: 0.75rem;
+}
+.competition-list .competition-card .card-content .card-footer .action-btn .btn-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-right: 0.1875rem;
 }
 .competition-list .competition-card .card-content .card-footer .action-btn.disabled-btn {
   background-color: #e5e7eb;

@@ -50,7 +50,7 @@
         <view class="info-grid-item">
           <text class="grid-item-label">时间</text>
           <view class="grid-item-content">
-            <text class="iconfont icon-clock"></text>
+            <SvgIcon name="shijian" color="#4A90E2" />
             <text class="grid-item-value">{{ formatDeadline(taskDetail.deadline) }}</text>
           </view>
         </view>
@@ -59,7 +59,7 @@
         <view class="info-grid-item" v-if="taskDetail.location">
           <text class="grid-item-label">地点</text>
           <view class="grid-item-content">
-            <text class="iconfont icon-location"></text>
+            <SvgIcon name="weizhi"  color="#4A90E2" />
             <text class="grid-item-value">{{ taskDetail.location }}</text>
           </view>
         </view>
@@ -68,7 +68,7 @@
         <view class="info-grid-item">
           <text class="grid-item-label">{{ getRewardTypeText(taskDetail.rewardTypeName) }}</text>
           <view class="grid-item-content">
-            <text class="iconfont icon-reward"></text>
+            <SvgIcon :name="getRewardIcon(taskDetail.rewardTypeName)" :color="getRewardIconColor(taskDetail.rewardTypeName)" size="28"/>
             <text class="grid-item-value reward-text" :class="getRewardClass(taskDetail.rewardTypeName)">
               <text v-if="taskDetail.rewardTypeName === '现金'">¥{{ taskDetail.rewardAmount }}</text>
               <text v-else-if="taskDetail.rewardTypeName === '学分'">{{ taskDetail.rewardAmount }} 学分</text>
@@ -81,7 +81,7 @@
         <view class="info-grid-item">
           <text class="grid-item-label">参与人数</text>
           <view class="grid-item-content">
-            <text class="iconfont icon-user"></text>
+            <SvgIcon name="renshu"  color="#4A90E2" />
             <text class="grid-item-value">{{ taskDetail.currentParticipants }}/{{ taskDetail.maxParticipants }} 人</text>
           </view>
         </view>
@@ -92,7 +92,10 @@
         <view class="card-title">联系方式</view>
         <view class="contact-list">
           <view class="contact-item" v-for="contact in validContacts" :key="contact.key" @click="copyContactInfo(contact.value)">
-            <text class="contact-type">{{ getContactTypeText(contact.key) }}</text>
+            <view class="contact-type-container">
+              <SvgIcon :name="getContactIcon(contact.key)" color="#4A90E2" />
+              <text class="contact-type">{{ getContactTypeText(contact.key) }}</text>
+            </view>
             <view class="contact-value-container">
               <text class="contact-value">{{ contact.value }}</text>
               <text class="copy-hint">点击复制</text>
@@ -105,7 +108,7 @@
     <!-- 底部操作栏 -->
     <view class="bottom-actions">
       <view class="action-btn favorite" @click="toggleFavorite">
-        <text class="iconfont" :class="isFavorite ? 'icon-star-filled' : 'icon-star'"></text>
+        <SvgIcon :name="isFavorite ? 'souchang' : 'weishouchang'" size="36" :color="isFavorite ? '#FFC107' : '#666666'" />
         <text>{{ isFavorite ? '已收藏' : '收藏' }}</text>
       </view>
       
@@ -126,6 +129,7 @@ import { ref, computed, onMounted, reactive } from 'vue';
 import request from '@/utils/request';
 import api from '@/api';
 import HeaderBar from '@/components/HeaderBar.vue'; // 引入顶部导航栏组件
+import SvgIcon from '@/components/SvgIcon.vue'; // 引入SVG图标组件
 
 // 默认头像
 const defaultAvatar = 'https://via.placeholder.com/100';
@@ -208,6 +212,58 @@ const isApplyDisabled = computed(() => {
   
   return false;
 });
+
+// 获取奖励类型对应的图标
+function getRewardIcon(type) {
+  switch (type) {
+    case '现金':
+      return 'xianjin';
+    case '学分':
+      return 'xuefen';
+    case '志愿服务':
+      return 'zhiyaunshichang';
+    case '证书':
+      return 'zhengshu';
+    case '实习机会':
+      return 'shixijihui';
+    case '礼品':
+      return 'liping';
+    default:
+      return 'xianjin';
+  }
+}
+
+// 获取奖励图标颜色
+function getRewardIconColor(type) {
+  switch (type) {
+    case '现金':
+      return '#FF6B6B';
+    case '学分':
+      return '#4A90E2';
+    case '志愿服务':
+      return '#7ED321';
+    case '证书':
+      return '#FFC107';
+    default:
+      return '#4A90E2';
+  }
+}
+
+// 获取联系方式对应的图标
+function getContactIcon(type) {
+  switch (type) {
+    case 'phone':
+      return 'dianhua'; // 这里我们使用icons.js中现有的电话图标名称
+    case 'wechat':
+      return 'weixintubiao';
+    case 'qq':
+      return 'qqtubiao';
+    case 'email':
+      return 'youxiang';
+    default:
+      return 'youxiang';
+  }
+}
 
 // 页面加载
 onMounted(() => {
@@ -526,7 +582,35 @@ function getApplyButtonText() {
 
 // 返回上一页
 function goBack() {
-  uni.navigateBack();
+  // 阻止事件继续传递，确保由当前页面处理返回逻辑
+  // 这可以通过在e.stopPropagation()或设置一个全局变量来实现
+  // 由于没有事件参数，我们使用直接返回的方式
+  
+  const pages = getCurrentPages();
+  if (pages.length > 1) {
+    // 有历史记录，正常返回
+    uni.navigateBack({
+      delta: 1,
+      success: () => {
+        console.log('成功返回上一页');
+      },
+      fail: (err) => {
+        console.error('返回失败', err);
+        // 如果返回失败，尝试直接跳转到任务列表
+        uni.redirectTo({
+          url: '/pages/task-square/index'
+        });
+      }
+    });
+  } else {
+    // 没有历史记录，切换到首页tab
+    uni.switchTab({
+      url: '/pages/index/index'
+    });
+  }
+  
+  // 返回true表示已处理，HeaderBar不需要再处理返回逻辑
+  return true;
 }
 
 // 收藏/取消收藏
@@ -862,7 +946,7 @@ $border-color: #eeeeee;
     .grid-item-label {
       font-size: 24rpx;
       color: $text-light;
-      margin-bottom: 16rpx;
+      margin-bottom: 18rpx;
       display: block;
     }
     
@@ -880,6 +964,7 @@ $border-color: #eeeeee;
         font-size: 28rpx;
         font-weight: 500;
         color: $text-primary;
+        margin-left: 16rpx;
       }
       
       .reward-text {
@@ -916,10 +1001,17 @@ $border-color: #eeeeee;
       border-bottom: none;
     }
     
-    .contact-type {
-      font-size: 28rpx;
-      color: $text-secondary;
-      font-weight: 500;
+    .contact-type-container {
+      display: flex;
+      align-items: center;
+      gap: 12rpx;
+      
+      .contact-type {
+        font-size: 28rpx;
+        color: $text-secondary;
+        font-weight: 500;
+        margin-left: 8rpx;
+      }
     }
     
     .contact-value-container {
@@ -970,11 +1062,6 @@ $border-color: #eeeeee;
     &.favorite {
       color: $text-secondary;
       margin-right: 24rpx;
-      
-      .iconfont {
-        font-size: 36rpx;
-        color: #FFC107;
-      }
     }
   }
   

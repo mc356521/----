@@ -10,16 +10,16 @@
       <!-- 顶部导航栏 -->
       <view class="sticky-header">
         <view class="flex-row px-4 py-3">
-          <view class="mr-3" @click="goBack">
-            <text class="iconfont icon-arrow-left text-gray-600"></text>
+          <view class="back-btn" @click="goBack">
+            <SvgIcon name="back" class="icon-btn"></SvgIcon>
           </view>
           <text class="text-xl font-bold text-gray-800">竞赛详情</text>
           <view class="ml-auto flex-row space-x-3">
-            <view class="p-2 rounded-full bg-gray-100">
-              <text class="iconfont icon-bookmark-outline text-gray-600"></text>
+            <view class="icon-circle" @click="toggleFavorite">
+              <SvgIcon :name="isFavorite ? 'souchang' : 'weishouchang'" class="icon-btn"></SvgIcon>
             </view>
-            <view class="p-2 rounded-full bg-gray-100">
-              <text class="iconfont icon-share text-gray-600"></text>
+            <view class="icon-circle" @click="shareCompetition">
+              <SvgIcon name="fenxiang"  class="icon-btn"></SvgIcon>
             </view>
           </view>
         </view>
@@ -43,22 +43,22 @@
       <view class="bg-white p-4 shadow-sm">
         <view class="flex-row justify-between items-center">
           <view class="flex-row items-center space-x-2">
-            <text class="iconfont icon-calendar info-icon"></text>
+           <SvgIcon name="baoming" class="info-icon"></SvgIcon>
             <text class="text-sm text-gray-700">报名截止: {{ getRegistrationDeadline() }}</text>
           </view>
           <view class="flex-row items-center space-x-2">
-            <text class="iconfont icon-users info-icon"></text>
+            <SvgIcon name="Baominrenshu" class="info-icon"></SvgIcon>
             <text class="text-sm text-gray-700">{{ competition.teamRequirement }}</text>
           </view>
         </view>
-        <view class="flex-row justify-between items-center mt-3">
-          <view class="flex-row items-center space-x-2" style="width: 60%;">
-            <text class="iconfont icon-university info-icon"></text>
-            <text class="text-sm text-gray-700">主办方: {{ competition.organizer.name }}</text>
+        <view class="flex-row justify-between mt-3">
+          <view class="flex-row items-start space-x-2" style="flex: 1;">
+            <SvgIcon name="Zhubanfang" class="info-icon" style="margin-top: 4rpx;"></SvgIcon>
+            <text class="text-sm text-gray-700 wrap-text" style="margin-top: 10rpx;">主办方: {{ competition.organizer.name }}</text>
           </view>
-          <view class="flex-row items-center space-x-2">
-            <text class="iconfont icon-trophy info-icon"></text>
-            <text class="text-sm text-gray-700">{{ competition.level }}</text>
+          <view class="flex-row items-start level-tag" style="margin-right: 45rpx;">
+            <SvgIcon name="dengji" class="info-icon" style="margin-top: 4rpx;"></SvgIcon>
+            <text class="text-sm text-gray-700" style="margin-top: 10rpx;">{{ competition.level }}</text>
           </view>
         </view>
       </view>
@@ -108,13 +108,13 @@
         <!-- 附件列表 -->
         <view v-if="competition.attachments && competition.attachments.length > 0" class="mt-6">
           <view class="font-bold text-lg text-gray-800 mb-3">相关资料</view>
-          <view>无</view>
-          <view class="space-y-3">
+          <view v-if="competition.attachments.length === 0">无</view>
+          <view class="space-y-3" v-else>
             <view v-for="(attachment, index) in competition.attachments" :key="index" 
               class="flex-row items-center p-3 bg-gray-50 rounded-lg">
-              <text class="iconfont icon-file text-blue-500 mr-2"></text>
               <text class="flex-1 text-sm text-gray-700">{{ attachment.fileName }}</text>
-              <view class="px-3 py-1 bg-blue-500 rounded-full">
+              <view class="download-btn">
+                <SvgIcon name="xiazai" class="download-icon"></SvgIcon>
                 <text class="text-xs text-white">下载</text>
               </view>
             </view>
@@ -245,7 +245,7 @@
       <!-- 底部固定按钮 -->
       <view class="fixed-bottom">
         <button class="team-btn" @click="createTeam">
-          <text class="iconfont icon-users mr-1"></text>
+          <SvgIcon name="chuangjianduiwu" class="btn-icon"></SvgIcon>
           <text>创建队伍</text>
         </button>
         <button 
@@ -253,7 +253,8 @@
           :class="{'disabled-btn': competition.statusCode === '0' || competition.statusCode === '3'}"
           :disabled="competition.statusCode === '0' || competition.statusCode === '3'"
           @click="handleActionButton">
-          {{ getActionButtonText() }}
+          <SvgIcon v-if="competition.statusCode === '0'" name="tixingwo" class="btn-icon"></SvgIcon>
+          <text>{{ getActionButtonText() }}</text>
         </button>
       </view>
     </template>
@@ -263,6 +264,8 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import api from '@/api';
+import { icons } from '@/static/svg/icons.js';
+import SvgIcon from '@/components/SvgIcon.vue';
 
 // 竞赛ID和加载状态
 const competitionId = ref(null);
@@ -360,6 +363,9 @@ const teamsCurrentPage = ref(1);
 const teamsPageSize = ref(10);
 const teamsHasMore = ref(true);
 const searchText = ref('');
+
+// 收藏状态
+const isFavorite = ref(false);
 
 // 获取竞赛详情数据
 async function getCompetitionDetail(id) {
@@ -684,6 +690,8 @@ function getTagClass(category) {
       return 'blue-tag';
     case '文体竞赛':
       return 'purple-tag';
+    case '程序设计':
+      return 'cxsj-tag';
     default:
       return 'gray-tag';
   }
@@ -796,6 +804,33 @@ function handleActionButton() {
       });
   }
 }
+
+// 收藏/取消收藏
+function toggleFavorite() {
+  isFavorite.value = !isFavorite.value;
+  if (isFavorite.value) {
+    uni.showToast({
+      title: '收藏成功',
+      icon: 'success',
+      duration: 2000
+    });
+  } else {
+    uni.showToast({
+      title: '已取消收藏',
+      icon: 'none',
+      duration: 2000
+    });
+  }
+}
+
+// 分享竞赛
+function shareCompetition() {
+  uni.showToast({
+    title: '分享功能开发中',
+    icon: 'none',
+    duration: 2000
+  });
+}
 </script>
 
 <style lang="scss">
@@ -825,6 +860,22 @@ page {
   display: flex;
   flex-direction: row;
   align-items: center;
+}
+
+.ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.wrap-text {
+  word-break: break-word;
+  white-space: normal;
+}
+
+.level-tag {
+  min-width: 160rpx;
+  justify-content: flex-end;
 }
 
 .px-4 {
@@ -902,7 +953,6 @@ page {
 
 .status-badge {
   position: absolute;
-  top: 32rpx;
   right: 32rpx;
   padding: 8rpx 16rpx;
   font-size: 24rpx;
@@ -961,12 +1011,16 @@ page {
 
 .blue-tag {
   background-color: #eff6ff;
-  color: #3b82f6;
+  color: #3fbcfa;
 }
 
 .purple-tag {
   background-color: #f5f3ff;
   color: #8b5cf6;
+}
+.cxsj-tag {
+  background-color: #f5f3ff;
+  color: #1270db;
 }
 
 .text-xs {
@@ -995,8 +1049,9 @@ page {
 }
 
 .info-icon {
-  color: #6b7280;
-  font-size: 32rpx;
+  width: 45rpx;
+  height: 45rpx;
+  margin-right: 8rpx;
 }
 
 .text-sm {
@@ -1353,7 +1408,9 @@ page {
   flex: 1;
   margin-right: 24rpx;
   height: 80rpx;
-  line-height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background-color: #8bff7ee6;
   color: #4b5563;
   border-radius: 16rpx;
@@ -1365,7 +1422,9 @@ page {
 .register-btn {
   flex: 1;
   height: 80rpx;
-  line-height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background-color: #2679cc;
   color: #ffffff;
   border-radius: 16rpx;
@@ -1480,5 +1539,58 @@ page {
 .role-count {
   font-size: 22rpx;
   opacity: 0.8;
+}
+
+/* 图标按钮样式 */
+.icon-btn {
+  width: 50rpx;
+  height: 50rpx;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+}
+
+.icon-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background-color: #f3f4f6;
+}
+
+.download-btn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 12rpx 20rpx;
+  background-color: #2679cc;
+  border-radius: 30rpx;
+}
+
+.download-icon {
+  width: 32rpx;
+  height: 32rpx;
+  margin-right: 8rpx;
+}
+
+.load-more-btn {
+  padding: 16rpx 32rpx;
+  border: 1rpx solid #e5e7eb;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  color: #6b7280;
+  background-color: #ffffff;
+}
+
+.btn-icon {
+  width: 40rpx;
+  height: 40rpx;
+  margin-right: 16rpx;
 }
 </style> 

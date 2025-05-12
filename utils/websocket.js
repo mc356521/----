@@ -6,7 +6,7 @@ import env from '@/config/env';
 
 // WebSocket配置
 const wsConfig = {
-  url: env.wsUrl || 'ws://localhost:8080/ws', // 使用环境配置中的WebSocket地址
+  url: env.wsUrl, // 使用环境配置中的WebSocket地址
   token: '', // 身份验证token
   debug: env.debug || false, // 是否开启调试模式
   autoReconnect: true, // 是否自动重连
@@ -53,8 +53,20 @@ function connect(token) {
     wsConfig.token = token;
   }
   
-  // 构建WebSocket URL
-  const url = `${wsConfig.url}${wsConfig.token ? `?token=${wsConfig.token}` : ''}`;
+  // 构建WebSocket URL，确保正确传递token参数
+  let url = wsConfig.url || '';
+  
+  // 确保URL以ws或wss开头
+  const validUrl = url.replace(/^http/, 'ws').replace(/^https/, 'wss');
+  
+  // 添加token参数
+  if (wsConfig.token) {
+    // 检查URL是否已有参数
+    const separator = validUrl.includes('?') ? '&' : '?';
+    url = `${validUrl}${separator}token=${encodeURIComponent(wsConfig.token)}`;
+  } else {
+    url = validUrl;
+  }
   
   log(`正在连接WebSocket: ${url}`);
   
@@ -62,15 +74,33 @@ function connect(token) {
     // 创建WebSocket连接
     socketTask = uni.connectSocket({
       url: url,
+      // 在支持的平台上启用多实例
+      multiple: true,
+      // 允许接收所有类型的数据
+      allowArrayBuffer: true,
       success: () => {
         log('WebSocket连接创建成功');
       },
       fail: (err) => {
         log('WebSocket连接创建失败', err);
         handleError(err);
+        // 连接失败时静默处理，不要让错误影响正常业务
+        isConnected = false;
+        socketTask = null;
+        
+        // 如果配置了自动重连，则自动重连
+        if (wsConfig.autoReconnect) {
+          reconnect();
+        }
       },
       complete: () => {}
     });
+    
+    // 确保socketTask存在才进行监听绑定
+    if (!socketTask) {
+      log('WebSocket连接创建返回为空，可能不支持或已被拦截');
+      return null;
+    }
     
     // 监听WebSocket连接打开事件
     socketTask.onOpen((res) => {
@@ -127,16 +157,35 @@ function connect(token) {
     // 监听WebSocket错误事件
     socketTask.onError((err) => {
       log('WebSocket连接错误', err);
+      isConnected = false;
       
       // 调用错误回调
       if (errorCallback) {
         errorCallback(err);
+      }
+      
+      // 错误后自动重连
+      if (wsConfig.autoReconnect) {
+        // 延迟一些时间再重连，避免立即重连导致循环错误
+        setTimeout(() => {
+          reconnect();
+        }, 3000);
       }
     });
     
     return socketTask;
   } catch (e) {
     console.error('创建WebSocket连接异常', e);
+    isConnected = false;
+    socketTask = null;
+    
+    // 出现异常后也尝试重连
+    if (wsConfig.autoReconnect) {
+      setTimeout(() => {
+        reconnect();
+      }, 5000);
+    }
+    
     return null;
   }
 }

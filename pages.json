@@ -184,9 +184,8 @@
 		"selectedColor": "#3B82F6",
 		"list": [
 			{
-				"pagePath": "pages/index/index",
-				"text": " "
-			},
+				"pagePath": "pages/index/index"
+			}, 
 			{
 				"pagePath": "pages/competition/index",
 				"text": " "

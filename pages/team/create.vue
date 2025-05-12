@@ -4,11 +4,11 @@
     <view class="sticky-header">
       <view class="nav-bar">
         <view class="back-btn" @click="goBack">
-          <text class="iconfont icon-arrow-left"></text>
+          <SvgIcon name="back" size="24"></SvgIcon>
         </view>
         <text class="page-title">创建团队</text>
         <view class="help-btn">
-          <text class="iconfont icon-help"></text>
+          <SvgIcon name="fenxiang" size="24"></SvgIcon>
         </view>
       </view>
     </view>
@@ -18,7 +18,7 @@
       <!-- 基本信息部分 -->
       <view class="form-section">
         <view class="section-header">
-          <text class="iconfont icon-trophy section-icon"></text>
+          <SvgIcon name="jibenxinxi" class="section-icon" size="22"></SvgIcon>
           <text class="section-title">基本信息</text>
         </view>
         
@@ -28,9 +28,9 @@
           <view class="select-box" @click="showCompetitionModal">
             <text v-if="form.competitionId" class="select-text">{{ selectedCompetitionName }}</text>
             <text v-else class="placeholder-text">请选择竞赛</text>
-            <text class="iconfont icon-arrow-left select-arrow"></text>
-      </view>
-    </view>
+            <SvgIcon name="xialaxuanze"  size="24"></SvgIcon>
+          </view>
+        </view>
         
         <!-- 竞赛选择弹窗 -->
         <uni-popup ref="competitionPopup" type="bottom">
@@ -118,7 +118,7 @@
       <!-- 招募信息部分 -->
       <view class="form-section">
         <view class="section-header">
-          <text class="iconfont icon-calendar section-icon"></text>
+          <SvgIcon name="zhaomuxingxi" class="section-icon" size="30"></SvgIcon>
           <text class="section-title">招募信息</text>
         </view>
         
@@ -135,7 +135,7 @@
               <view class="picker-view">
                 <text v-if="form.recruitDeadline" class="select-text">{{ formatDate(form.recruitDeadline) }}</text>
                 <text v-else class="placeholder-text">请选择截止日期</text>
-                <text class="iconfont icon-calendar picker-icon"></text>
+                <SvgIcon name="rqi" class="picker-icon" size="24"></SvgIcon>
               </view>
             </uni-datetime-picker>
           </view>
@@ -145,7 +145,7 @@
       <!-- 联系方式部分 -->
       <view class="form-section">
         <view class="section-header">
-          <text class="iconfont icon-phone section-icon"></text>
+          <SvgIcon name="lianxifangshi" class="section-icon" size="22"></SvgIcon>
           <text class="section-title">联系方式</text>
         </view>
         
@@ -186,7 +186,7 @@
       <!-- 指导老师部分 -->
       <view class="form-section">
         <view class="section-header">
-          <text class="iconfont icon-graduation section-icon"></text>
+          <SvgIcon name="zhidaolaoshi" class="section-icon" size="30"></SvgIcon>
           <text class="section-title">指导老师</text>
         </view>
         
@@ -196,7 +196,7 @@
             <view class="item-header">
               <text class="item-title">指导老师 {{ index + 1 }}</text>
               <view class="delete-btn" @click="removeTeacher(index)">
-                <text class="iconfont icon-trash"></text>
+                <SvgIcon name="chuangjianrenwu" size="20"></SvgIcon>
               </view>
             </view>
             
@@ -206,7 +206,7 @@
               <view class="select-box" @click="showTeacherModal(index)">
                 <text v-if="teacher.name" class="select-text">{{ teacher.name }}</text>
                 <text v-else class="placeholder-text">请选择老师</text>
-                <text class="iconfont icon-arrow-left select-arrow"></text>
+                <SvgIcon name="xiazhankai" class="select-arrow" size="24"></SvgIcon>
               </view>
             </view>
             
@@ -225,7 +225,7 @@
         
         <!-- 添加老师按钮 -->
         <view class="add-item-btn" @click="addTeacher">
-          <text class="iconfont icon-plus"></text>
+          <SvgIcon name="chuangjianrenwu" size="24"></SvgIcon>
           <text>添加指导老师</text>
         </view>
       </view>
@@ -241,7 +241,7 @@
           <!-- 搜索框 -->
           <view class="search-box">
             <view class="search-input-wrapper">
-              <text class="iconfont icon-search"></text>
+              <SvgIcon name="sousuo" size="24"></SvgIcon>
               <input 
                 type="text"
                 v-model="teacherSearchKey"
@@ -249,7 +249,7 @@
                 class="search-input"
                 @input="searchTeachers"
               />
-              <text class="iconfont icon-times-circle clear-btn" v-if="teacherSearchKey" @click="clearTeacherSearch"></text>
+              <SvgIcon name="mimaIcon" class="clear-btn" v-if="teacherSearchKey" @click="clearTeacherSearch" size="24"></SvgIcon>
             </view>
           </view>
           
@@ -306,7 +306,7 @@
       <!-- 招募角色部分 -->
       <view class="form-section">
         <view class="section-header">
-          <text class="iconfont icon-team section-icon"></text>
+          <SvgIcon name="zhaomujiaose" class="section-icon" size="24"></SvgIcon>
           <text class="section-title">招募角色</text>
         </view>
         
@@ -316,7 +316,7 @@
             <view class="item-header">
               <text class="item-title">角色 {{ index + 1 }}</text>
               <view class="delete-btn" @click="removeRole(index)">
-                <text class="iconfont icon-trash"></text>
+                <SvgIcon name="chuangjianrenwu" size="20"></SvgIcon>
               </view>
             </view>
             
@@ -358,21 +358,21 @@
               
               <!-- 已添加的技能标签 -->
               <view class="skill-tags">
-      <view 
+                <view 
                   v-for="(skill, skillIndex) in role.skills" 
                   :key="skillIndex" 
                   class="skill-tag"
                 >
                   <text>{{ skill }}</text>
-                  <text class="iconfont icon-times-circle" @click.stop="removeSkill(index, skillIndex)"></text>
+                  <SvgIcon name="mimaIcon" size="20" @click.stop="removeSkill(index, skillIndex)"></SvgIcon>
                 </view>
               </view>
               
               <!-- 添加技能按钮 -->
               <view class="skill-select-btn" @click="showSkillModal(index)">
-                <text class="iconfont icon-tag"></text>
+                <SvgIcon name="zhuanye" size="20"></SvgIcon>
                 <text>选择技能标签</text>
-                <text class="iconfont icon-arrow-right"></text>
+                <SvgIcon name="xiazhankai" size="20"></SvgIcon>
               </view>
             </view>
           </view>
@@ -380,7 +380,7 @@
         
         <!-- 添加角色按钮 -->
         <view class="add-item-btn" @click="addRole">
-          <text class="iconfont icon-plus"></text>
+          <SvgIcon name="chuangjianrenwu" size="24"></SvgIcon>
           <text>添加招募角色</text>
         </view>
       </view>
@@ -402,7 +402,7 @@
         <!-- 搜索框 -->
         <view class="search-box">
           <view class="search-input-wrapper">
-            <text class="iconfont icon-search"></text>
+            <SvgIcon name="sousuo" size="24"></SvgIcon>
             <input 
               type="text"
               v-model="skillSearchKey"
@@ -410,7 +410,7 @@
               class="search-input"
               @input="searchSkills"
             />
-            <text class="iconfont icon-times-circle clear-btn" v-if="skillSearchKey" @click="clearSkillSearch"></text>
+            <SvgIcon name="mimaIcon" class="clear-btn" v-if="skillSearchKey" @click="clearSkillSearch" size="24"></SvgIcon>
           </view>
         </view>
         
@@ -472,6 +472,8 @@ import { ref, reactive, computed, onMounted, nextTick } from 'vue';
 import teamApi from '@/api/modules/team';
 import competitionsApi from '@/api/modules/competitions';
 import dev from '../../config/env/dev';
+import SvgIcon from '@/components/SvgIcon.vue';
+
 // 弹窗引用
 const competitionPopup = ref(null);
 const teacherPopup = ref(null);
@@ -1283,19 +1285,18 @@ page {
 
 .section-header {
   display: flex;
-
+  align-items: center;
   margin-bottom: 20rpx;
 
 .section-icon {
-      color: $primary-color;
-  font-size: 40rpx;
   margin-right: 12rpx;
+  color: $primary-color;
 }
 
 .section-title {
   font-size: 32rpx;
   font-weight: bold;
-      color: $text-color;
+  color: $text-color;
     }
   }
 }
@@ -1367,11 +1368,6 @@ page {
       border-radius: 50%;
       background-color: rgba($accent-color, 0.1);
       
-      .iconfont {
-        font-size: 30rpx;
-        color: $accent-color;
-      }
-      
       &:active {
         background-color: rgba($accent-color, 0.2);
       }
@@ -1385,27 +1381,26 @@ page {
   background-color: #fff;
   border: 1rpx solid $border-color;
   border-radius: $border-radius;
-        display: flex;
-        align-items: center;
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   padding: 0 24rpx;
   box-sizing: border-box;
 
 .select-text {
   font-size: 28rpx;
-    color: $text-color;
+  color: $text-color;
 }
 
 .placeholder-text {
-          font-size: 28rpx;
-    color: $text-muted;
+  font-size: 28rpx;
+  color: $text-muted;
 }
 
 .select-arrow {
-    color: $text-muted;
-  font-size: 32rpx;
-    transform: rotate(-90deg);
-  }
+  color: $text-muted;
+  transform: rotate(-90deg);
+}
 }
 
 /* 添加按钮样式 */
@@ -1419,9 +1414,8 @@ page {
   color: $primary-color;
   font-size: 28rpx;
   
-  .iconfont {
-    margin-right: 8rpx;
-    font-size: 32rpx;
+  text {
+    margin-left: 8rpx;
   }
   
   &:active {
@@ -1583,18 +1577,12 @@ page {
   margin-bottom: 12rpx;
 
 .skill-tag {
-    @include flex-center;
+  @include flex-center;
   padding: 8rpx 16rpx;
-    background-color: rgba($primary-color, 0.1);
-    border-radius: $border-radius-full;
-    font-size: 24rpx;
-    color: $primary-color;
-
-    .iconfont {
-  margin-left: 8rpx;
+  background-color: rgba($primary-color, 0.1);
+  border-radius: $border-radius-full;
   font-size: 24rpx;
-      color: $accent-color;
-    }
+  color: $primary-color;
   }
 }
 
@@ -1621,11 +1609,6 @@ page {
   justify-content: center;
     background-color: rgba($primary-color, 0.1);
     border-radius: 50%;
-    
-    .iconfont {
-      font-size: 26rpx;
-      color: $primary-color;
-    }
   }
 }
 
@@ -1681,7 +1664,6 @@ page {
     }
     
     .picker-icon {
-      font-size: 32rpx;
       color: $text-muted;
     }
   }
@@ -1783,7 +1765,6 @@ page {
     padding: 0 20rpx;
     
     .iconfont {
-      font-size: 28rpx;
       color: $text-muted;
       margin-right: 10rpx;
     }
@@ -1797,7 +1778,6 @@ page {
     }
     
     .clear-btn {
-      font-size: 28rpx;
       color: $text-muted;
       padding: 0 10rpx;
     }
@@ -1904,23 +1884,11 @@ page {
   padding: 0 24rpx;
   margin-bottom: 16rpx;
   
-  .iconfont {
-    color: $text-secondary;
-    &.icon-tag {
-      margin-right: 12rpx;
-      font-size: 28rpx;
-    }
-    &.icon-arrow-right {
-      font-size: 24rpx;
-    }
-  }
-  
   text {
     color: $text-secondary;
     font-size: 28rpx;
-    &:nth-child(2) {
-      flex: 1;
-    }
+    flex: 1;
+    margin-left: 8rpx;
   }
   
   &:active {

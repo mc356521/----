@@ -4,6 +4,7 @@
  */
 import request from '@/utils/request';
 import { getToken, setToken } from '@/utils/request';
+import { getEnv } from '@/config/env';
 
 const userApi = {
   /**
@@ -212,6 +213,45 @@ const userApi = {
       data,
       header: {
         'Content-Type': 'application/json'
+      }
+    });
+  },
+  
+  /**
+   * 上传用户头像
+   * @param {String} filePath - 本地文件路径
+   * @param {Function} onProgress - 上传进度回调函数
+   * @returns {Promise} 上传结果的Promise对象
+   */
+  uploadAvatar(filePath, onProgress) {
+    return new Promise((resolve, reject) => {
+      const uploadTask = uni.uploadFile({
+        url: getEnv().baseUrl + '/users/avatar',
+        filePath: filePath,
+        name: 'file',
+        header: {
+          'Authorization': 'Bearer ' + getToken()
+        },
+        success: (res) => {
+          // 服务器返回的数据是字符串，需要转换成对象
+          let data;
+          try {
+            data = JSON.parse(res.data);
+            resolve(data);
+          } catch (e) {
+            reject(new Error('解析响应数据失败'));
+          }
+        },
+        fail: (err) => {
+          reject(err);
+        }
+      });
+      
+      // 监听上传进度
+      if (onProgress && typeof onProgress === 'function') {
+        uploadTask.onProgressUpdate((res) => {
+          onProgress(res.progress);
+        });
       }
     });
   },

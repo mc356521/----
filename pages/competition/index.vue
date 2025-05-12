@@ -44,11 +44,10 @@
                 <text class="hot-desc">{{ item.shortDescription }}</text>
                 <view class="hot-info">
                   <view class="hot-info-item">
-                    <text class="iconfont icon-calendar"></text>
                     <text class="hot-date">报名截止: {{ formatDate(item.registrationDeadline) }}</text>
                   </view>
                   <view class="hot-info-item">
-                    <text class="iconfont icon-team"></text>
+                       <SvgIcon name="Baominrenshulunbotu" ></SvgIcon>
                     <text class="hot-team">{{ item.teamSize }}~{{ item.teamMax }}人</text>
                   </view>
                 </view>
@@ -89,14 +88,17 @@
               <text class="card-desc">{{ item.shortDescription }}</text>
               <view class="card-tags">
                 <text class="category-tag" :class="getCategoryClass(item.categoryName)">{{ item.categoryName }}</text>
-                <text class="level-tag">{{ item.level }}</text>
+                <text class="level-tag">
+                  <SvgIcon name="dengji" size="18" style="padding-bottom: 15rpx;"/>
+                  {{ item.level }}
+                </text>
                 <text class="team-tag">
-                  <text class="iconfont icon-team"></text> {{ item.teamSize }}~{{ item.teamMax }}人
+                  <SvgIcon name="baomingrhenshu2" size="20" style="padding-bottom: 10rpx;" />
+                  {{ item.participantCount || 0 }}人已报名
                 </text>
               </view>
               <view class="card-footer">
                 <view class="date-info">
-                  <text class="iconfont icon-calendar"></text>
                   <text class="date-text">{{ isUpcoming(item) ? '报名开始' : '报名截止' }}: {{ formatDate(isUpcoming(item) ? item.registrationStart : item.registrationDeadline) }}</text>
                 </view>
                 <view class="action-btn" :class="{'disabled-btn': item.status === '0' || item.status === '3'}">
@@ -134,11 +136,13 @@
 import TabBar from '@/components/TabBar.vue';
 import api from '@/api';
 import HeaderBar from '@/components/HeaderBar.vue';
-
+import { icons } from '@/static/svg/icons.js';
+import SvgIcon from '@/components/SvgIcon.vue';
 export default {
   components: {
     TabBar,
-    HeaderBar
+    HeaderBar,
+    SvgIcon
   },
   data() {
     return {
@@ -160,7 +164,10 @@ export default {
       currentHotIndex: 0,
       
       // HeaderBar占位高度
-      headerPlaceholderHeight: '200rpx'
+      headerPlaceholderHeight: '200rpx',
+      
+      // 导入SVG图标
+      icons: icons
     }
   },
   
@@ -499,7 +506,7 @@ page {
 // 竞赛内容区域
 .competition-content {
   flex: 1;
-  padding: 80rpx 30rpx 150rpx 30rpx;
+  padding: 60rpx 30rpx 150rpx 30rpx;
   box-sizing: border-box;
   width: 100%;
 }
@@ -707,14 +714,12 @@ page {
       
       .card-tags {
         @include flex-center;
-        gap: 16rpx;
+        flex-wrap: wrap;
         margin-bottom: 20rpx;
-        
         .category-tag {
-          padding: 4rpx 16rpx;
-          border-radius: 8rpx;
+          padding: 4rpx 0rpx;
+          border-radius: 6rpx;
           font-size: 22rpx;
-          
           &.tag-orange {
             background-color: $category-orange-bg;
             color: $category-orange-text;
@@ -737,15 +742,20 @@ page {
         }
         
         .level-tag, .team-tag {
-          font-size: 22rpx;
-          color: $text-muted;
-        }
-        
-        .team-tag {
           @include flex-center;
-          
-          .iconfont {
-            margin-right: 4rpx;
+          font-size: 25rpx;
+          color: $text-muted;
+          margin-right: 26rpx;
+          .icon-image {
+            width: 30rpx;
+            height: 30rpx;
+            margin-right: 6rpx;
+          }
+          .icon-image2 {
+            width: 30rpx;
+            height: 30rpx;
+        
+            margin-right: 6rpx;
           }
         }
       }
@@ -769,11 +779,18 @@ page {
         }
         
         .action-btn {
+          @include flex-center;
           padding: 8rpx 20rpx;
           border-radius: $border-radius-full;
           background-color: $status-color-bg;
           color: rgb(255, 255, 255);
           font-size: 24rpx;
+          
+          .btn-icon {
+            width: 24rpx;
+            height: 24rpx;
+            margin-right: 6rpx;
+          }
           
           &.disabled-btn {
             background-color: #e5e7eb;

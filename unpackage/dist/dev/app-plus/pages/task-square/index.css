@@ -155,6 +155,30 @@
     transform: rotate(360deg);
 }
 }
+
+.svg-icon-container[data-v-4c110535] {
+  display: inline-block;
+  vertical-align: middle;
+  position: relative;
+  overflow: hidden;
+}
+.svg-content[data-v-4c110535] {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.svg-content svg[data-v-4c110535] {
+  width: 100%;
+  height: 100%;
+}
+.svg-image[data-v-4c110535] {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 /* 水平间距 */
 /* 水平间距 */
 /* 导入主题变量 */
@@ -190,7 +214,6 @@
   width: 1.875rem;
   height: 1.875rem;
   border-radius: 50%;
-  background-color: #f5f5f5;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -383,10 +406,9 @@
   align-items: center;
   margin: 0.5rem 0;
 }
-.task-card .task-location .iconfont {
-  font-size: 0.875rem;
-  color: #999999;
+.task-card .task-location .location-icon {
   margin-right: 0.25rem;
+  color: #999999;
 }
 .task-card .task-location .location-text {
   font-size: 0.8125rem;
@@ -419,8 +441,10 @@
 .task-card .task-footer .task-stats .stat-item {
   font-size: 0.8125rem;
   color: #999999;
+  display: flex;
+  align-items: center;
 }
-.task-card .task-footer .task-stats .stat-item .iconfont {
+.task-card .task-footer .task-stats .stat-item .stat-icon {
   margin-right: 0.25rem;
 }
 

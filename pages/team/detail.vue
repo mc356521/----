@@ -4,21 +4,22 @@
     <view class="top-bar">
       <view class="flex-between px-4 py-3">
         <view class="back-btn" @click="goBack">
-          <text class="iconfont icon-arrow-left"></text>
+          <SvgIcon name="back" size="24" />
         </view>
         <text class="page-title">{{teamInfo.name || '队伍详情'}}</text>
         <view class="header-actions">
-          <text class="iconfont icon-star mr-3"></text>
-          <text class="iconfont icon-share"></text>
+          <SvgIcon name="souchang" :size="30"  />
+          <SvgIcon name="fenxiang" size="30" />
         </view>
       </view>
+      
     </view>
 
     <!-- 队伍基本信息 -->
     <view class="info-card">
       <view class="flex-between mb-3">
         <view class="competition-link" @click="goToCompetition(teamInfo.competitionId)">
-          <text class="iconfont icon-trophy mr-1 blue-text"></text>
+          <SvgIcon name="guanlian" size="17" class="mr-1 blue-text" />
           <view class="blue-text">关联竞赛：{{teamInfo.competitionName}}</view>
         </view>
 
@@ -51,7 +52,7 @@
       <view class="team-meta">
         <text class="meta-item">组队截止：{{teamInfo.recruitmentDeadlineFormatted}}</text>
         <view class="view-count">
-          <text class="iconfont icon-eye"></text>
+          <SvgIcon name="liulan" size="20" />
           <text>浏览次数：{{teamInfo.viewCount}}</text>
         </view>
       </view>
@@ -99,7 +100,7 @@
             :disabled="role.currentCount >= role.requiredCount"
             @click="applyRole(role.id)"
           >
-            <text class="iconfont icon-paper-plane" v-if="role.currentCount < role.requiredCount"></text>
+            <SvgIcon name="chuangjianduiwu" size="30" v-if="role.currentCount < role.requiredCount" />
             申请加入
           </button>
         </view>
@@ -140,17 +141,17 @@
       <text class="section-header">联系方式</text>
       <view class="contact-list">
         <view class="contact-item" v-if="teamInfo.contactInfo.wechat">
-          <text class="iconfont icon-weixin contact-icon wechat-color"></text>
+          <SvgIcon name="weixintubiao" size="20" class="contact-icon wechat-color" />
           <text class="contact-text">微信：{{teamInfo.contactInfo.wechat}}</text>
           <text class="copy-btn" @click="copyText(teamInfo.contactInfo.wechat)">复制</text>
         </view>
         <view class="contact-item" v-if="teamInfo.contactInfo.phone">
-          <text class="iconfont icon-phone contact-icon phone-color"></text>
+          <SvgIcon name="youxiang" size="20" class="contact-icon phone-color" />
           <text class="contact-text">电话：{{showPhone ? teamInfo.contactInfo.phone : hidePhone(teamInfo.contactInfo.phone)}}</text>
           <text class="copy-btn" @click="togglePhone">{{showPhone ? '隐藏' : '查看'}}</text>
         </view>
         <view class="contact-item" v-if="teamInfo.contactInfo.qq">
-          <text class="iconfont icon-qq contact-icon qq-color"></text>
+          <SvgIcon name="qqtubiao" size="20" class="contact-icon qq-color" />
           <text class="contact-text">QQ群：{{teamInfo.contactInfo.qq}}</text>
           <text class="copy-btn" @click="copyText(teamInfo.contactInfo.qq)">复制</text>
         </view>
@@ -163,8 +164,12 @@
 
 <script>
 import teamApi from '@/api/modules/team';
+import SvgIcon from '@/components/SvgIcon.vue';
 
 export default {
+  components: {
+    SvgIcon
+  },
   data() {
     return {
       defaultAvatar: '/static/images/default-avatar.png',

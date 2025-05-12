@@ -4,15 +4,15 @@
     <view class="header-fixed" :style="{ height: headerHeight }">
       <view class="header-bar">
         <view class="back-btn" @click="goBack">
-          <text class="iconfont icon-back"></text>
+          <SvgIcon name="back" size="25" />
         </view>
         <view class="header-title">任务广场</view>
         <view class="header-actions">
           <view class="action-btn" @click="onSearch">
-            <text class="iconfont icon-search"></text>
+            <SvgIcon name="sousuo" size="20" />
           </view>
           <view class="action-btn" @click="onNotification">
-            <text class="iconfont icon-notification"></text>
+            <SvgIcon name="xiaoxi" size="20" />
           </view>
         </view>
       </view>
@@ -77,15 +77,11 @@
       class="tasks-scroll" 
       :style="{ 'padding-top': headerHeight }"
       @scrolltolower="loadMore" 
-      @refresherrefresh="onRefresh" 
-      refresher-enabled="true" 
-      :refresher-triggered="refreshing"
-      refresher-background="#f5f5f5"
     >
       <view class="tasks-container">
         <!-- 顶部刷新提示 -->
-        <view class="refresh-tip" v-if="refreshing">
-          <text class="refresh-text">正在刷新数据...</text>
+        <view class="refresh-tip" v-if="loading && page.value === 1">
+          <text class="refresh-text">正在加载数据...</text>
         </view>
         
         <!-- 任务卡片 -->
@@ -112,7 +108,7 @@
           </view>
           <view class="task-desc">{{ task.shortDescription }}</view>
           <view class="task-location" v-if="task.location">
-            <text class="iconfont icon-location"></text>
+            <SvgIcon name="weizhi" size="20" class="location-icon" />
             <text class="location-text">{{ task.location }}</text>
           </view>
           <view class="task-footer">
@@ -121,8 +117,8 @@
               <text class="publisher-info">{{ task.creatorName }} · {{ task.creatorMajor }}</text>
             </view>
             <view class="task-stats">
-              <text class="stat-item"><text class="iconfont icon-view"></text> {{ task.viewCount }}</text>
-              <text class="stat-item"><text class="iconfont icon-user"></text> {{ task.currentParticipants }}/{{ task.maxParticipants }}</text>
+              <text class="stat-item"><SvgIcon name="liulan" size="20" class="stat-icon" /> {{ task.viewCount }}</text>
+              <text class="stat-item"><SvgIcon name="Baominrenshu" size="20" class="stat-icon" /> {{ task.currentParticipants }}/{{ task.maxParticipants }}</text>
             </view>
           </view>
         </view>
@@ -134,7 +130,7 @@
         </view>
 
         <!-- 加载状态 -->
-        <view class="loading-more" v-if="loading && !refreshing">
+        <view class="loading-more" v-if="loading">
           <uni-load-more status="loading" :contentText="loadingText"></uni-load-more>
         </view>
         <view class="no-more" v-if="noMore && !loading && taskList.length > 0">
@@ -148,7 +144,7 @@
 
     <!-- 悬浮发布按钮 -->
     <view class="float-btn" @click="createTask">
-      <text class="iconfont icon-plus"></text>
+      <SvgIcon name="chuangjianrenwu" size="30" color="#ffffff" />
     </view>
   </view>
 </template>
@@ -156,6 +152,7 @@
 <script setup>
 import { ref, onMounted, reactive, computed } from 'vue';
 import request from '@/utils/request';
+import SvgIcon from '@/components/SvgIcon.vue';
 
 // 默认头像
 const defaultAvatar = 'https://via.placeholder.com/100';
@@ -180,7 +177,6 @@ const taskList = ref([]);
 const page = ref(1);
 const pageSize = ref(10);
 const loading = ref(false);
-const refreshing = ref(false);
 const noMore = ref(false);
 const loadingText = ref({
   contentdown: '上拉显示更多',
@@ -249,10 +245,8 @@ async function getTaskCategories() {
 
 // 获取任务列表
 async function getTaskList() {
-  // 如果不是下拉刷新，则显示loading状态
-  if (!refreshing.value) {
-    loading.value = true;
-  }
+  // 显示loading状态
+  loading.value = true;
   
   try {
     const params = {
@@ -278,17 +272,8 @@ async function getTaskList() {
     
     if (res.code === 200 && res.data) {
       if (page.value === 1) {
-        // 下拉刷新或初始加载，替换所有数据
+        // 初始加载，替换所有数据
         taskList.value = res.data.records || [];
-        
-        // 如果是下拉刷新，显示提示
-        if (refreshing.value) {
-          uni.showToast({
-            title: '刷新成功',
-            icon: 'success',
-            duration: 1500
-          });
-        }
       } else {
         // 上拉加载更多，追加数据
         taskList.value = [...taskList.value, ...(res.data.records || [])];
@@ -324,21 +309,7 @@ async function getTaskList() {
     });
   } finally {
     loading.value = false;
-    if (refreshing.value) {
-      refreshing.value = false;
-      uni.stopPullDownRefresh();
-    }
   }
-}
-
-// 下拉刷新
-function onRefresh() {
-  if (loading.value) return; // 避免重复请求
-  
-  refreshing.value = true;
-  page.value = 1;
-  noMore.value = false;
-  getTaskList();
 }
 
 // 格式化日期
@@ -563,7 +534,7 @@ $border-color: #eeeeee;
     width: 60rpx;
     height: 60rpx;
     border-radius: 50%;
-    background-color: #f5f5f5;
+
     display: flex;
     justify-content: center;
     align-items: center;
@@ -781,10 +752,9 @@ $border-color: #eeeeee;
     align-items: center;
     margin: 16rpx 0;
     
-    .iconfont {
-      font-size: 28rpx;
-      color: $text-light;
+    .location-icon {
       margin-right: 8rpx;
+      color: $text-light;
     }
     
     .location-text {
@@ -823,8 +793,10 @@ $border-color: #eeeeee;
       .stat-item {
         font-size: 26rpx;
         color: $text-light;
+        display: flex;
+        align-items: center;
         
-        .iconfont {
+        .stat-icon {
           margin-right: 8rpx;
         }
       }

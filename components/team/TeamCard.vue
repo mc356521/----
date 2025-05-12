@@ -10,7 +10,7 @@
         <view>
           <view class="title-with-icon">
             <text class="team-title">{{ team.title || team.name }}</text>
-            <text v-if="showHotIcon" class="iconfont icon-spark hot-icon"></text>
+            <SvgIcon v-if="showHotIcon" name="remen" size="20" class="hot-icon"></SvgIcon>
             <view class="view-count">
               <text class="view-text">{{ team.viewCount }}</text>
             </view>
@@ -78,7 +78,7 @@
             </image>
           </template>
           <view v-else class="empty-avatar">
-            <text class="iconfont icon-user"></text>
+            <image :src="icons.Baominrenshu" class="avatar-icon"></image>
           </view>
         </view>
         <text class="member-count">{{ getMemberCount() }}人已加入</text>
@@ -100,6 +100,8 @@
 
 <script setup>
 import { computed } from 'vue';
+import { icons } from '@/static/svg/icons.js';
+import SvgIcon from '@/components/SvgIcon.vue';
 
 // 组件属性
 const props = defineProps({
@@ -234,9 +236,11 @@ $border-radius-lg: 16rpx;
 
 // 动画
 @keyframes sparkle {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
+  0% { opacity: 1; filter: drop-shadow(0 0 2rpx #e74d15); }
+  25% { opacity: 0.9; filter: drop-shadow(0 0 5rpx #e74d15); transform: scale(1.05); }
+  50% { opacity: 0.8; filter: drop-shadow(0 0 10rpx #e74d15); transform: scale(1.1); }
+  75% { opacity: 0.9; filter: drop-shadow(0 0 5rpx #e74d15); transform: scale(1.05); }
+  100% { opacity: 1; filter: drop-shadow(0 0 2rpx #e74d15); }
 }
 
 @keyframes pulse {
@@ -292,16 +296,17 @@ $border-radius-lg: 16rpx;
         align-items: center;
         
         .team-title {
-          font-size: 32rpx;
+          font-size: 33rpx;
           font-weight: bold;
           color: $text-color;
         }
         
         .hot-icon {
-          color: $hot-color;
-          font-size: 28rpx;
+          width: 32rpx;
+          height: 32rpx;
           margin-left: 10rpx;
-          animation: sparkle 1.5s infinite;
+          animation: sparkle 2s infinite;
+          filter: drop-shadow(0 0 5rpx #e74d15);
         }
       }
       
@@ -312,7 +317,7 @@ $border-radius-lg: 16rpx;
         
         .view-text {
           color: $text-muted;
-          font-size: 22rpx;
+          font-size: 24rpx;
         }
       }
       
@@ -321,7 +326,7 @@ $border-radius-lg: 16rpx;
         margin-top: 8rpx;
         
         .tag {
-          font-size: 24rpx;
+          font-size: 26rpx;
           padding: 4rpx 16rpx;
           border-radius: 8rpx;
           margin-right: 10rpx;
@@ -334,7 +339,7 @@ $border-radius-lg: 16rpx;
       }
       
       .status-tag {
-        font-size: 24rpx;
+        font-size: 26rpx;
         padding: 6rpx 16rpx;
         border-radius: 8rpx;
         margin-left: 35rpx;
@@ -371,7 +376,7 @@ $border-radius-lg: 16rpx;
       }
       
       .date-info {
-        font-size: 22rpx;
+        font-size: 24rpx;
         color: $text-muted;
         margin-top: 8rpx;
         text-align: right;
@@ -393,14 +398,14 @@ $border-radius-lg: 16rpx;
       background-color: #F3F4F6;
       
       .role-name {
-        font-size: 22rpx;
+        font-size: 25rpx;
         color: $text-secondary;
       }
       
       .role-count {
         display: inline-block;
         margin-left: 8rpx;
-        font-size: 22rpx;
+        font-size: 25rpx;
         padding: 2rpx 8rpx;
         
         &.success {
@@ -415,7 +420,7 @@ $border-radius-lg: 16rpx;
   }
   
   .team-desc {
-    font-size: 24rpx;
+    font-size: 26rpx;
     color: $text-secondary;
     line-height: 1.5;
     margin-bottom: 20rpx;
@@ -456,9 +461,9 @@ $border-radius-lg: 16rpx;
           justify-content: center;
           align-items: center;
           
-          .iconfont {
-            font-size: 24rpx;
-            color: $text-muted;
+          .avatar-icon {
+            width: 32rpx;
+            height: 32rpx;
           }
         }
       }
@@ -479,7 +484,7 @@ $border-radius-lg: 16rpx;
       padding: 10rpx 35rpx;
       border-radius: 100rpx;
       white-space: nowrap;
-      font-size: 24rpx;
+      font-size: 26rpx;
 	  margin-right: 10rpx;
       text-align: center;
       &.blue-join {
@@ -523,7 +528,7 @@ $border-radius-lg: 16rpx;
     }
     
     .score-text {
-      font-size: 22rpx;
+      font-size: 26rpx;
       color: $primary-color;
       font-weight: bold;
       white-space: nowrap;
@@ -531,7 +536,7 @@ $border-radius-lg: 16rpx;
   }
   
   .recommend-role {
-    font-size: 22rpx;
+    font-size: 26rpx;
     line-height: 1.4;
     margin-bottom: 8rpx;
     
@@ -551,7 +556,7 @@ $border-radius-lg: 16rpx;
   }
   
   .match-reason {
-    font-size: 22rpx;
+    font-size: 26rpx;
     line-height: 1.4;
     
     .reason-label {
