@@ -34,13 +34,13 @@
             <text class="stat-value">2</text>
             <text class="stat-label">我的团队</text>
           </view>
-          <view class="stat-item" @click="navigateTo('myAwards')">
+          <view class="stat-item" @click="navigateTo('myTask')">
             <text class="stat-value">{{ userInfo.awardsHistory ? userInfo.awardsHistory.length : 0 }}</text>
-            <text class="stat-label">获得奖项</text>
+            <text class="stat-label">我的任务</text>
           </view>
           <view class="stat-item" @click="navigateTo('settings')">
-            <text class="stat-value credit-score">{{ userInfo.creditScore }}</text>
-            <text class="stat-label">信用分</text>
+            <text class="stat-value ">{{ userInfo.awardsCount || 0 }}</text>
+            <text class="stat-label">我的获奖</text>
           </view>
         </view>
       </view>
@@ -172,6 +172,23 @@ function navigateTo(page) {
       url: '/pages/profile/material-reward'
     });
     return;
+  }else if (page === 'myCompetitions') {
+    uni.navigateTo({
+      url: '/pages/mycompetitions/mycompetitions'
+    });
+    return;
+  }
+  else if (page === 'myTeams') {
+    uni.navigateTo({
+      url: '/pages/myTeam/myTeam'
+    });
+    return;
+  }
+  else if	(page=='myTask'){
+  	uni.navigateTo({
+  		url:'/pages/mytasks/index'
+  	})
+   return;
   }
   
 }
@@ -230,7 +247,7 @@ function handleTabChange(tab) {
     uni.switchTab({
       url: '/pages/index/index'
     });
-  } else if (tab === 'competition') {
+  } else if (tab === 'myCompetitions') {
     uni.switchTab({
       url: '/pages/competition/index'
     });
@@ -461,8 +478,7 @@ page {
 
 // 菜单区域
 .menu-section {
-  margin-bottom: 40rpx;
-  
+
   .menu-group {
     background-color: $card-color;
     border-radius: 16rpx;

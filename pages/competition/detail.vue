@@ -147,19 +147,34 @@
           <view class="timeline-line"></view>
           
           <!-- 阶段列表 -->
-          <view v-for="(stage, index) in competitionStages" :key="index" class="timeline-item">
-            <view class="timeline-dot-container">
-              <view class="timeline-dot" :class="stage.active ? 'active-dot' : ''">
-                <text class="timeline-dot-text">{{ index + 1 }}</text>
+          <view v-if="competitionStages.length === 0" class="empty-state">
+            <text class="text-gray-500">暂无赛程安排</text>
+          </view>
+          
+          <view v-else>
+            <view v-for="(stage, index) in competitionStages" :key="stage.id" class="timeline-item">
+              <view class="timeline-dot-container">
+                <view class="timeline-dot" :class="stage.active ? 'active-dot' : ''">
+                  <text class="timeline-dot-text">{{ index + 1 }}</text>
+                </view>
               </view>
-            </view>
-            <view class="timeline-content" :class="stage.active ? 'active-content' : ''">
-              <view class="flex-row justify-between items-center mb-2">
-                <text class="font-bold" :class="stage.active ? 'text-blue-800' : 'text-gray-700'">{{ stage.title }}</text>
-                <text class="status-text" :class="stage.active ? 'active-status' : 'inactive-status'">{{ stage.status }}</text>
+              <view class="timeline-content" :class="stage.active ? 'active-content' : ''">
+                <view class="flex-row justify-between items-center mb-2">
+                  <text class="stage-title" :class="stage.active ? 'text-blue-800' : 'text-gray-700'">{{ stage.title }}</text>
+                  <text class="status-text" :class="stage.active ? 'active-status' : 'inactive-status'">{{ stage.status }}</text>
+                </view>
+                <view class="stage-period-container">
+                  <SvgIcon name="shijian" class="stage-icon"></SvgIcon>
+                  <text class="stage-period">{{ stage.period }}</text>
+                </view>
+                <view class="stage-desc-container">
+                  <text class="stage-desc">{{ stage.description }}</text>
+                </view>
+                <view v-if="stage.location" class="stage-location-container">
+                  <SvgIcon name="didian" class="stage-icon"></SvgIcon>
+                  <text class="stage-location">{{ stage.location }}</text>
+                </view>
               </view>
-              <text class="text-sm text-gray-700 mb-2">{{ stage.period }}</text>
-              <text class="text-xs text-gray-600">{{ stage.description }}</text>
             </view>
           </view>
         </view>
@@ -310,37 +325,7 @@ const competition = ref({
 });
 
 // 赛程阶段数据
-const competitionStages = ref([
-  {
-    title: '报名阶段',
-    period: '',
-    description: '在此阶段，参赛团队需完成在线报名，提交团队基本信息和项目概述。报名成功后，团队可以开始准备初赛材料。',
-    status: '进行中',
-    active: true
-  },
-  {
-    title: '初赛阶段',
-    period: '',
-    description: '各参赛团队需提交商业计划书和项目PPT。评审委员会将对所有参赛项目进行评审，选拔优秀项目进入复赛。',
-    status: '未开始',
-    active: false
-  },
-  {
-    title: '复赛阶段',
-    period: '',
-    description: '入围复赛的团队将进行现场路演和答辩。评委将从项目创新性、商业模式、团队能力等多方面进行评估。',
-    status: '未开始',
-    active: false
-  },
-  {
-    title: '总决赛',
-    period: '',
-    description: '决赛将在北京举行，入围团队将进行最终路演和展示。评审团将评选出金、银、铜奖项目，并举行颁奖典礼。',
-    status: '未开始',
-    active: false
-  }
-]);
-
+const competitionStages = ref([]);
 
 // 相关竞赛
 const relatedCompetitions = ref([
@@ -410,8 +395,8 @@ async function getCompetitionDetail(id) {
         coverImageUrl: data.coverImageUrl || ''
       };
       
-      // 更新赛程阶段
-      updateCompetitionStages(data);
+      // 获取竞赛阶段
+      getCompetitionStages(data.id);
       
       console.log('竞赛详情数据:', competition.value);
     } else {
@@ -428,6 +413,76 @@ async function getCompetitionDetail(id) {
     });
   } finally {
     loading.value = false;
+  }
+}
+
+// 获取竞赛阶段
+async function getCompetitionStages(competitionId) {
+  try {
+    const res = await api.competitions.getCompetitionStages(competitionId);
+    if (res && res.code === 200 && res.data) {
+      // 处理阶段数据
+      const stagesData = res.data.map(stage => {
+        // 解析元数据获取地点信息
+        let location = '';
+        if (stage.metadata) {
+          try {
+            const metadata = JSON.parse(stage.metadata);
+            location = metadata.location || '';
+          } catch (e) {
+            console.error('解析元数据失败:', e);
+          }
+        }
+        
+        // 获取阶段状态
+        let active = false;
+        let statusText = '';
+        
+        switch(stage.status) {
+          case 'pending':
+            statusText = '未开始';
+            active = false;
+            break;
+          case 'ongoing':
+          case 'active':
+            statusText = '进行中';
+            active = true;
+            break;
+          case 'completed':
+            statusText = '已结束';
+            active = false;
+            break;
+          default:
+            statusText = '未知状态';
+            active = false;
+        }
+        
+        return {
+          id: stage.id,
+          title: stage.stageName,
+          period: formatDatePeriod(stage.startTime, stage.endTime),
+          description: stage.description,
+          status: statusText,
+          active,
+          location,
+          rawData: stage
+        };
+      });
+      
+      // 按开始时间排序
+      stagesData.sort((a, b) => {
+        const aTime = new Date(a.rawData.startTime).getTime();
+        const bTime = new Date(b.rawData.startTime).getTime();
+        return aTime - bTime;
+      });
+      
+      competitionStages.value = stagesData;
+      console.log('竞赛阶段数据:', competitionStages.value);
+    } else {
+      console.warn('获取竞赛阶段失败或无数据:', res);
+    }
+  } catch (error) {
+    console.error('获取竞赛阶段错误:', error);
   }
 }
 
@@ -452,43 +507,6 @@ function formatDatePeriod(startDate, endDate) {
   };
   
   return `${formatDate(startDate)} - ${formatDate(endDate)}`;
-}
-
-// 更新赛程阶段
-function updateCompetitionStages(data) {
-  if (data.registrationStart && data.registrationDeadline) {
-    // 设置报名阶段时间
-    competitionStages.value[0].period = formatDatePeriod(data.registrationStart, data.registrationDeadline);
-    
-    // 根据当前时间和竞赛状态计算各阶段状态
-    const now = new Date();
-    const regStartDate = new Date(data.registrationStart);
-    const regEndDate = new Date(data.registrationDeadline);
-    
-    // 更新报名阶段状态
-    if (now < regStartDate) {
-      competitionStages.value[0].status = '未开始';
-      competitionStages.value[0].active = false;
-    } else if (now >= regStartDate && now <= regEndDate) {
-      competitionStages.value[0].status = '进行中';
-      competitionStages.value[0].active = true;
-    } else {
-      competitionStages.value[0].status = '已结束';
-      competitionStages.value[0].active = false;
-    }
-    
-    // 根据竞赛状态码设置后续阶段
-    if (data.status === '2') { // 进行中
-      competitionStages.value[1].active = true;
-      competitionStages.value[1].status = '进行中';
-      competitionStages.value[0].status = '已结束';
-    } else if (data.status === '3') { // 已截止
-      competitionStages.value[0].status = '已结束';
-      competitionStages.value[1].status = '已结束';
-      competitionStages.value[2].status = '已结束';
-      competitionStages.value[3].status = '已结束';
-    }
-  }
 }
 
 // 获取竞赛相关队伍列表
@@ -1148,7 +1166,7 @@ page {
   top: 0;
   bottom: 0;
   left: 48rpx;
-  width: 2rpx;
+  width: 4rpx;
   background-color: #e5e7eb;
   z-index: 1;
 }
@@ -1162,7 +1180,7 @@ page {
 .timeline-dot-container {
   position: absolute;
   left: 0;
-  top: 8rpx;
+  top: 16rpx;
   width: 96rpx;
   display: flex;
   justify-content: center;
@@ -1177,51 +1195,96 @@ page {
   align-items: center;
   justify-content: center;
   z-index: 2;
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
 }
 
 .timeline-dot-text {
   color: white;
-  font-size: 24rpx;
+  font-size: 26rpx;
   font-weight: bold;
 }
 
 .active-dot {
-  background-color: #3b82f6;
-  box-shadow: 0 0 0 8rpx rgba(59, 130, 246, 0.2);
+  background-color: #2679cc;
+  box-shadow: 0 0 0 8rpx rgba(38, 121, 204, 0.2);
 }
 
 .timeline-content {
   background-color: #f9fafb;
   border-radius: 16rpx;
   padding: 32rpx;
+  border: 1rpx solid #f0f0f0;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
 }
 
 .active-content {
-  background-color: #eff6ff;
+  background-color: #f0f7ff;
+  border-color: #c7e0ff;
 }
 
-.mb-2 {
-  margin-bottom: 16rpx;
+.stage-title {
+  font-size: 32rpx;
+  font-weight: bold;
 }
 
 .text-blue-800 {
-  color: #1e40af;
+  color: #2679cc;
 }
 
 .status-text {
   font-size: 24rpx;
   padding: 6rpx 16rpx;
-  border-radius: 8rpx;
+  border-radius: 40rpx;
+  font-weight: 500;
 }
 
 .active-status {
-  background-color: #bfdbfe;
-  color: #1d4ed8;
+  background-color: #dcf5ee;
+  color: #10b981;
 }
 
 .inactive-status {
   background-color: #e5e7eb;
   color: #6b7280;
+}
+
+.stage-period-container, 
+.stage-location-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 16rpx;
+}
+
+.stage-desc-container {
+  margin-top: 16rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx dashed #e5e7eb;
+}
+
+.stage-icon {
+  width: 32rpx;
+  height: 32rpx;
+  margin-right: 12rpx;
+  color: #2679cc;
+}
+
+.stage-period {
+  font-size: 28rpx;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.stage-desc {
+  font-size: 28rpx;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.stage-location {
+  font-size: 28rpx;
+  color: #4b5563;
 }
 
 /* 参赛队伍 */
@@ -1592,5 +1655,13 @@ page {
   width: 40rpx;
   height: 40rpx;
   margin-right: 16rpx;
+}
+
+/* 添加地点图标样式 */
+.location-icon {
+  width: 32rpx;
+  height: 32rpx;
+  margin-right: 8rpx;
+  color: #6b7280;
 }
 </style> 

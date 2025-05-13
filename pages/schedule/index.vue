@@ -191,50 +191,196 @@ const headerPlaceholderHeight = computed(() => {
 const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
 
 // 日历状态
-const today = new Date();
+const today = new Date(2025, 4, 13); // 设置为2025-5-13
 const currentYear = ref(today.getFullYear());
 const currentMonth = ref(today.getMonth() + 1);
 const selectedDate = ref(formatDate(today));
 const calendarDays = ref([]);
 
-// 事件数据（模拟数据）
+// 事件数据（模拟数据 - 2025年5月到7月）
 const events = ref([
+  // 5月事件
   {
     id: 1,
-    title: '中国大学生计算机设计大赛报名',
-    date: '2023-10-15',
-    startTime: '09:00',
-    endTime: '11:00',
-    location: '信息楼B201',
-    type: 'competition',
+    title: '2025全国大学生人工智能创新大赛报名截止',
+    date: '2025-05-15',
+    startTime: '23:59',
+    endTime: '23:59',
+    location: '线上提交',
+    type: 'deadline',
     completed: false
   },
   {
     id: 2,
-    title: '团队项目讨论会',
-    date: '2023-10-15',
-    startTime: '14:00',
-    endTime: '16:00',
-    location: '图书馆研讨室',
+    title: '团队项目周报交流会',
+    date: '2025-05-17',
+    startTime: '14:30',
+    endTime: '16:30',
+    location: '信息楼A305',
     type: 'team',
     completed: false
   },
   {
     id: 3,
-    title: '创新创业大赛初赛',
-    date: '2023-10-20',
-    startTime: '13:30',
-    endTime: '17:30',
+    title: '机器学习期末项目演示',
+    date: '2025-05-20',
+    startTime: '09:00',
+    endTime: '12:00',
+    location: '计算机学院报告厅',
+    type: 'deadline',
+    completed: false
+  },
+  {
+    id: 4,
+    title: '互联网+大赛校内选拔赛',
+    date: '2025-05-25',
+    startTime: '08:30',
+    endTime: '17:00',
     location: '创新创业中心',
     type: 'competition',
     completed: false
   },
   {
-    id: 4,
-    title: '人工智能课程作业截止',
-    date: '2023-10-18',
-    startTime: '23:59',
-    endTime: '23:59',
+    id: 5,
+    title: '校园开发者大会',
+    date: '2025-05-28',
+    startTime: '13:00',
+    endTime: '18:00',
+    location: '图书馆报告厅',
+    type: 'meeting',
+    completed: false
+  },
+  
+  // 6月事件
+  {
+    id: 6,
+    title: '挑战杯竞赛初赛',
+    date: '2025-06-03',
+    startTime: '09:00',
+    endTime: '17:00',
+    location: '大学生活动中心',
+    type: 'competition',
+    completed: false
+  },
+  {
+    id: 7,
+    title: '数据科学项目组会议',
+    date: '2025-06-08',
+    startTime: '15:00',
+    endTime: '17:00',
+    location: '信息楼B201',
+    type: 'team',
+    completed: false
+  },
+  {
+    id: 8,
+    title: '第二十届ACM国际大学生程序设计竞赛',
+    date: '2025-06-12',
+    startTime: '08:00',
+    endTime: '18:00',
+    location: '计算机学院机房',
+    type: 'competition',
+    completed: false
+  },
+  {
+    id: 9,
+    title: '青年创新创业论坛',
+    date: '2025-06-15',
+    startTime: '14:00',
+    endTime: '17:30',
+    location: '大礼堂',
+    type: 'meeting',
+    completed: false
+  },
+  {
+    id: 10,
+    title: '期末考试周开始',
+    date: '2025-06-24',
+    startTime: '08:00',
+    endTime: '18:00',
+    location: '各考场',
+    type: 'deadline',
+    completed: false
+  },
+  {
+    id: 11,
+    title: '软件工程实训作品提交',
+    date: '2025-06-28',
+    startTime: '17:00',
+    endTime: '17:00',
+    location: '线上提交',
+    type: 'deadline',
+    completed: false
+  },
+  
+  // 7月事件
+  {
+    id: 12,
+    title: '暑期实习开始',
+    date: '2025-07-01',
+    startTime: '09:00',
+    endTime: '18:00',
+    location: '企业实习基地',
+    type: 'other',
+    completed: false
+  },
+  {
+    id: 13,
+    title: '全国大学生智能汽车竞赛',
+    date: '2025-07-05',
+    startTime: '08:30',
+    endTime: '17:30',
+    location: '工程学院综合楼',
+    type: 'competition',
+    completed: false
+  },
+  {
+    id: 14,
+    title: '开源项目代码审核会议',
+    date: '2025-07-10',
+    startTime: '14:00',
+    endTime: '16:00',
+    location: '线上会议',
+    type: 'team',
+    completed: false
+  },
+  {
+    id: 15,
+    title: '创新创业夏令营',
+    date: '2025-07-15',
+    startTime: '09:00',
+    endTime: '17:00',
+    location: '创客空间',
+    type: 'meeting',
+    completed: false
+  },
+  {
+    id: 16,
+    title: '人工智能与机器人大赛',
+    date: '2025-07-20',
+    startTime: '09:00',
+    endTime: '18:00',
+    location: '科技馆',
+    type: 'competition',
+    completed: false
+  },
+  {
+    id: 17,
+    title: '暑期学术交流会',
+    date: '2025-07-25',
+    startTime: '14:30',
+    endTime: '17:30',
+    location: '国际会议中心',
+    type: 'meeting',
+    completed: false
+  },
+  {
+    id: 18,
+    title: '实训成果展示',
+    date: '2025-07-30',
+    startTime: '10:00',
+    endTime: '16:00',
+    location: '学术交流中心',
     type: 'deadline',
     completed: false
   }
@@ -820,7 +966,7 @@ onMounted(() => {
 .popup-content {
   background-color: $card-color;
   border-radius: 24rpx 24rpx 0 0;
-  padding: 30rpx;
+  padding:130rpx 30rpx;
 }
 
 .popup-header {

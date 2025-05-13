@@ -5,7 +5,7 @@
       title="任务详情"
       :show-search="false"
       :show-filter="true"
-      @back="goBack"
+  
     ></header-bar>
     
     <!-- 任务详情内容 -->
@@ -580,38 +580,7 @@ function getApplyButtonText() {
   return '立即申请';
 }
 
-// 返回上一页
-function goBack() {
-  // 阻止事件继续传递，确保由当前页面处理返回逻辑
-  // 这可以通过在e.stopPropagation()或设置一个全局变量来实现
-  // 由于没有事件参数，我们使用直接返回的方式
-  
-  const pages = getCurrentPages();
-  if (pages.length > 1) {
-    // 有历史记录，正常返回
-    uni.navigateBack({
-      delta: 1,
-      success: () => {
-        console.log('成功返回上一页');
-      },
-      fail: (err) => {
-        console.error('返回失败', err);
-        // 如果返回失败，尝试直接跳转到任务列表
-        uni.redirectTo({
-          url: '/pages/task-square/index'
-        });
-      }
-    });
-  } else {
-    // 没有历史记录，切换到首页tab
-    uni.switchTab({
-      url: '/pages/index/index'
-    });
-  }
-  
-  // 返回true表示已处理，HeaderBar不需要再处理返回逻辑
-  return true;
-}
+
 
 // 收藏/取消收藏
 async function toggleFavorite() {

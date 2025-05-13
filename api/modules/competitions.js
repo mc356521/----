@@ -116,6 +116,85 @@ const competitionsApi = {
   },
   
   /**
+   * 创建比赛阶段
+   * @param {Object} data - 阶段信息
+   * @param {Number} data.competitionId - 关联的竞赛ID
+   * @param {String} data.stageName - 阶段名称
+   * @param {String} data.startTime - 开始时间
+   * @param {String} data.endTime - 结束时间
+   * @param {String} data.description - 阶段描述
+   * @param {String} data.status - 阶段状态 (pending/active/completed)
+   * @param {String} data.metadata - 元数据JSON字符串，包含地点等信息
+   * @returns {Promise} 请求结果Promise对象
+   */
+  createCompetitionStage(data) {
+    // 检查是否有token
+    const token = getToken();
+    if (!token) {
+      uni.showToast({
+        title: '请先登录',
+        icon: 'none'
+      });
+      
+      setTimeout(() => {
+        uni.navigateTo({
+          url: '/pages/login/login'
+        });
+      }, 1500);
+      
+      return Promise.reject(new Error('未登录'));
+    }
+    
+    return request({
+      url: '/competitionStages',
+      method: 'POST',
+      data,
+      header: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+  
+  /**
+   * 批量创建比赛阶段
+   * @param {Array} stages - 阶段信息数组
+   * @param {Number} competitionId - 关联的竞赛ID
+   * @returns {Promise} 请求结果Promise对象
+   */
+  createCompetitionStages(stages, competitionId) {
+    // 检查是否有token
+    const token = getToken();
+    if (!token) {
+      uni.showToast({
+        title: '请先登录',
+        icon: 'none'
+      });
+      
+      setTimeout(() => {
+        uni.navigateTo({
+          url: '/pages/login/login'
+        });
+      }, 1500);
+      
+      return Promise.reject(new Error('未登录'));
+    }
+    
+    // 为每个阶段添加竞赛ID
+    const stagesWithCompetitionId = stages.map(stage => ({
+      ...stage,
+      competitionId
+    }));
+    
+    // 使用Promise.all同时创建多个阶段
+    return Promise.all(
+      stagesWithCompetitionId.map(stage => 
+        this.createCompetitionStage(stage)
+      )
+    );
+  },
+  
+  /**
    * 获取所有竞赛分类
    * @returns {Promise} 包含所有竞赛分类的Promise对象
    */
@@ -133,6 +212,18 @@ const competitionsApi = {
   getCompetitionsBasicInfo() {
     return request({
       url: '/competitions/basic-info',
+      method: 'GET'
+    });
+  },
+  
+  /**
+   * 获取竞赛阶段列表
+   * @param {Number|String} competitionId - 竞赛ID
+   * @returns {Promise} 请求结果Promise对象
+   */
+  getCompetitionStages(competitionId) {
+    return request({
+      url: `/competitionStages/list/${competitionId}`,
       method: 'GET'
     });
   }

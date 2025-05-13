@@ -1287,7 +1287,6 @@ page {
   display: flex;
   align-items: center;
   margin-bottom: 20rpx;
-
 .section-icon {
   margin-right: 12rpx;
   color: $primary-color;

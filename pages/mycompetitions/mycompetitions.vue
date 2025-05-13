@@ -1,15 +1,62 @@
 <template>
   <view class="container">
     <!-- 顶部导航栏 -->
-    <view class="header">
-      <view class="back-btn" @click="goBack">
-        <SvgIcon name="arrow-left" size="20"></SvgIcon>
+    <HeaderBar 
+      ref="headerBarRef"
+      title="我的竞赛" 
+      :showSearch="false" 
+      :showFilter="false"
+
+    >
+      <template #actions>
+        <view class="action-btn" @click="showFilterModal">
+          <SvgIcon name="filter" size="24" />
+        </view>
+      </template>
+    </HeaderBar>
+    
+    <!-- 导航栏占位 -->
+    <view class="header-placeholder" :style="{ height: headerPlaceholderHeight }"></view>
+    
+    <!-- 状态标签 -->
+    <scroll-view scroll-x class="status-tabs">
+      <view class="tabs-container">
+        <view 
+          class="tab-item" 
+          :class="{'active': activeStatus === 'all'}"
+          @click="setActiveStatus('all')"
+        >
+          <text>全部</text>
+        </view>
+        <view 
+          class="tab-item" 
+          :class="{'active': activeStatus === 'ongoing'}"
+          @click="setActiveStatus('ongoing')"
+        >
+          <text>进行中</text>
+          <view class="badge" v-if="myCompetitions && myCompetitions.value && myCompetitions.value.length > 0 && getCompetitionCountByStatus('ongoing') > 0">
+            <text>{{ getCompetitionCountByStatus('ongoing') }}</text>
+          </view>
+        </view>
+        <view 
+          class="tab-item" 
+          :class="{'active': activeStatus === 'upcoming'}"
+          @click="setActiveStatus('upcoming')"
+        >
+          <text>即将开始</text>
+        </view>
+        <view 
+          class="tab-item" 
+          :class="{'active': activeStatus === 'completed'}"
+          @click="setActiveStatus('completed')"
+        >
+          <text>已结束</text>
+          <view class="badge" v-if="myCompetitions && myCompetitions.value && myCompetitions.value.length > 0 && getCompetitionCountByStatus('finished') > 0">
+            <text>{{ getCompetitionCountByStatus('finished') }}</text>
+          </view>
+        </view>
       </view>
-      <text class="header-title">我的竞赛</text>
-      <view class="filter-btn" @click="showFilterModal">
-        <SvgIcon name="filter" size="20"></SvgIcon>
-      </view>
-    </view>
+    </scroll-view>
     
     <!-- 加载中显示 -->
     <view class="loading-container" v-if="loading">
@@ -22,52 +69,12 @@
       scroll-y 
       class="content-scroll" 
       v-else
-      refresher-enabled
-      :refresher-triggered="refreshing"
-      @refresherrefresh="refreshCompetitions"
     >
-      <!-- 状态标签 -->
-      <scroll-view scroll-x class="status-tabs">
-        <view class="tabs-container">
-          <view 
-            class="tab-item" 
-            :class="{'active': activeStatus === 'all'}"
-            @click="setActiveStatus('all')"
-          >
-            <text>全部</text>
-          </view>
-          <view 
-            class="tab-item" 
-            :class="{'active': activeStatus === 'ongoing'}"
-            @click="setActiveStatus('ongoing')"
-          >
-            <text>进行中</text>
-            <view class="badge" v-if="myCompetitions.length > 0 && getCompetitionCountByStatus('ongoing') > 0">
-              <text>{{ getCompetitionCountByStatus('ongoing') }}</text>
-            </view>
-          </view>
-          <view 
-            class="tab-item" 
-            :class="{'active': activeStatus === 'upcoming'}"
-            @click="setActiveStatus('upcoming')"
-          >
-            <text>即将开始</text>
-          </view>
-          <view 
-            class="tab-item" 
-            :class="{'active': activeStatus === 'completed'}"
-            @click="setActiveStatus('completed')"
-          >
-            <text>已结束</text>
-          </view>
-        </view>
-      </scroll-view>
-      
       <!-- 进行中的竞赛 -->
       <view class="competition-section" v-if="activeStatus === 'all' || activeStatus === 'ongoing'">
         <view class="section-header" v-if="activeStatus === 'all'">
           <text class="section-title">进行中的竞赛</text>
-          <text class="section-count">{{ ongoingCompetitions.length }}个</text>
+          <text class="section-count">{{ ongoingCompetitions ? ongoingCompetitions.length : 0 }}个</text>
         </view>
         
         <view class="competition-list">
@@ -145,7 +152,7 @@
           </view>
           
           <!-- 空状态 -->
-          <view class="empty-state" v-if="ongoingCompetitions.length === 0">
+          <view class="empty-state" v-if="ongoingCompetitions && ongoingCompetitions.length === 0">
             <image class="empty-image" src="/static/image/empty-ongoing.png" mode="aspectFit"></image>
             <text class="empty-text">暂无进行中的竞赛</text>
             <view class="action-btn primary" @click="navigateToCompetitionList">
@@ -159,7 +166,7 @@
       <view class="competition-section" v-if="activeStatus === 'all' || activeStatus === 'upcoming'">
         <view class="section-header" v-if="activeStatus === 'all'">
           <text class="section-title">即将开始的竞赛</text>
-          <text class="section-count">{{ upcomingCompetitions.length }}个</text>
+          <text class="section-count">{{ upcomingCompetitions ? upcomingCompetitions.length : 0 }}个</text>
         </view>
         
         <view class="competition-list">
@@ -244,7 +251,7 @@
           </view>
           
           <!-- 空状态 -->
-          <view class="empty-state" v-if="upcomingCompetitions.length === 0">
+          <view class="empty-state" v-if="upcomingCompetitions && upcomingCompetitions.length === 0">
             <image class="empty-image" src="/static/image/empty-upcoming.png" mode="aspectFit"></image>
             <text class="empty-text">暂无即将开始的竞赛</text>
             <view class="action-btn primary" @click="navigateToCompetitionList">
@@ -258,7 +265,7 @@
       <view class="competition-section" v-if="activeStatus === 'all' || activeStatus === 'completed'">
         <view class="section-header" v-if="activeStatus === 'all'">
           <text class="section-title">已结束的竞赛</text>
-          <text class="section-count">{{ completedCompetitions.length }}个</text>
+          <text class="section-count">{{ completedCompetitions ? completedCompetitions.length : 0 }}个</text>
         </view>
         
         <view class="competition-list">
@@ -340,7 +347,7 @@
           </view>
           
           <!-- 空状态 -->
-          <view class="empty-state" v-if="completedCompetitions.length === 0">
+          <view class="empty-state" v-if="completedCompetitions && completedCompetitions.length === 0">
             <image class="empty-image" src="/static/image/empty-completed.png" mode="aspectFit"></image>
             <text class="empty-text">暂无已结束的竞赛</text>
             <view class="action-btn primary" @click="navigateToCompetitionList">
@@ -640,18 +647,56 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import SvgIcon from '@/components/SvgIcon.vue';
+import HeaderBar from '@/components/HeaderBar.vue';
 
-// 引入 uni 对象
-const uni = uni || {};
+// HeaderBar引用
+const headerBarRef = ref(null);
+
+// 计算HeaderBar占位高度
+const headerPlaceholderHeight = computed(() => {
+  if (headerBarRef.value && headerBarRef.value.headerHeight) {
+    return headerBarRef.value.headerHeight + 'rpx';
+  }
+  return '120rpx';
+});
 
 // 加载状态
 const loading = ref(true);
-// 刷新状态
-const refreshing = ref(false);
 // 当前选中的状态标签
 const activeStatus = ref('all');
 // 竞赛列表
-const myCompetitions = ref([]);
+const myCompetitions = ref([
+  {
+    id: 1,
+    title: '2023年全国大学生计算机设计大赛',
+    status: 'ongoing',
+    stage: '省赛',
+    description: '全国大学生计算机设计大赛是由教育部高等学校计算机类专业教学指导委员会、教育部高等学校软件工程专业教学指导委员会、教育部高等学校大学计算机课程教学指导委员会主办的全国性赛事。',
+    startDate: '2023-04-15',
+    endDate: '2023-06-30',
+    organizerName: '教育部',
+    category: '人工智能',
+    tags: ['科技创新', 'AI应用'],
+    teamSize: 3,
+    teamId: 5,
+    teamName: '创梦之星'
+  },
+  {
+    id: 2,
+    title: '2022互联网+大学生创新创业大赛',
+    status: 'finished',
+    stage: '校赛',
+    description: '中国"互联网+"大学生创新创业大赛，是由教育部与政府有关部门、有关行业协会和企业共同举办的全国性创新创业赛事。',
+    startDate: '2022-03-10',
+    endDate: '2022-05-20',
+    organizerName: '教育部',
+    category: '创新创业',
+    tags: ['商业计划', '创业'],
+    teamSize: 5,
+    teamId: 2,
+    teamName: '星火创业'
+  }
+]);
 // 筛选相关
 const showFilter = ref(false);
 const selectedLevels = ref(['全部']);
@@ -665,70 +710,30 @@ const shareCompetition = ref({});
 const showCancelConfirm = ref(false);
 const cancelCompetition = ref({});
 
-// 根据状态过滤竞赛
+// 计算属性
 const ongoingCompetitions = computed(() => {
-  return filterCompetitions(myCompetitions.value.filter(comp => comp.status === 'ongoing'));
+  if (!myCompetitions.value || myCompetitions.value.length === 0) return [];
+  return myCompetitions.value.filter(comp => 
+    comp.status === 'ongoing' || comp.status === 'registering'
+  );
 });
 
 const upcomingCompetitions = computed(() => {
-  return filterCompetitions(myCompetitions.value.filter(comp => comp.status === 'upcoming'));
+  if (!myCompetitions.value || myCompetitions.value.length === 0) return [];
+  return myCompetitions.value.filter(comp => comp.status === 'upcoming');
 });
 
 const completedCompetitions = computed(() => {
-  return filterCompetitions(myCompetitions.value.filter(comp => comp.status === 'completed'));
+  if (!myCompetitions.value || myCompetitions.value.length === 0) return [];
+  return myCompetitions.value.filter(comp => comp.status === 'finished' || comp.status === 'completed');
 });
 
-// 筛选竞赛
-function filterCompetitions(competitions) {
-  return competitions.filter(comp => {
-    // 级别筛选
-    if (!selectedLevels.value.includes('全部') && !selectedLevels.value.includes(comp.level)) {
-      return false;
-    }
-    
-    // 类型筛选
-    if (!selectedTypes.value.includes('全部') && !selectedTypes.value.includes(comp.type)) {
-      return false;
-    }
-    
-    // 结果筛选（仅对已完成的竞赛有效）
-    if (comp.status === 'completed' && !selectedResults.value.includes('全部')) {
-      if (!comp.result && selectedResults.value.includes('未获奖')) {
-        return true;
-      }
-      if (!selectedResults.value.includes(comp.result)) {
-        return false;
-      }
-    }
-    
-    // 时间范围筛选
-    if (selectedTimeRange.value !== 'all') {
-      const now = new Date();
-      const endDate = new Date(comp.endDate);
-      const diffMonths = (now.getFullYear() - endDate.getFullYear()) * 12 + now.getMonth() - endDate.getMonth();
-      
-      if (selectedTimeRange.value === 'month3' && diffMonths > 3) {
-        return false;
-      } else if (selectedTimeRange.value === 'month6' && diffMonths > 6) {
-        return false;
-      } else if (selectedTimeRange.value === 'year1' && diffMonths > 12) {
-        return false;
-      }
-    }
-    
-    return true;
-  });
-}
-
-// 获取我的竞赛列表
-async function getMyCompetitions() {
+// 将竞赛数据排序
+function getMyCompetitions() {
+  loading.value = true;
+  
   try {
-    loading.value = true;
-    
-    // 这里应该调用API获取我的竞赛列表
-    // const res = await competitionApi.getMyCompetitions();
-    
-    // 模拟数据
+    // 模拟API请求
     setTimeout(() => {
       myCompetitions.value = [
         {
@@ -851,7 +856,6 @@ async function getMyCompetitions() {
       ];
       
       loading.value = false;
-      refreshing.value = false;
     }, 800);
   } catch (error) {
     console.error('获取我的竞赛列表失败:', error);
@@ -860,14 +864,7 @@ async function getMyCompetitions() {
       icon: 'none'
     });
     loading.value = false;
-    refreshing.value = false;
   }
-}
-
-// 刷新竞赛列表
-function refreshCompetitions() {
-  refreshing.value = true;
-  getMyCompetitions();
 }
 
 // 设置当前状态标签
@@ -875,10 +872,19 @@ function setActiveStatus(status) {
   activeStatus.value = status;
 }
 
-// 获取指定状态的竞赛数量
-function getCompetitionCountByStatus(status) {
-  return myCompetitions.value.filter(comp => comp.status === status).length;
-}
+// 根据状态获取竞赛数量
+const getCompetitionCountByStatus = (status) => {
+  if (!myCompetitions || !myCompetitions.value || myCompetitions.value.length === 0) return 0;
+  
+  return myCompetitions.value.filter(comp => {
+    if (status === 'ongoing') {
+      return comp.status === 'registering' || comp.status === 'ongoing';
+    } else if (status === 'finished') {
+      return comp.status === 'finished';
+    }
+    return false;
+  }).length;
+};
 
 // 格式化日期
 function formatDate(dateString) {
@@ -980,22 +986,22 @@ function closeFilterModal() {
 function toggleLevelFilter(level) {
   if (level === '全部') {
     selectedLevels.value = ['全部'];
+    return;
+  }
+  
+  // 移除"全部"选项
+  if (selectedLevels.value.includes('全部')) {
+    selectedLevels.value = selectedLevels.value.filter(l => l !== '全部');
+  }
+  
+  if (selectedLevels.value.includes(level)) {
+    selectedLevels.value = selectedLevels.value.filter(l => l !== level);
+    // 如果没有选中任何选项，添加"全部"
+    if (selectedLevels.value.length === 0) {
+      selectedLevels.value = ['全部'];
+    }
   } else {
-    // 移除"全部"选项
-    if (selectedLevels.value.includes('全部')) {
-      selectedLevels.value = selectedLevels.value.filter(item => item !== '全部');
-    }
-    
-    // 切换选中状态
-    if (selectedLevels.value.includes(level)) {
-      selectedLevels.value = selectedLevels.value.filter(item => item !== level);
-      // 如果没有选中任何级别，则默认选中"全部"
-      if (selectedLevels.value.length === 0) {
-        selectedLevels.value = ['全部'];
-      }
-    } else {
-      selectedLevels.value.push(level);
-    }
+    selectedLevels.value.push(level);
   }
 }
 
@@ -1003,22 +1009,22 @@ function toggleLevelFilter(level) {
 function toggleTypeFilter(type) {
   if (type === '全部') {
     selectedTypes.value = ['全部'];
+    return;
+  }
+  
+  // 移除"全部"选项
+  if (selectedTypes.value.includes('全部')) {
+    selectedTypes.value = selectedTypes.value.filter(t => t !== '全部');
+  }
+  
+  if (selectedTypes.value.includes(type)) {
+    selectedTypes.value = selectedTypes.value.filter(t => t !== type);
+    // 如果没有选中任何选项，添加"全部"
+    if (selectedTypes.value.length === 0) {
+      selectedTypes.value = ['全部'];
+    }
   } else {
-    // 移除"全部"选项
-    if (selectedTypes.value.includes('全部')) {
-      selectedTypes.value = selectedTypes.value.filter(item => item !== '全部');
-    }
-    
-    // 切换选中状态
-    if (selectedTypes.value.includes(type)) {
-      selectedTypes.value = selectedTypes.value.filter(item => item !== type);
-      // 如果没有选中任何类型，则默认选中"全部"
-      if (selectedTypes.value.length === 0) {
-        selectedTypes.value = ['全部'];
-      }
-    } else {
-      selectedTypes.value.push(type);
-    }
+    selectedTypes.value.push(type);
   }
 }
 
@@ -1026,22 +1032,22 @@ function toggleTypeFilter(type) {
 function toggleResultFilter(result) {
   if (result === '全部') {
     selectedResults.value = ['全部'];
+    return;
+  }
+  
+  // 移除"全部"选项
+  if (selectedResults.value.includes('全部')) {
+    selectedResults.value = selectedResults.value.filter(r => r !== '全部');
+  }
+  
+  if (selectedResults.value.includes(result)) {
+    selectedResults.value = selectedResults.value.filter(r => r !== result);
+    // 如果没有选中任何选项，添加"全部"
+    if (selectedResults.value.length === 0) {
+      selectedResults.value = ['全部'];
+    }
   } else {
-    // 移除"全部"选项
-    if (selectedResults.value.includes('全部')) {
-      selectedResults.value = selectedResults.value.filter(item => item !== '全部');
-    }
-    
-    // 切换选中状态
-    if (selectedResults.value.includes(result)) {
-      selectedResults.value = selectedResults.value.filter(item => item !== result);
-      // 如果没有选中任何结果，则默认选中"全部"
-      if (selectedResults.value.length === 0) {
-        selectedResults.value = ['全部'];
-      }
-    } else {
-      selectedResults.value.push(result);
-    }
+    selectedResults.value.push(result);
   }
 }
 
@@ -1050,18 +1056,18 @@ function setTimeRange(range) {
   selectedTimeRange.value = range;
 }
 
-// 重置筛选条件
+// 应用筛选条件
+function applyFilters() {
+  // 这里添加更多的筛选逻辑，可以根据需要在计算属性中使用
+  closeFilterModal();
+}
+
+// 重置所有筛选条件
 function resetFilters() {
   selectedLevels.value = ['全部'];
   selectedTypes.value = ['全部'];
   selectedResults.value = ['全部'];
   selectedTimeRange.value = 'all';
-}
-
-// 应用筛选条件
-function applyFilters() {
-  closeFilterModal();
-  // 筛选逻辑已在计算属性中实现
 }
 
 // 跳转到竞赛详情
@@ -1201,10 +1207,6 @@ function confirmCancelRegistration() {
   }, 1500);
 }
 
-// 返回
-function goBack() {
-  uni.navigateBack();
-}
 
 // 页面加载时获取竞赛列表
 onMounted(() => {
@@ -1213,6 +1215,11 @@ onMounted(() => {
 </script>
 
 <style lang="scss">
+// CSS变量
+:root {
+  --status-height: 80rpx; /* 状态标签栏的高度 */
+}
+
 // 颜色变量
 $primary-color: #3B82F6;
 $background-color: #f8fafc;
@@ -1252,32 +1259,12 @@ page {
   height: 100vh;
 }
 
-// 顶部导航栏
-.header {
+// 顶部导航栏样式
+.action-btn {
+  padding: 6rpx;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  padding: 40rpx 30rpx;
-  background-color: $card-color;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
-  
-  .back-btn, .filter-btn {
-    padding: 10rpx;
-    
-    .iconfont {
-      font-size: 36rpx;
-      color: $text-color;
-    }
-  }
-  
-  .header-title {
-    font-size: 32rpx;
-    font-weight: bold;
-    color: $text-color;
-  }
 }
 
 // 加载中
@@ -1313,13 +1300,22 @@ page {
 .content-scroll {
   flex: 1;
   padding-bottom: 30rpx;
+  height: calc(100vh - 180rpx - var(--status-height));
+  box-sizing: border-box;
 }
 
 // 状态标签
 .status-tabs {
   background-color: $card-color;
-  padding: 20rpx 0;
+  padding: 15rpx 0;
   white-space: nowrap;
+  margin-bottom: 15rpx;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
+  height: var(--status-height);
+  box-sizing: border-box;
   
   .tabs-container {
     display: inline-flex;
@@ -1328,14 +1324,14 @@ page {
     .tab-item {
       display: inline-flex;
       align-items: center;
-      padding: 12rpx 30rpx;
+      padding: 10rpx 25rpx;
       margin-right: 20rpx;
       border-radius: 30rpx;
       background-color: $background-color;
       transition: all 0.3s;
       
       text {
-        font-size: 26rpx;
+        font-size: 28rpx;
         color: $text-secondary;
       }
       
@@ -1376,7 +1372,7 @@ page {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 30rpx;
+    padding:  30rpx;
     margin-bottom: 16rpx;
     
     .section-title {

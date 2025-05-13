@@ -197,14 +197,6 @@ function showPublishMenu() {
           url: '/pages/task-square/create'
         });
       }
-    },
-    {
-      text: '添加日程',
-      action: () => {
-        uni.navigateTo({
-          url: '/pages/schedule/index?action=add'
-        });
-      }
     }
   );
   

@@ -4,7 +4,7 @@
     <view class="content-area">
       <!-- 顶部图片 -->
       <view class="top-image">
-        <image src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80" 
+        <image src="/static/image/Lianxi/mc/LOG1.png" 
                mode="aspectFill" 
                class="campus-image"></image>
       </view>
@@ -544,13 +544,10 @@ page {
   min-height: 100vh;
 }
 
-.top-image {
-  margin-bottom: 60rpx;
-}
 
 .campus-image {
   width: 100%;
-  height: 300rpx;
+  height: 400rpx;
   border-radius: 20rpx;
   box-shadow: 0 5rpx 15rpx rgba(0,0,0,0.1);
 }

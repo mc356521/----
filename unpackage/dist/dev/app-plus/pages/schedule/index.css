@@ -511,7 +511,7 @@
 .popup-content {
   background-color: #ffffff;
   border-radius: 0.75rem 0.75rem 0 0;
-  padding: 0.9375rem;
+  padding: 4.0625rem 0.9375rem;
 }
 .popup-header {
   display: flex;

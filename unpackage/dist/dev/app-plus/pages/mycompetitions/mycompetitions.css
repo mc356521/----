@@ -1,0 +1,606 @@
+
+.svg-icon-container[data-v-4c110535] {
+  display: inline-block;
+  vertical-align: middle;
+  position: relative;
+  overflow: hidden;
+}
+.svg-content[data-v-4c110535] {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.svg-content svg[data-v-4c110535] {
+  width: 100%;
+  height: 100%;
+}
+.svg-image[data-v-4c110535] {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* 水平间距 */
+/* 水平间距 */
+/* 导入主题变量 */
+.sticky-header[data-v-965d9a70] {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: #ffffff;
+  box-shadow: 0 0.03125rem 0.1875rem rgba(0, 0, 0, 0.08);
+  /* 确保iOS设备上也能正常固定 */
+  transform: translateZ(0);
+  /* 添加安全区域适配 */
+  padding-top: 0;
+  /* 先清除原有的固定值 */
+  /* 动态适配安全区域高度 */
+  padding-top: env(safe-area-inset-top, 0);
+  width: 100%;
+}
+.sticky-header .header-title[data-v-965d9a70] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* 增加上方安全区域额外间距，确保在所有设备上显示良好 */
+  padding: 1.875rem 0.75rem 0.3125rem 0.75rem;
+}
+.sticky-header .header-title .back-btn[data-v-965d9a70] {
+  width: 2.1875rem;
+  height: 2.1875rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.3125rem;
+}
+.sticky-header .header-title .back-btn .iconfont[data-v-965d9a70] {
+  font-size: 1.125rem;
+  color: #666666;
+}
+.sticky-header .header-title .back-btn[data-v-965d9a70]:active {
+  opacity: 0.7;
+}
+.sticky-header .header-title .section-title[data-v-965d9a70] {
+  font-size: 1.125rem;
+  font-weight: bold;
+  color: #333333;
+  flex: 1;
+}
+.sticky-header .header-title .header-actions[data-v-965d9a70] {
+  display: flex;
+  gap: 0.5rem;
+}
+.sticky-header .header-title .header-actions .action-btn[data-v-965d9a70] {
+  width: 1.5625rem;
+  height: 1.5625rem;
+  border-radius: 50%;
+  background-color: #F3F4F6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sticky-header .header-title .header-actions .action-btn .iconfont[data-v-965d9a70] {
+  font-size: 1.125rem;
+  color: #666666;
+}
+.sticky-header .header-title .header-actions .action-btn[data-v-965d9a70] .svg-icon {
+  color: #666666;
+}
+.sticky-header .header-title .header-actions .action-btn.message-btn[data-v-965d9a70] {
+  position: relative;
+}
+.sticky-header .header-title .header-actions .action-btn.message-btn .badge[data-v-965d9a70] {
+  position: absolute;
+  top: -0.46875rem;
+  right: -0.46875rem;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 0.5625rem;
+  background-color: #ed4014;
+  color: #fff;
+  font-size: 0.6875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.25rem;
+}
+.sticky-header .header-title .header-actions .action-btn.ai-recommend-btn[data-v-965d9a70] {
+  background: linear-gradient(135deg, #4facfe, #64f38c);
+}
+.sticky-header .header-title .header-actions .action-btn.ai-recommend-btn .iconfont[data-v-965d9a70] {
+  color: #fff;
+}
+.sticky-header .category-scroll[data-v-965d9a70] {
+  width: 100%;
+  white-space: nowrap;
+  padding: 0.375rem 0.5rem;
+  overflow-x: auto;
+  /* 隐藏滚动条但保留滚动功能 */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+}
+.sticky-header .category-scroll[data-v-965d9a70]::-webkit-scrollbar {
+  display: none;
+}
+.sticky-header .category-scroll .category-list[data-v-965d9a70] {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 0.3125rem;
+  padding: 0 0.25rem;
+}
+.sticky-header .category-scroll .category-list .category-item[data-v-965d9a70] {
+  display: inline-block;
+  padding: 0.3125rem 0.5rem;
+  border-radius: 3.125rem;
+  background-color: #F3F4F6;
+  font-size: 0.75rem;
+  color: #666666;
+  transition: all 0.3s;
+}
+.sticky-header .category-scroll .category-list .category-item.active-category[data-v-965d9a70] {
+  background-color: #2d8cf0;
+  color: #ffffff;
+}
+/* 水平间距 */
+/* 水平间距 */
+/* 导入主题变量 */
+:root {
+  --status-height: 2.5rem;
+  /* 状态标签栏的高度 */
+}
+body {
+  background-color: #f8fafc;
+}
+.container {
+  display: flex;
+  flex-direction: column;
+  font-family: "Noto Sans SC", "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif;
+  position: relative;
+  height: 100vh;
+}
+.action-btn {
+  padding: 0.1875rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3.125rem 0;
+}
+.loading-container .loading-circle {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 0.1875rem solid rgba(59, 130, 246, 0.1);
+  border-top-color: #3B82F6;
+  animation: spin 1s linear infinite;
+  margin-bottom: 0.625rem;
+}
+.loading-container .loading-text {
+  font-size: 0.875rem;
+  color: #6B7280;
+}
+@keyframes spin {
+from {
+    transform: rotate(0deg);
+}
+to {
+    transform: rotate(360deg);
+}
+}
+.content-scroll {
+  flex: 1;
+  padding-bottom: 0.9375rem;
+  height: calc(100vh - 5.625rem - var(--status-height));
+  box-sizing: border-box;
+}
+.status-tabs {
+  background-color: #ffffff;
+  padding: 0.46875rem 0;
+  white-space: nowrap;
+  margin-bottom: 0.46875rem;
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  box-shadow: 0 0.0625rem 0.3125rem rgba(0, 0, 0, 0.08);
+  height: var(--status-height);
+  box-sizing: border-box;
+}
+.status-tabs .tabs-container {
+  display: inline-flex;
+  padding: 0 0.9375rem;
+}
+.status-tabs .tabs-container .tab-item {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3125rem 0.78125rem;
+  margin-right: 0.625rem;
+  border-radius: 0.9375rem;
+  background-color: #f8fafc;
+  transition: all 0.3s;
+}
+.status-tabs .tabs-container .tab-item uni-text {
+  font-size: 0.875rem;
+  color: #6B7280;
+}
+.status-tabs .tabs-container .tab-item .badge {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 1rem;
+  height: 1rem;
+  border-radius: 0.5rem;
+  background-color: #3B82F6;
+  margin-left: 0.25rem;
+  padding: 0 0.25rem;
+}
+.status-tabs .tabs-container .tab-item .badge uni-text {
+  font-size: 0.625rem;
+  color: white;
+}
+.status-tabs .tabs-container .tab-item.active {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+.status-tabs .tabs-container .tab-item.active uni-text {
+  color: #3B82F6;
+  font-weight: 500;
+}
+.competition-section {
+  margin: 0.625rem 0;
+}
+.competition-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.9375rem;
+  margin-bottom: 0.5rem;
+}
+.competition-section .section-header .section-title {
+  font-size: 0.9375rem;
+  font-weight: bold;
+  color: #333333;
+}
+.competition-section .section-header .section-count {
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+.competition-section .competition-list {
+  padding: 0 0.625rem;
+}
+.competition-section .competition-list .competition-card {
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  margin-bottom: 0.625rem;
+  overflow: hidden;
+  box-shadow: 0 0.0625rem 0.25rem rgba(0, 0, 0, 0.05);
+}
+.competition-section .competition-list .competition-card .card-header {
+  display: flex;
+  padding: 0.625rem;
+  border-bottom: 0.03125rem solid #F3F4F6;
+}
+.competition-section .competition-list .competition-card .card-header .competition-image {
+  width: 3.75rem;
+  height: 3.75rem;
+  border-radius: 0.375rem;
+  margin-right: 0.625rem;
+}
+.competition-section .competition-list .competition-card .card-header .competition-info {
+  flex: 1;
+}
+.competition-section .competition-list .competition-card .card-header .competition-info .competition-name {
+  font-size: 0.9375rem;
+  font-weight: bold;
+  color: #333333;
+  margin-bottom: 0.3125rem;
+}
+.competition-section .competition-list .competition-card .card-header .competition-info .competition-badges {
+  display: flex;
+  gap: 0.3125rem;
+  margin-bottom: 0.3125rem;
+}
+.competition-section .competition-list .competition-card .card-header .competition-info .competition-badges .level-badge, .competition-section .competition-list .competition-card .card-header .competition-info .competition-badges .status-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.625rem;
+}
+.competition-section .competition-list .competition-card .card-header .competition-info .competition-badges .level-badge uni-text, .competition-section .competition-list .competition-card .card-header .competition-info .competition-badges .status-badge uni-text {
+  font-size: 0.6875rem;
+  color: white;
+}
+.competition-section .competition-list .competition-card .card-header .competition-info .competition-badges .level-badge.level-national {
+  background-color: #EF4444;
+}
+.competition-section .competition-list .competition-card .card-header .competition-info .competition-badges .level-badge.level-province {
+  background-color: #F59E0B;
+}
+.competition-section .competition-list .competition-card .card-header .competition-info .competition-badges .level-badge.level-city {
+  background-color: #10B981;
+}
+.competition-section .competition-list .competition-card .card-header .competition-info .competition-badges .level-badge.level-school {
+  background-color: #8B5CF6;
+}
+.competition-section .competition-list .competition-card .card-header .competition-info .competition-badges .status-badge.status-ongoing {
+  background-color: #10B981;
+}
+.competition-section .competition-list .competition-card .card-header .competition-info .competition-badges .status-badge.status-upcoming {
+  background-color: #F59E0B;
+}
+.competition-section .competition-list .competition-card .card-header .competition-info .competition-badges .status-badge.status-completed {
+  background-color: #6B7280;
+}
+.competition-section .competition-list .competition-card .card-header .competition-info .competition-date {
+  display: flex;
+  align-items: center;
+}
+.competition-section .competition-list .competition-card .card-header .competition-info .competition-date .iconfont {
+  font-size: 0.75rem;
+  color: #6B7280;
+  margin-right: 0.1875rem;
+}
+.competition-section .competition-list .competition-card .card-header .competition-info .competition-date uni-text {
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+.competition-section .competition-list .competition-card .card-body {
+  padding: 0.625rem;
+}
+.competition-section .competition-list .competition-card .card-body .progress-info {
+  margin-bottom: 0.625rem;
+}
+.competition-section .competition-list .competition-card .card-body .progress-info .progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.3125rem;
+}
+.competition-section .competition-list .competition-card .card-body .progress-info .progress-header .current-stage {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #333333;
+}
+.competition-section .competition-list .competition-card .card-body .progress-info .progress-header .days-left {
+  font-size: 0.75rem;
+  color: #10B981;
+  font-weight: 500;
+}
+.competition-section .competition-list .competition-card .card-body .progress-info .progress-bar {
+  height: 0.3125rem;
+  background-color: #f8fafc;
+  border-radius: 0.15625rem;
+  margin-bottom: 0.3125rem;
+  overflow: hidden;
+}
+.competition-section .competition-list .competition-card .card-body .progress-info .progress-bar .progress-fill {
+  height: 100%;
+  background-color: #10B981;
+  border-radius: 0.15625rem;
+}
+.competition-section .competition-list .competition-card .card-body .progress-info .stage-info .stage-text {
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+.competition-section .competition-list .competition-card .card-body .countdown-info {
+  margin-bottom: 0.625rem;
+}
+.competition-section .competition-list .competition-card .card-body .countdown-info .countdown-label {
+  font-size: 0.8125rem;
+  color: #333333;
+  margin-bottom: 0.3125rem;
+  display: block;
+}
+.competition-section .competition-list .competition-card .card-body .countdown-info .countdown-timer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.competition-section .competition-list .competition-card .card-body .countdown-info .countdown-timer .time-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.competition-section .competition-list .competition-card .card-body .countdown-info .countdown-timer .time-unit .time-value {
+  font-size: 1.125rem;
+  font-weight: bold;
+  color: #F59E0B;
+  min-width: 1.875rem;
+  text-align: center;
+}
+.competition-section .competition-list .competition-card .card-body .countdown-info .countdown-timer .time-unit .time-label {
+  font-size: 0.6875rem;
+  color: #6B7280;
+}
+.competition-section .competition-list .competition-card .card-body .countdown-info .countdown-timer .time-separator {
+  font-size: 1.125rem;
+  font-weight: bold;
+  color: #F59E0B;
+  margin: 0 0.3125rem;
+}
+.competition-section .competition-list .competition-card .card-body .result-info {
+  margin-bottom: 0.625rem;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .result-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.3125rem;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .result-header .result-label {
+  font-size: 0.8125rem;
+  color: #333333;
+  margin-right: 0.5rem;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .result-header .result-badge {
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.625rem;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .result-header .result-badge uni-text {
+  font-size: 0.75rem;
+  color: white;
+  font-weight: 500;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .result-header .result-badge.result-first {
+  background-color: #F59E0B;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .result-header .result-badge.result-second {
+  background-color: #94A3B8;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .result-header .result-badge.result-third {
+  background-color: #B45309;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .result-header .result-badge.result-honorable {
+  background-color: #8B5CF6;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .result-header .result-badge.result-none, .competition-section .competition-list .competition-card .card-body .result-info .result-header .result-badge.result-other {
+  background-color: #9CA3AF;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .certificate-info {
+  display: flex;
+  align-items: center;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .certificate-info .iconfont {
+  font-size: 0.875rem;
+  color: #F59E0B;
+  margin-right: 0.1875rem;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .certificate-info uni-text {
+  font-size: 0.75rem;
+  color: #6B7280;
+  flex: 1;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .certificate-info .view-certificate {
+  display: flex;
+  align-items: center;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .certificate-info .view-certificate uni-text {
+  font-size: 0.75rem;
+  color: #3B82F6;
+  margin-right: 0.125rem;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .certificate-info .view-certificate .iconfont {
+  font-size: 0.75rem;
+  color: #3B82F6;
+  margin-right: 0;
+}
+.competition-section .competition-list .competition-card .card-body .team-info {
+  margin-bottom: 0.625rem;
+  padding: 0.5rem;
+  background-color: #f8fafc;
+  border-radius: 0.375rem;
+}
+.competition-section .competition-list .competition-card .card-body .team-info .team-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.3125rem;
+}
+.competition-section .competition-list .competition-card .card-body .team-info .team-header .team-label {
+  font-size: 0.75rem;
+  color: #6B7280;
+  margin-right: 0.3125rem;
+}
+.competition-section .competition-list .competition-card .card-body .team-info .team-header .team-name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #333333;
+}
+.competition-section .competition-list .competition-card .card-body .team-info .team-members {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.competition-section .competition-list .competition-card .card-body .team-info .team-members .member-avatars {
+  display: flex;
+}
+.competition-section .competition-list .competition-card .card-body .team-info .team-members .member-avatars .member-avatar {
+  width: 1.5625rem;
+  height: 1.5625rem;
+  border-radius: 0.78125rem;
+  border: 0.0625rem solid white;
+  margin-right: -0.46875rem;
+}
+.competition-section .competition-list .competition-card .card-body .team-info .team-members .member-avatars .more-members {
+  width: 1.5625rem;
+  height: 1.5625rem;
+  border-radius: 0.78125rem;
+  background-color: #6B7280;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.competition-section .competition-list .competition-card .card-body .team-info .team-members .member-avatars .more-members uni-text {
+  font-size: 0.625rem;
+  color: white;
+}
+.competition-section .competition-list .competition-card .card-body .team-info .team-members .member-count {
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+.competition-section .competition-list .competition-card .card-body .action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+.competition-section .competition-list .competition-card .card-body .action-buttons .action-btn {
+  flex: 1;
+  height: 2.1875rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 1.09375rem;
+}
+.competition-section .competition-list .competition-card .card-body .action-buttons .action-btn .iconfont {
+  font-size: 0.875rem;
+  margin-right: 0.25rem;
+}
+.competition-section .competition-list .competition-card .card-body .action-buttons .action-btn uni-text {
+  font-size: 0.8125rem;
+}
+.competition-section .competition-list .competition-card .card-body .action-buttons .action-btn.primary {
+  background-color: #3B82F6;
+}
+.competition-section .competition-list .competition-card .card-body .action-buttons .action-btn.primary .iconfont, .competition-section .competition-list .competition-card .card-body .action-buttons .action-btn.primary uni-text {
+  color: white;
+}
+.competition-section .competition-list .competition-card .card-body .action-buttons .action-btn.secondary {
+  background-color: #f8fafc;
+  border: 0.03125rem solid #F3F4F6;
+}
+.competition-section .competition-list .competition-card .card-body .action-buttons .action-btn.secondary .iconfont, .competition-section .competition-list .competition-card .card-body .action-buttons .action-btn.secondary uni-text {
+  color: #6B7280;
+}
+.competition-section .competition-list .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.875rem 0;
+}
+.competition-section .competition-list .empty-state .empty-image {
+  width: 6.25rem;
+  height: 6.25rem;
+  margin-bottom: 0.625rem;
+  opacity: 0.6;
+}
+.competition-section .competition-list .empty-state .empty-text {
+  font-size: 0.875rem;
+  color: #9CA3AF;
+  margin-bottom: 0.9375rem;
+}
+.competition-section .competition-list .empty-state .action-btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 1.25rem;
+  background-color: #3B82F6;
+}
+.competition-section .competition-list .empty-state .action-btn uni-text {
+  font-size: 0.8125rem;
+  color: white;
+}

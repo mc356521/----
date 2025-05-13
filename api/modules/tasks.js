@@ -136,6 +136,32 @@ export function getRewardTypes() {
   });
 }
 
+/**
+ * 获取我创建的任务列表
+ * @param {Object} params - 查询参数，包括pageNum(页码)、pageSize(每页数量)、status(任务状态，可选)
+ * @returns {Promise} 返回请求结果
+ */
+export function getMyCreatedTasks(params) {
+  return request({
+    url: `${baseApiUrl}/tasks/my/created`,
+    method: 'GET',
+    params
+  });
+}
+
+/**
+ * 获取我参与的任务列表
+ * @param {Object} params - 查询参数，包括pageNum(页码)、pageSize(每页数量)、status(任务状态，可选)
+ * @returns {Promise} 返回请求结果
+ */
+export function getMyParticipatedTasks(params) {
+  return request({
+    url: `${baseApiUrl}/tasks/my/participated`,
+    method: 'GET',
+    params
+  });
+}
+
 export default {
   getTaskList,
   getTaskDetail,
@@ -146,5 +172,7 @@ export default {
   toggleFavoriteTask,
   applyTask,
   getTaskCategories,
-  getRewardTypes
+  getRewardTypes,
+  getMyCreatedTasks,
+  getMyParticipatedTasks
 };

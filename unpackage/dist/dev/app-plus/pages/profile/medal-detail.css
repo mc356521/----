@@ -480,3 +480,23 @@ to {
   right: 0.625rem;
   padding: 0.3125rem;
 }
+.apply-badge-btn {
+  position: fixed;
+  right: 0.9375rem;
+  bottom: 3.125rem;
+  height: 2.8125rem;
+  padding: 0 0.9375rem;
+  border-radius: 1.40625rem;
+  background: linear-gradient(135deg, #4f83fc, #3B82F6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0.125rem 0.5rem rgba(59, 130, 246, 0.4);
+  z-index: 100;
+}
+.apply-badge-btn uni-text {
+  font-size: 0.9375rem;
+  color: #ffffff;
+  font-weight: 500;
+  margin-left: 0.3125rem;
+}

@@ -224,6 +224,22 @@
 			{
 				"navigationBarTitleText" : "我的竞赛"
 			}
+		},
+		{
+			"path" : "pages/myTeam/myTeam",
+			"style" : 
+			{
+				"navigationBarTitleText" : "我的队伍"
+			}
+		},
+		{
+			"path" : "pages/mytasks/index",
+			"style" : 
+			{
+				"navigationBarTitleText" : "我的任务",
+				"navigationStyle": "custom",
+				"enablePullDownRefresh": true
+			}
 		}
 	],
 	"globalStyle": {
