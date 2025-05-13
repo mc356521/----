@@ -5,95 +5,109 @@
       <view class="back-btn" @click="goBack">
         <SvgIcon name="back" size="20"></SvgIcon>
       </view>
-      <text class="header-title">勋章申请</text>
+      <text class="header-title">实物奖励申请</text>
       <view class="right-placeholder"></view>
     </view>
     
     <!-- 表单内容 -->
     <scroll-view scroll-y class="form-scroll">
       <view class="form-container">
-        <!-- 申请类型选择 -->
+        <!-- 基本信息卡片 -->
         <view class="form-section">
-          <view class="section-title">申请类型</view>
-          <view class="type-selector">
-            <view 
-              class="type-option"
-              :class="{ active: formData.applicantType === 'individual' }"
-              @click="formData.applicantType = 'individual'"
-            >
-              <view class="type-radio">
-                <view class="radio-inner" v-if="formData.applicantType === 'individual'"></view>
+          <view class="section-title">基本信息</view>
+          <view class="form-item">
+            <text class="item-label">申请类型</text>
+            <view class="type-selector">
+              <view 
+                class="type-option"
+                :class="{ active: formData.rewardType === 'competition' }"
+                @click="formData.rewardType = 'competition'"
+              >
+                <view class="type-radio">
+                  <view class="radio-inner" v-if="formData.rewardType === 'competition'"></view>
+                </view>
+                <text>竞赛奖品</text>
               </view>
-              <text>个人申请</text>
-            </view>
-            
-            <view 
-              class="type-option"
-              :class="{ active: formData.applicantType === 'team' }"
-              @click="formData.applicantType = 'team'"
-            >
-              <view class="type-radio">
-                <view class="radio-inner" v-if="formData.applicantType === 'team'"></view>
+              
+              <view 
+                class="type-option"
+                :class="{ active: formData.rewardType === 'activity' }"
+                @click="formData.rewardType = 'activity'"
+              >
+                <view class="type-radio">
+                  <view class="radio-inner" v-if="formData.rewardType === 'activity'"></view>
+                </view>
+                <text>活动奖励</text>
               </view>
-              <text>团队申请</text>
+              
+              <view 
+                class="type-option"
+                :class="{ active: formData.rewardType === 'other' }"
+                @click="formData.rewardType = 'other'"
+              >
+                <view class="type-radio">
+                  <view class="radio-inner" v-if="formData.rewardType === 'other'"></view>
+                </view>
+                <text>其他奖励</text>
+              </view>
             </view>
+          </view>
+          
+          <!-- 申请人信息 -->
+          <view class="form-item">
+            <text class="item-label">申请人</text>
+            <input type="text" class="form-input" v-model="formData.applicantName" placeholder="请输入申请人姓名" />
+          </view>
+          
+          <view class="form-item">
+            <text class="item-label">手机号码</text>
+            <input type="number" class="form-input" v-model="formData.phoneNumber" placeholder="请输入联系电话" maxlength="11" />
+          </view>
+          
+          <view class="form-item">
+            <text class="item-label">收货地址</text>
+            <textarea 
+              class="form-textarea address-textarea" 
+              v-model="formData.address" 
+              placeholder="请输入详细收货地址"
+              :maxlength="100"
+            ></textarea>
           </view>
         </view>
         
-        <!-- 团队选择 - 仅团队申请时显示 -->
-        <view class="form-section" v-if="formData.applicantType === 'team'">
-          <view class="section-title">选择团队</view>
-          <view class="form-item">
-            <view class="dropdown-selector" @click="showTeamPicker">
-              <text class="selector-text">{{ selectedTeamName || '请选择团队' }}</text>
-              <SvgIcon name="arrow-down" size="16"></SvgIcon>
-            </view>
-          </view>
-        </view>
-        
-        <!-- 竞赛选择 -->
+        <!-- 奖品信息卡片 -->
         <view class="form-section">
-          <view class="section-title">竞赛信息</view>
-          <view class="form-item">
+          <view class="section-title">奖品信息</view>
+          
+          <!-- 竞赛选择 - 仅竞赛奖品时显示 -->
+          <view class="form-item" v-if="formData.rewardType === 'competition'">
+            <text class="item-label">相关竞赛</text>
             <view class="dropdown-selector" @click="showCompetitionPicker">
-              <text class="selector-text">{{ selectedCompetitionName || '请选择竞赛' }}</text>
+              <text class="selector-text">{{ selectedCompetitionName || '请选择相关竞赛' }}</text>
               <SvgIcon name="arrow-down" size="16"></SvgIcon>
             </view>
           </view>
-        </view>
-        
-        <!-- 奖项选择 -->
-        <view class="form-section">
-          <view class="section-title">获得奖项</view>
-          <view class="award-selector">
-            <view 
-              v-for="award in awardOptions" 
-              :key="award.value"
-              class="award-option"
-              :class="{ active: formData.awardLevel === award.value }"
-              @click="formData.awardLevel = award.value"
-            >
-              {{ award.label }}
+          
+          <!-- 活动选择 - 仅活动奖励时显示 -->
+          <view class="form-item" v-if="formData.rewardType === 'activity'">
+            <text class="item-label">相关活动</text>
+            <view class="dropdown-selector" @click="showActivityPicker">
+              <text class="selector-text">{{ selectedActivityName || '请选择相关活动' }}</text>
+              <SvgIcon name="arrow-down" size="16"></SvgIcon>
             </view>
           </view>
-        </view>
-        
-        <!-- 勋章选择 -->
-        <view class="form-section">
-          <view class="section-title">勋章选择</view>
-          <view class="badge-container">
-            <view 
-              v-for="badge in availableBadges"
-              :key="badge.id"
-              class="badge-item"
-              :class="{ selected: formData.requestedBadge === badge.id }"
-              @click="selectBadge(badge)"
-            >
-              <image class="badge-image" :src="badge.icon" mode="aspectFit"></image>
-              <text class="badge-name">{{ badge.name }}</text>
-              <view class="badge-check" v-if="formData.requestedBadge === badge.id">
-                <SvgIcon name="check" size="16" color="#ffffff"></SvgIcon>
-              </view>
+          
+          <view class="form-item">
+            <text class="item-label">奖品名称</text>
+            <input type="text" class="form-input" v-model="formData.rewardName" placeholder="请输入奖品名称" />
+          </view>
+          
+          <view class="form-item">
+            <text class="item-label">奖品数量</text>
+            <view class="quantity-selector">
+              <view class="quantity-btn" @click="decreaseQuantity">-</view>
+              <input type="number" class="quantity-input" v-model="formData.quantity" />
+              <view class="quantity-btn" @click="increaseQuantity">+</view>
             </view>
           </view>
         </view>
@@ -104,11 +118,11 @@
           <view class="form-item">
             <textarea
               class="form-textarea"
-              v-model="formData.reviewMessage"
-              placeholder="请详细描述申请理由，如：竞赛名称、获奖级别、团队贡献等"
+              v-model="formData.description"
+              placeholder="请详细描述申请理由，如：获奖情况、活动参与情况等"
               :maxlength="200"
             ></textarea>
-            <text class="textarea-counter">{{ formData.reviewMessage.length }}/200</text>
+            <text class="textarea-counter">{{ formData.description.length }}/200</text>
           </view>
         </view>
         
@@ -132,7 +146,7 @@
               <text>上传图片</text>
             </view>
           </view>
-          <text class="upload-tips">请上传获奖证书、比赛公示截图等证明材料，最多3张图片</text>
+          <text class="upload-tips">请上传获奖证书、活动参与证明等相关材料，最多3张图片</text>
         </view>
       </view>
     </scroll-view>
@@ -144,33 +158,8 @@
       </button>
     </view>
     
-    <!-- 团队选择弹窗 -->
-    <UniPopup ref="teamPopup" type="bottom">
-      <view class="popup-content">
-        <view class="popup-header">
-          <text class="popup-title">选择团队</text>
-          <view class="popup-close" @click="closeTeamPicker">
-            <SvgIcon name="close" size="18"></SvgIcon>
-          </view>
-        </view>
-        <view class="popup-body">
-          <view 
-            class="popup-item"
-            v-for="team in myTeams"
-            :key="team.id"
-            @click="selectTeam(team)"
-          >
-            <text class="popup-item-text">{{ team.name }}</text>
-            <view class="popup-item-check" v-if="formData.teamId === team.id">
-              <SvgIcon name="check" size="16" color="#3B82F6"></SvgIcon>
-            </view>
-          </view>
-        </view>
-      </view>
-    </UniPopup>
-    
     <!-- 竞赛选择弹窗 -->
-    <UniPopup ref="competitionPopup" type="bottom">
+    <uni-popup ref="competitionPopup" type="bottom">
       <view class="popup-content">
         <view class="popup-header">
           <text class="popup-title">选择竞赛</text>
@@ -192,27 +181,51 @@
           </view>
         </view>
       </view>
-    </UniPopup>
+    </uni-popup>
+    
+    <!-- 活动选择弹窗 -->
+    <uni-popup ref="activityPopup" type="bottom">
+      <view class="popup-content">
+        <view class="popup-header">
+          <text class="popup-title">选择活动</text>
+          <view class="popup-close" @click="closeActivityPicker">
+            <SvgIcon name="close" size="18"></SvgIcon>
+          </view>
+        </view>
+        <view class="popup-body">
+          <view 
+            class="popup-item"
+            v-for="activity in activities"
+            :key="activity.id"
+            @click="selectActivity(activity)"
+          >
+            <text class="popup-item-text">{{ activity.name }}</text>
+            <view class="popup-item-check" v-if="formData.activityId === activity.id">
+              <SvgIcon name="check" size="16" color="#3B82F6"></SvgIcon>
+            </view>
+          </view>
+        </view>
+      </view>
+    </uni-popup>
   </view>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import SvgIcon from '@/components/SvgIcon.vue';
-import UniPopup from '@/uni_modules/uni-popup/components/uni-popup/uni-popup.vue';
-
-// 定义组件名称
-const name = 'apply-badge';
+import uniPopup from '@/uni_modules/uni-popup/components/uni-popup/uni-popup.vue';
 
 // 表单数据
 const formData = reactive({
-  applicantType: 'individual', // 申请主体类型: "team" 或 "individual"
-  teamId: null, // 当applicantType=team时必填
-  competitionId: null, // 竞赛徽章申请时必填
-  awardLevel: null, // 竞赛徽章申请时必填: "金奖"/"银奖"/"铜奖"/"优秀奖" 
-  applicantId: null, // 当applicantType=individual时必填，个人申请可不填，自动使用当前用户ID
-  requestedBadge: null, // 申请的徽章ID(必填)
-  reviewMessage: "" // 申请说明
+  rewardType: 'competition', // 申请类型: "competition"竞赛, "activity"活动, "other"其他
+  applicantName: '',  // 申请人姓名
+  phoneNumber: '',    // 联系电话
+  address: '',        // 收货地址
+  competitionId: null, // 竞赛ID
+  activityId: null,    // 活动ID
+  rewardName: '',      // 奖品名称
+  quantity: 1,         // 数量
+  description: ''      // 申请说明
 });
 
 // 上传的文件
@@ -221,16 +234,7 @@ const uploadFiles = ref([]);
 // 提交状态
 const submitting = ref(false);
 
-// 团队选择
-const myTeams = ref([
-  { id: 1, name: "创新先锋队" },
-  { id: 2, name: "未来科技团队" },
-  { id: 3, name: "算法精英组" }
-]);
-const selectedTeamName = ref('');
-const teamPopup = ref(null);
-
-// 竞赛选择
+// 竞赛列表
 const competitions = ref([
   { id: 1, name: "全国大学生数学建模竞赛" },
   { id: 2, name: "挑战杯全国大学生创业大赛" },
@@ -240,37 +244,27 @@ const competitions = ref([
 const selectedCompetitionName = ref('');
 const competitionPopup = ref(null);
 
-// 奖项选项
-const awardOptions = [
-  { label: '金奖', value: '金奖' },
-  { label: '银奖', value: '银奖' },
-  { label: '铜奖', value: '铜奖' },
-  { label: '优秀奖', value: '优秀奖' }
-];
-
-// 可选的勋章列表
-const availableBadges = ref([
-  { id: 1, name: "全国赛金奖", icon: "/static/image/Lianxi/mc/1-1.png" },
-  { id: 2, name: "创新先锋", icon: "/static/image/Lianxi/mc/1-2.png" },
-  { id: 3, name: "技术能手", icon: "/static/image/Lianxi/mc/1-3.png" },
-  { id: 4, name: "优秀队员", icon: "/static/image/Lianxi/mc/1-4.png" }
+// 活动列表
+const activities = ref([
+  { id: 1, name: "校园科技文化节" },
+  { id: 2, name: "创新创业大赛" },
+  { id: 3, name: "编程马拉松" },
+  { id: 4, name: "学生会年度颁奖典礼" }
 ]);
+const selectedActivityName = ref('');
+const activityPopup = ref(null);
 
-// 显示团队选择器
-function showTeamPicker() {
-  teamPopup.value.open('bottom');
+// 数量增减函数
+function increaseQuantity() {
+  if (formData.quantity < 99) {
+    formData.quantity++;
+  }
 }
 
-// 关闭团队选择器
-function closeTeamPicker() {
-  teamPopup.value.close();
-}
-
-// 选择团队
-function selectTeam(team) {
-  formData.teamId = team.id;
-  selectedTeamName.value = team.name;
-  closeTeamPicker();
+function decreaseQuantity() {
+  if (formData.quantity > 1) {
+    formData.quantity--;
+  }
 }
 
 // 显示竞赛选择器
@@ -290,9 +284,21 @@ function selectCompetition(competition) {
   closeCompetitionPicker();
 }
 
-// 选择勋章
-function selectBadge(badge) {
-  formData.requestedBadge = badge.id;
+// 显示活动选择器
+function showActivityPicker() {
+  activityPopup.value.open('bottom');
+}
+
+// 关闭活动选择器
+function closeActivityPicker() {
+  activityPopup.value.close();
+}
+
+// 选择活动
+function selectActivity(activity) {
+  formData.activityId = activity.id;
+  selectedActivityName.value = activity.name;
+  closeActivityPicker();
 }
 
 // 选择文件
@@ -319,35 +325,49 @@ function removeFile(index) {
 // 提交申请
 async function submitApplication() {
   // 表单验证
-  if (formData.applicantType === 'team' && !formData.teamId) {
+  if (!formData.applicantName.trim()) {
     return uni.showToast({
-      title: '请选择团队',
+      title: '请输入申请人姓名',
       icon: 'none'
     });
   }
   
-  if (!formData.competitionId) {
+  if (!formData.phoneNumber || !/^1\d{10}$/.test(formData.phoneNumber)) {
     return uni.showToast({
-      title: '请选择竞赛',
+      title: '请输入有效的手机号码',
       icon: 'none'
     });
   }
   
-  if (!formData.awardLevel) {
+  if (!formData.address.trim()) {
     return uni.showToast({
-      title: '请选择获得奖项',
+      title: '请输入收货地址',
       icon: 'none'
     });
   }
   
-  if (!formData.requestedBadge) {
+  if (formData.rewardType === 'competition' && !formData.competitionId) {
     return uni.showToast({
-      title: '请选择申请的勋章',
+      title: '请选择相关竞赛',
       icon: 'none'
     });
   }
   
-  if (!formData.reviewMessage.trim()) {
+  if (formData.rewardType === 'activity' && !formData.activityId) {
+    return uni.showToast({
+      title: '请选择相关活动',
+      icon: 'none'
+    });
+  }
+  
+  if (!formData.rewardName.trim()) {
+    return uni.showToast({
+      title: '请输入奖品名称',
+      icon: 'none'
+    });
+  }
+  
+  if (!formData.description.trim()) {
     return uni.showToast({
       title: '请填写申请说明',
       icon: 'none'
@@ -395,8 +415,8 @@ function goBack() {
 
 // 页面加载时获取数据
 onMounted(() => {
-  // 在实际项目中，这里应该获取用户团队列表、竞赛列表和可申请的勋章
-  console.log('勋章申请页面加载');
+  // 在实际项目中，这里应该获取用户信息、竞赛列表和活动列表
+  console.log('实物奖励申请页面加载');
 });
 </script>
 
@@ -409,9 +429,6 @@ $text-color: #333333;
 $text-secondary: #6B7280;
 $text-muted: #9CA3AF;
 $border-color: #F3F4F6;
-$gold-color: #FFD700;
-$silver-color: #C0C0C0;
-$bronze-color: #CD7F32;
 
 page {
   background-color: $background-color;
@@ -475,10 +492,17 @@ page {
   }
   
   .form-item {
-    margin-bottom: 20rpx;
+    margin-bottom: 24rpx;
     
     &:last-child {
       margin-bottom: 0;
+    }
+    
+    .item-label {
+      display: block;
+      font-size: 28rpx;
+      color: $text-secondary;
+      margin-bottom: 10rpx;
     }
   }
 }
@@ -486,12 +510,12 @@ page {
 // 申请类型选择
 .type-selector {
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
   
   .type-option {
     display: flex;
     align-items: center;
-    padding: 20rpx 40rpx;
+    padding: 16rpx 24rpx;
     border-radius: 8rpx;
     background-color: rgba($border-color, 0.5);
     transition: all 0.2s ease;
@@ -501,116 +525,73 @@ page {
     }
     
     .type-radio {
-      width: 36rpx;
-      height: 36rpx;
+      width: 32rpx;
+      height: 32rpx;
       border-radius: 50%;
       border: 2rpx solid $text-secondary;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-right: 16rpx;
+      margin-right: 12rpx;
       
       .radio-inner {
-        width: 20rpx;
-        height: 20rpx;
+        width: 18rpx;
+        height: 18rpx;
         border-radius: 50%;
         background-color: $primary-color;
       }
     }
     
     text {
-      font-size: 30rpx;
+      font-size: 28rpx;
       color: $text-color;
     }
   }
 }
 
-// 下拉选择器
-.dropdown-selector {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24rpx;
+// 输入框样式
+.form-input {
+  width: 100%;
+  height: 80rpx;
+  padding: 0 24rpx;
   border-radius: 8rpx;
   background-color: rgba($border-color, 0.5);
-  
-  .selector-text {
-    font-size: 30rpx;
-    color: $text-color;
-    
-    &:empty::before {
-      content: '请选择';
-      color: $text-muted;
-    }
-  }
+  font-size: 28rpx;
+  color: $text-color;
 }
 
-// 奖项选择
-.award-selector {
+// 数量选择器
+.quantity-selector {
   display: flex;
-  flex-wrap: wrap;
-  gap: 20rpx;
+  align-items: center;
+  width: 240rpx;
   
-  .award-option {
-    padding: 16rpx 30rpx;
+  .quantity-btn {
+    width: 64rpx;
+    height: 64rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40rpx;
+    font-weight: bold;
+    background-color: rgba($border-color, 0.7);
     border-radius: 8rpx;
+    color: $text-secondary;
+    
+    &:active {
+      background-color: rgba($primary-color, 0.1);
+    }
+  }
+  
+  .quantity-input {
+    flex: 1;
+    height: 64rpx;
+    text-align: center;
+    margin: 0 16rpx;
     background-color: rgba($border-color, 0.5);
+    border-radius: 8rpx;
     font-size: 28rpx;
     color: $text-color;
-    transition: all 0.2s ease;
-    
-    &.active {
-      background-color: rgba($primary-color, 0.1);
-      color: $primary-color;
-      font-weight: 500;
-    }
-  }
-}
-
-// 勋章选择
-.badge-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20rpx;
-  
-  .badge-item {
-    width: calc(33.33% - 14rpx);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20rpx;
-    border-radius: 8rpx;
-    background-color: rgba($border-color, 0.5);
-    position: relative;
-    
-    &.selected {
-      background-color: rgba($primary-color, 0.1);
-    }
-    
-    .badge-image {
-      width: 120rpx;
-      height: 120rpx;
-      margin-bottom: 12rpx;
-    }
-    
-    .badge-name {
-      font-size: 26rpx;
-      color: $text-color;
-      text-align: center;
-    }
-    
-    .badge-check {
-      position: absolute;
-      top: 10rpx;
-      right: 10rpx;
-      width: 40rpx;
-      height: 40rpx;
-      border-radius: 50%;
-      background-color: $primary-color;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
   }
 }
 
@@ -624,6 +605,10 @@ page {
   font-size: 28rpx;
   color: $text-color;
   line-height: 1.5;
+  
+  &.address-textarea {
+    height: 140rpx;
+  }
 }
 
 .textarea-counter {
@@ -631,6 +616,26 @@ page {
   font-size: 24rpx;
   color: $text-muted;
   margin-top: 8rpx;
+}
+
+// 下拉选择器
+.dropdown-selector {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx;
+  border-radius: 8rpx;
+  background-color: rgba($border-color, 0.5);
+  
+  .selector-text {
+    font-size: 28rpx;
+    color: $text-color;
+    
+    &:empty::before {
+      content: '请选择';
+      color: $text-muted;
+    }
+  }
 }
 
 // 上传区域

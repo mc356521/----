@@ -207,6 +207,23 @@
 					"titleNView": false
 				}
 			}
+		},
+		{
+			"path": "pages/profile/material-reward",
+			"style": {
+				"navigationStyle": "custom",
+				"app-plus": {
+					"bounce": "none",
+					"titleNView": false
+				}
+			}
+		},
+		{
+			"path" : "pages/mycompetitions/mycompetitions",
+			"style" : 
+			{
+				"navigationBarTitleText" : "我的竞赛"
+			}
 		}
 	],
 	"globalStyle": {

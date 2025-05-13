@@ -49,19 +49,15 @@
     <!-- 功能菜单 -->
     <view class="menu-section">
       <view class="menu-group">
-        <view class="menu-item" @click="navigateTo('myCompetitions')">
-          <text class="iconfont icon-trophy menu-icon"></text>
-          <text class="menu-text">我的竞赛</text>
-          <text class="iconfont icon-arrow-left menu-arrow"></text>
-        </view>
-        <view class="menu-item" @click="navigateTo('myTeams')">
+  
+        <view class="menu-item" @click="navigateTo('material-reward')">
           <text class="iconfont icon-users menu-icon"></text>
           <text class="menu-text">实物奖励</text>
           <text class="iconfont icon-arrow-left menu-arrow"></text>
         </view>
         <view class="menu-item" @click="navigateTo('myAwards')">
           <text class="iconfont icon-star menu-icon"></text>
-          <text class="menu-text">勋章申请</text>
+          <text class="menu-text" @click="navigateTo('apply-badge')">勋章申请</text>
           <text class="iconfont icon-arrow-left menu-arrow"></text>
         </view>
         <view class="menu-item" @click="navigateTo('applications')">
@@ -166,14 +162,19 @@ function navigateTo(page) {
       url: '/pages/application/application'
     });
     return;
+  }else if (page === 'apply-badge') {
+    uni.navigateTo({
+      url: '/pages/profile/apply-badge'
+    });
+    return;
+  }else if (page === 'material-reward') {
+    uni.navigateTo({
+      url: '/pages/profile/material-reward'
+    });
+    return;
   }
   
-  uni.showToast({
-    title: `跳转到${page}`,
-    icon: 'none'
-  });
 }
-
 // 退出登录
 function logout() {
   uni.showModal({
