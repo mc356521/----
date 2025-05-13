@@ -184,14 +184,21 @@ const loadingText = ref({
   contentnomore: '已经到底啦'
 });
 const isCategoryExpanded = ref(false);
+const refreshing = ref(false);
+
+// 安全区域高度(rpx)
+const safeAreaTop = ref(0);
 
 // 主要显示的分类数量
 const mainCategoryCount = 4;
 
 // 计算顶部高度
 const headerHeight = computed(() => {
-  // 基础头部高度 = 导航栏(100rpx) + 主分类栏(110rpx) + 状态筛选栏(90rpx)
-  const baseHeight = 300;
+  // 基础头部高度 = 导航栏(140rpx) + 主分类栏(110rpx) + 状态筛选栏(90rpx)
+  const baseHeight = 340;
+  
+  // 加上安全区域高度
+  let height = baseHeight + safeAreaTop.value;
   
   // 如果展开了分类，加上展开分类的高度
   if (isCategoryExpanded.value) {
@@ -199,9 +206,9 @@ const headerHeight = computed(() => {
     // 计算行数（每行最多4个分类）
     const rows = Math.ceil(moreCount / 4);
     // 每行高度约80rpx，再加上上下padding共30rpx
-    return baseHeight + (rows * 80) + 30 + 'rpx';
+    height += (rows * 80) + 30;
   }
-  return baseHeight + 'rpx';
+  return height + 'rpx';
 });
 
 // 初始化数据
@@ -213,11 +220,28 @@ onMounted(() => {
     contentnomore: '已经到底啦'
   };
   
+  // 获取安全区域高度
+  getSystemInfo();
+  
   // 获取任务分类
   getTaskCategories();
   // 获取任务列表
   getTaskList();
 });
+
+// 获取系统信息和安全区域高度
+function getSystemInfo() {
+  uni.getSystemInfo({
+    success: (res) => {
+      if (res.safeArea && res.safeArea.top) {
+        // 将px转换为rpx (750rpx = 设计稿宽度)
+        const screenWidth = res.screenWidth;
+        safeAreaTop.value = Math.round((res.safeArea.top * 750) / screenWidth);
+        console.log('安全区高度(rpx):', safeAreaTop.value);
+      }
+    }
+  });
+}
 
 // 获取任务分类
 async function getTaskCategories() {
@@ -521,6 +545,8 @@ $border-color: #eeeeee;
   z-index: 999;
   background-color: #fff;
   box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+  /* 适配安全区域 */
+  padding-top: env(safe-area-inset-top, 0);
 }
 
 /* 顶部导航栏 */
@@ -528,7 +554,7 @@ $border-color: #eeeeee;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20rpx 30rpx;
+  padding: 100rpx 30rpx 20rpx 30rpx;
   
   .back-btn {
     width: 60rpx;
@@ -683,7 +709,7 @@ $border-color: #eeeeee;
 }
 
 .tasks-container {
-  padding: 20rpx;
+  padding:50rpx 20rpx;
 }
 
 /* 任务卡片 */
@@ -885,7 +911,7 @@ $border-color: #eeeeee;
 .float-btn {
   position: fixed;
   right: 30rpx;
-  bottom: 100rpx;
+  bottom: calc(100rpx + env(safe-area-inset-bottom, 0));
   width: 100rpx;
   height: 100rpx;
   border-radius: 50%;
@@ -895,6 +921,7 @@ $border-color: #eeeeee;
   justify-content: center;
   align-items: center;
   box-shadow: 0 4rpx 16rpx rgba($primary-color, 0.3);
+  z-index: 900;
   
   .iconfont {
     font-size: 50rpx;

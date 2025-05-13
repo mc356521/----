@@ -2,10 +2,12 @@
 	<view class="application-container">
 	  <!-- 固定区域 -->
 	  <view class="fixed-area">
+	  <!-- 安全区域占位 -->
+	  <view class="safe-area-top"></view>
 	  <!-- 顶部导航栏 -->
 	  <view class="nav-bar">
 		<view class="back-btn" @click="goBack">
-		  <text class="iconfont icon-arrow-left"></text>
+		  <SvgIcon name="back" size="20"></SvgIcon>
 		</view>
 		<text class="page-title">申请管理</text>
 		<view class="placeholder-right"></view>
@@ -145,10 +147,10 @@
           </view>
 		  
 		  <view class="card-footer" v-else>
-            <view class="btn-group">
-              <button class="btn btn-detail" @click.stop="viewDetail(item)">查看详情</button>
-            </view>
 			<text class="process-time" v-if="item.reviewedAt">处理时间：{{ formatDateTime(item.reviewedAt) }}</text>
+		  <view class="btn-group">
+		    <button class="btn btn-detail" @click.stop="viewDetail(item)">查看详情</button>
+		  </view>
 		  </view>
 		</view>
 		
@@ -180,7 +182,8 @@
   import taskApplicationApi from '@/api/modules/taskApplications';
   import teamApi from '@/api/modules/team';
   import config from '@/config/env/dev';
-  
+  import SvgIcon from '@/components/SvgIcon.vue';
+
   // 基础API路径
   const baseApiUrl = config.baseUrl;
   
@@ -198,6 +201,9 @@
   
   // 角色类型：申请者/创建者
   const currentRole = ref('applicant');
+  
+  // 安全区域高度
+  const safeAreaTop = ref(0);
   
   // 标签页
   const tabs = ref([
@@ -293,6 +299,9 @@
   
   // 初始化数据
   onMounted(() => {
+    // 获取系统信息，计算安全区域
+    getSystemInfo();
+    
     // 获取页面参数
     let query = {};
     if (uni.getSystemInfoSync().platform === 'h5') {
@@ -1019,6 +1028,33 @@
   function goBack() {
 	uni.navigateBack();
   }
+  
+  // 获取系统信息，计算安全区域
+  function getSystemInfo() {
+    uni.getSystemInfo({
+      success: (res) => {
+        console.log('系统信息:', res);
+        if (res.safeArea) {
+          console.log('安全区域信息:', res.safeArea);
+          if (res.safeArea.top) {
+            // 将px转换为rpx (750rpx = 设计稿宽度)
+            const screenWidth = res.screenWidth;
+            safeAreaTop.value = Math.round((res.safeArea.top * 750) / screenWidth);
+            console.log('屏幕宽度:', screenWidth, 'px');
+            console.log('安全区顶部:', res.safeArea.top, 'px');
+            console.log('安全区高度(rpx):', safeAreaTop.value);
+            
+            // 根据安全区域调整导航栏
+            if (safeAreaTop.value > 40) {
+              // 如果安全区域较大，增加额外的padding
+              document.documentElement.style.setProperty('--nav-extra-padding', '100rpx');
+              console.log('应用了额外的导航栏内边距');
+            }
+          }
+        }
+      }
+    });
+  }
   </script>
   
   <style lang="scss">
@@ -1044,6 +1080,11 @@
 	font-family: 'Noto Sans SC', "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif;
   }
   
+  /* 定义CSS自定义变量 */
+  :root {
+    --nav-extra-padding: 60rpx;
+  }
+  
   .application-container {
 	display: flex;
 	flex-direction: column;
@@ -1060,6 +1101,14 @@
     z-index: 100;
     background-color: $card-color;
     box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+    /* 添加安全区域适配 */
+    padding-top: 0; /* 移除padding-top，我们使用专门的视图来占位 */
+  }
+  
+  // 安全区域占位
+  .safe-area-top {
+    height: env(safe-area-inset-top, 0);
+    background-color: $card-color;
   }
   
   // 导航栏
@@ -1069,6 +1118,8 @@
 	align-items: center;
 	justify-content: space-between;
 	padding: 0 30rpx;
+	/* 使用CSS变量控制顶部内边距 */
+	padding-top: var(--nav-extra-padding);
 	background-color: $card-color;
 	
 	.back-btn {
@@ -1184,7 +1235,8 @@
 	flex: 1;
 	background-color: $background-color;
 	padding: 20rpx;
-    margin-top: 340rpx; /* 固定区域的高度，根据实际情况调整 */
+    /* 增加固定区域的基础高度，不需要再加上安全区域高度 */
+    margin-top: 400rpx;
 	
 	.application-card {
 	  background-color: $card-color;
@@ -1337,7 +1389,7 @@
 		.process-time {
 		  font-size: 22rpx;
 		  color: $text-muted;
-          margin-left: 40rpx;
+         
 		  margin-right:40rpx;
 		}
 		}
@@ -1389,7 +1441,7 @@
   
   // 底部安全区域
   .safe-area-bottom {
-	height: 120rpx;
+	height: calc(120rpx + env(safe-area-inset-bottom, 0));
   }
   
   // 加载更多

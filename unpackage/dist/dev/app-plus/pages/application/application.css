@@ -155,12 +155,41 @@
     transform: rotate(360deg);
 }
 }
+
+.svg-icon-container[data-v-4c110535] {
+  display: inline-block;
+  vertical-align: middle;
+  position: relative;
+  overflow: hidden;
+}
+.svg-content[data-v-4c110535] {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.svg-content svg[data-v-4c110535] {
+  width: 100%;
+  height: 100%;
+}
+.svg-image[data-v-4c110535] {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 /* 水平间距 */
 /* 水平间距 */
 /* 导入主题变量 */
 body {
   background-color: #F8F9FA;
   font-family: "Noto Sans SC", "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* 定义CSS自定义变量 */
+:root {
+  --nav-extra-padding: 1.875rem;
 }
 .application-container {
   display: flex;
@@ -176,6 +205,13 @@ body {
   z-index: 100;
   background-color: #FFFFFF;
   box-shadow: 0 0.0625rem 0.3125rem rgba(0, 0, 0, 0.05);
+  /* 添加安全区域适配 */
+  padding-top: 0;
+  /* 移除padding-top，我们使用专门的视图来占位 */
+}
+.safe-area-top {
+  height: env(safe-area-inset-top, 0);
+  background-color: #FFFFFF;
 }
 .nav-bar {
   height: 2.8125rem;
@@ -183,6 +219,8 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0 0.9375rem;
+  /* 使用CSS变量控制顶部内边距 */
+  padding-top: var(--nav-extra-padding);
   background-color: #FFFFFF;
 }
 .nav-bar .back-btn {
@@ -280,8 +318,8 @@ body {
   flex: 1;
   background-color: #F8F9FA;
   padding: 0.625rem;
-  margin-top: 10.625rem;
-  /* 固定区域的高度，根据实际情况调整 */
+  /* 增加固定区域的基础高度，不需要再加上安全区域高度 */
+  margin-top: 12.5rem;
 }
 .application-list .application-card {
   background-color: #FFFFFF;
@@ -410,7 +448,6 @@ body {
 .application-list .application-card .card-footer .process-time {
   font-size: 0.6875rem;
   color: #999999;
-  margin-left: 1.25rem;
   margin-right: 1.25rem;
 }
 .empty-state {
@@ -451,7 +488,7 @@ body {
   font-size: 0.875rem;
 }
 .safe-area-bottom {
-  height: 3.75rem;
+  height: calc(3.75rem + env(safe-area-inset-bottom, 0));
 }
 .loading-more, .no-more {
   padding: 0.9375rem 0;

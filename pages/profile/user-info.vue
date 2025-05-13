@@ -19,59 +19,105 @@
     <scroll-view scroll-y class="content-scroll" v-else>
       <!-- 头像区域 -->
       <view class="avatar-section">
-        <image 
-          class="avatar" 
-          :src="userInfo.avatarUrl || 'https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=200'" 
-          mode="aspectFill"
-        ></image>
-        <view class="change-avatar-btn" @click="changeAvatar">
-          <text>更换头像</text>
-        </view>
-      </view>
-      
-      <!-- 基本信息卡片 -->
-      <view class="info-card">
-        <view class="card-header">
-          <text class="card-title">基本信息</text>
-          <view class="edit-btn" @click="editBasicInfo">
-            <SvgIcon name="bianji" size="20"></SvgIcon>
-            <text class="edit-text">编辑</text>
+        <!-- 用户信息卡片 -->
+        <view class="user-info-card">
+          <view class="user-info-header">
+            <view class="user-avatar-container">
+              <image 
+                class="user-avatar" 
+                :src="userInfo.avatarUrl || 'https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=200'" 
+                mode="aspectFill"
+              ></image>
+              <!-- 头像编辑按钮 -->
+              <view class="avatar-edit-btn" @click="changeAvatar">
+                <SvgIcon name="bianji" size="16" color="#ffffff"></SvgIcon>
+              </view>
+            </view>
+            <view class="user-basic-info">
+              <text class="user-name">{{ userInfo.realName || '未设置姓名' }}</text>
+              <view class="role-tag">
+                <text>{{ userInfo.role === 'student' ? '学生' : userInfo.role === 'teacher' ? '教师' : '管理员' }}</text>
+              </view>
+            </view>
+            <view class="edit-profile-btn" @click="editBasicInfo">
+              <SvgIcon name="bianji" size="16"></SvgIcon>
+              <text>编辑资料</text>
+            </view>
+          </view>
+          
+          <view class="user-info-details">
+            <view class="detail-item">
+              <text class="detail-label">学校</text>
+              <text class="detail-value">{{ userInfo.schoolName || '未设置' }}</text>
+            </view>
+            <view class="detail-item">
+              <text class="detail-label">专业</text>
+              <text class="detail-value">{{ userInfo.major || '未设置' }}</text>
+            </view>
+            <view class="detail-item">
+              <text class="detail-label">信用分</text>
+              <text class="detail-value credit-score">{{ userInfo.creditScore || 0 }}</text>
+            </view>
           </view>
         </view>
         
-        <view class="info-item">
-          <text class="item-label">姓名</text>
-          <text class="item-value">{{ userInfo.realName }}</text>
-        </view>
-        
-        <view class="info-item">
-          <text class="item-label">手机号</text>
-          <text class="item-value">{{ userInfo.phoneNumber }}</text>
-        </view>
-        
-        <view class="info-item">
-          <text class="item-label">学号</text>
-          <text class="item-value">{{ userInfo.studentTeacherId }}</text>
-        </view>
-        
-        <view class="info-item">
-          <text class="item-label">学校</text>
-          <text class="item-value">{{ userInfo.schoolName }}</text>
-        </view>
-        
-        <view class="info-item">
-          <text class="item-label">专业</text>
-          <text class="item-value">{{ userInfo.major }}</text>
-        </view>
-        
-        <view class="info-item">
-          <text class="item-label">角色</text>
-          <text class="item-value">{{ userInfo.role === 'student' ? '学生' : userInfo.role === 'teacher' ? '教师' : '管理员' }}</text>
-        </view>
-        
-        <view class="info-item">
-          <text class="item-label">信用分</text>
-          <text class="item-value credit-score">{{ userInfo.creditScore }}</text>
+        <!-- 勋章展示区域 -->
+        <view class="medals-container">
+          <view class="medals-header">
+            <view class="medals-title-wrapper">
+              <text class="medals-title" style="margin-left: 25rpx;">荣誉勋章</text>
+              <text class="medals-count">{{ medals.length || 0 }}个</text>
+            </view>
+            <view class="view-all-btn" @click="goToMedalDetail">
+              <text>查看详情</text>
+              <SvgIcon name="arrow-right" size="14"></SvgIcon>
+            </view>
+          </view>
+          
+          <!-- 勋章展示框 - 竖向滚动 -->
+          <view class="medals-box">
+            <scroll-view 
+              class="medals-scroll" 
+              scroll-y="true" 
+              :show-scrollbar="true" 
+              @scrolltolower="onScrollToBottom"
+              :scroll-anchoring="true"
+              :enhanced="true"
+              :bounces="false"
+            >
+              <!-- 勋章网格 -->
+              <view class="medals-grid">
+                <view 
+                  class="medal-item" 
+                  v-for="(medal, index) in medals" 
+                  :key="index"
+                  @click="showMedalImage(medal)" >
+                  <image class="medal-image" :src="medal.imageUrl" mode="aspectFit" ></image>
+                  <text class="medal-name">{{ medal.name }}</text>
+                </view>
+                
+                <!-- 暂无勋章时显示 -->
+                <view class="empty-medals" v-if="!medals || medals.length === 0">
+                  <image class="empty-medal-icon" src="/static/image/empty-medal.png" mode="aspectFit"></image>
+                  <text>暂无勋章</text>
+                </view>
+                
+                <!-- 滚动到底部的提示 -->
+                <view v-if="medals && medals.length > 8 && showBottomTip" class="bottom-tip">
+                  <text>已显示全部勋章</text>
+                </view>
+
+                <!-- 添加底部空白区域，防止内容被提示遮挡 -->
+                <view class="bottom-space" v-if="medals && medals.length > 8"></view>
+              </view>
+            </scroll-view>
+            
+            <!-- 滚动提示 -->
+            <view class="scroll-hint" v-if="medals && medals.length > 8 && !reachedBottom">
+              <SvgIcon name="arrow-down" size="16"></SvgIcon>
+              <text>向下滑动查看更多</text>
+            </view>
+          </view>
         </view>
       </view>
       
@@ -140,7 +186,34 @@
     
     <!-- 悬浮刷新按钮 -->
     <view class="refresh-btn" @click="refreshUserInfo">
-      <SvgIcon name="shuaxin" size="40"></SvgIcon>
+      <SvgIcon name="shuaxin" size="48" color="#ffffff"></SvgIcon>
+    </view>
+
+    <!-- 勋章大图预览弹窗 -->
+    <view class="medal-preview-overlay" v-if="showPreview" @click="closePreview">
+      <view class="medal-preview-content" @click.stop>
+        <view class="medal-preview-header">
+          <text class="medal-preview-title">{{ currentMedal.name }}</text>
+          <view class="medal-preview-close" @click="closePreview">
+            <SvgIcon name="close" size="20"></SvgIcon>
+          </view>
+        </view>
+        <image 
+          class="medal-preview-image" 
+          :src="currentMedal.imageUrl" 
+          mode="aspectFit"
+          :style="{ transform: `scale(${previewScale})` }"
+          @touchstart="handleTouchStart"
+          @touchmove="handleTouchMove"
+          @touchend="handleTouchEnd"
+        ></image>
+        <view class="medal-preview-info">
+          <text class="medal-preview-desc">{{ currentMedal.description }}</text>
+          <view class="medal-preview-hint">
+            <text>双指缩放可调整图片大小</text>
+          </view>
+        </view>
+      </view>
     </view>
   </view>
 </template>
@@ -149,6 +222,7 @@
 import { ref, onMounted } from 'vue';
 import userApi from '@/api/modules/user';
 import SvgIcon from '@/components/SvgIcon.vue';
+
 // 用户信息状态
 const userInfo = ref({
   realName: '',
@@ -170,6 +244,97 @@ const userInfo = ref({
 const loading = ref(true);
 // 刷新状态
 const isRefreshing = ref(false);
+
+// 模拟勋章数据
+const medals = ref([
+  {
+    id: 1,
+    name: '国赛一等奖',
+    imageUrl: '/static/image/Lianxi/mc/1-1.png',
+    description: '表彰在团队合作中表现突出的成员'
+  },
+  {
+    id: 2,
+    name: '创新先锋',
+    imageUrl: '/static/image/Lianxi/mc/1-2.png',
+    description: '表彰在项目中提出创新想法的成员'
+  },
+  {
+    id: 3,
+    name: '技术能手',
+    imageUrl: '/static/image/Lianxi/mc/1-3.png',
+    description: '表彰技术能力出众的成员'
+  },
+  {
+    id: 4,
+    name: '勤奋之星',
+    imageUrl: '/static/image/Lianxi/mc/1-4.png',
+    description: '表彰工作勤奋、认真负责的成员'
+  },
+  {
+    id: 1,
+    name: '国赛一等奖',
+    imageUrl: '/static/image/Lianxi/mc/1-1.png',
+    description: '表彰在团队合作中表现突出的成员'
+  },
+  {
+    id: 2,
+    name: '创新先锋',
+    imageUrl: '/static/image/Lianxi/mc/1-2.png',
+    description: '表彰在项目中提出创新想法的成员'
+  },
+  {
+    id: 3,
+    name: '技术能手',
+    imageUrl: '/static/image/Lianxi/mc/1-3.png',
+    description: '表彰技术能力出众的成员'
+  },
+  {
+    id: 4,
+    name: '勤奋之星',
+    imageUrl: '/static/image/Lianxi/mc/1-4.png',
+    description: '表彰工作勤奋、认真负责的成员'
+  },  {
+    id: 1,
+    name: '国赛一等奖',
+    imageUrl: '/static/image/Lianxi/mc/1-1.png',
+    description: '表彰在团队合作中表现突出的成员'
+  },
+  {
+    id: 2,
+    name: '创新先锋',
+    imageUrl: '/static/image/Lianxi/mc/1-2.png',
+    description: '表彰在项目中提出创新想法的成员'
+  },
+  {
+    id: 3,
+    name: '技术能手',
+    imageUrl: '/static/image/Lianxi/mc/1-3.png',
+    description: '表彰技术能力出众的成员'
+  },
+  {
+    id: 4,
+    name: '勤奋之星',
+    imageUrl: '/static/image/Lianxi/mc/1-4.png',
+    description: '表彰工作勤奋、认真负责的成员'
+  },
+  
+]);
+
+// 底部提示状态
+const reachedBottom = ref(false);
+const showBottomTip = ref(false);
+
+// 滚动到底部时触发
+function onScrollToBottom() {
+  reachedBottom.value = true;
+  showBottomTip.value = true;
+  
+  // 3秒后隐藏底部提示，但不改变已滚动到底部的状态
+  setTimeout(() => {
+    showBottomTip.value = false;
+  }, 3000);
+}
 
 // 获取用户个人资料
 async function getUserProfile() {
@@ -457,6 +622,79 @@ function goBack() {
   uni.navigateBack();
 }
 
+// 勋章大图预览相关
+const showPreview = ref(false);
+const currentMedal = ref({});
+const previewScale = ref(1);
+const touchStartDistance = ref(0);
+
+// 显示勋章大图
+function showMedalImage(medal) {
+  currentMedal.value = medal;
+  showPreview.value = true;
+  previewScale.value = 1; // 重置缩放比例
+}
+
+// 关闭预览
+function closePreview() {
+  showPreview.value = false;
+}
+
+// 处理触摸开始事件（用于缩放）
+function handleTouchStart(event) {
+  if (event.touches.length === 2) {
+    // 计算两个触摸点之间的距离
+    const touch1 = event.touches[0];
+    const touch2 = event.touches[1];
+    touchStartDistance.value = Math.sqrt(
+      Math.pow(touch2.pageX - touch1.pageX, 2) + 
+      Math.pow(touch2.pageY - touch1.pageY, 2)
+    );
+  }
+}
+
+// 处理触摸移动事件（用于缩放）
+function handleTouchMove(event) {
+  if (event.touches.length === 2 && touchStartDistance.value > 0) {
+    // 计算当前两个触摸点之间的距离
+    const touch1 = event.touches[0];
+    const touch2 = event.touches[1];
+    const currentDistance = Math.sqrt(
+      Math.pow(touch2.pageX - touch1.pageX, 2) + 
+      Math.pow(touch2.pageY - touch1.pageY, 2)
+    );
+    
+    // 计算缩放因子（限制在0.5到3之间）
+    const scaleFactor = currentDistance / touchStartDistance.value;
+    previewScale.value = Math.max(0.5, Math.min(3, previewScale.value * scaleFactor));
+    
+    // 更新起始距离
+    touchStartDistance.value = currentDistance;
+  }
+}
+
+// 处理触摸结束事件
+function handleTouchEnd() {
+  touchStartDistance.value = 0;
+}
+
+// 显示勋章详情
+function showMedalDetail(medal) {
+  uni.showModal({
+    title: medal.name,
+    content: medal.description,
+    showCancel: false,
+    confirmText: '知道了'
+  });
+}
+
+// 跳转到勋章详情页
+function goToMedalDetail() {
+  uni.navigateTo({
+    url: '/pages/profile/medal-detail'
+  });
+}
+
 // 页面加载时获取用户资料
 onMounted(() => {
   getUserProfile();
@@ -509,7 +747,7 @@ page {
   }
   
   .header-title {
-    font-size: 32rpx;
+    font-size: 36rpx;
     font-weight: bold;
     color: $text-color;
   }
@@ -538,7 +776,7 @@ page {
   }
   
   .loading-text {
-    font-size: 28rpx;
+    font-size: 32rpx;
     color: $text-secondary;
   }
 }
@@ -551,31 +789,299 @@ page {
 // 内容区域
 .content-scroll {
   flex: 1;
+  padding: 0 0 30rpx 0;
 }
 
 // 头像区域
 .avatar-section {
   display: flex;
   flex-direction: column;
+  padding: 20rpx;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+// 用户信息卡片
+.user-info-card {
+  width: 100%;
+  background-color: $card-color;
+  border-radius: 12rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.05);
+  margin-bottom: 20rpx;
+}
+
+.user-info-header {
+  display: flex;
   align-items: center;
-  padding: 40rpx 0;
+  padding: 20rpx 24rpx;
+  position: relative;
+}
+
+.user-avatar-container {
+  margin-right: 20rpx;
+  position: relative;
   
-  .avatar {
-    width: 180rpx;
-    height: 180rpx;
+  .user-avatar {
+    width: 160rpx;
+    height: 160rpx;
     border-radius: 50%;
-    border: 4rpx solid rgba($primary-color, 0.2);
-    margin-bottom: 20rpx;
+    border: 2rpx solid rgba($primary-color, 0.2);
   }
   
-  .change-avatar-btn {
-    background-color: rgba($primary-color, 0.1);
-    padding: 10rpx 30rpx;
-    border-radius: 30rpx;
+  .avatar-edit-btn {
+    position: absolute;
+    bottom: 6rpx;
+    right: 6rpx;
+    width: 46rpx;
+    height: 46rpx;
+    border-radius: 50%;
+    background-color: rgb(239 239 239 / 90%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.2);
+    z-index: 5;
+    
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+}
+
+.user-basic-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: $text-color;
+  margin-bottom: 8rpx;
+}
+
+.role-tag {
+  align-self: flex-start;
+  background-color: rgba($primary-color, 0.1);
+  padding: 4rpx 14rpx;
+  border-radius: 6rpx;
+  
+  text {
+    font-size: 24rpx;
+    color: $primary-color;
+  }
+}
+
+.edit-profile-btn {
+  display: flex;
+  align-items: center;
+  background-color: rgba($primary-color, 0.1);
+  padding: 10rpx 18rpx;
+  border-radius: 30rpx;
+  margin-left: auto;
+  
+  text {
+    font-size: 28rpx;
+    color: $primary-color;
+    margin-left: 6rpx;
+  }
+}
+
+.user-info-details {
+  display: flex;
+  border-top: 1rpx solid rgba(0, 0, 0, 0.05);
+  
+  .detail-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16rpx 0;
+    
+    &:not(:last-child) {
+      border-right: 1rpx solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .detail-label {
+      font-size: 24rpx;
+      color: $text-secondary;
+      margin-bottom: 6rpx;
+    }
+    
+    .detail-value {
+      font-size: 28rpx;
+      font-weight: 500;
+      color: $text-color;
+      
+      &.credit-score {
+        color: $green-color;
+      }
+    }
+  }
+}
+
+// 勋章展示区域
+.medals-container {
+  margin-top: 30rpx;
+  width: 100%;
+  
+  .medals-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20rpx;
+    
+    .medals-title-wrapper {
+      display: flex;
+      align-items: center;
+      
+      .medals-title {
+        font-size: 32rpx;
+        font-weight: bold;
+        color: $text-color;
+        margin-right: 10rpx;
+      }
+      
+      .medals-count {
+        font-size: 28rpx;
+        color: $text-secondary;
+      }
+    }
+    
+    .view-all-btn {
+      display: flex;
+      align-items: center;
+      background-color: rgba($primary-color, 0.1);
+      padding: 4rpx 16rpx;
+      border-radius: 20rpx;
+      
+      text {
+        font-size: 28rpx;
+        color: $primary-color;
+      }
+    }
+  }
+  
+  .medals-box {
+    width: 100%;
+    border: 2rpx solid rgba($primary-color, 0.5);
+    border-radius: 16rpx;
+    overflow: hidden;
+    height: 420rpx; // 固定高度，支持滚动
+    position: relative; // 为滚动提示定位
+  }
+  
+  .medals-scroll {
+    width: 100%;
+    height: 100%;
+    
+    &::-webkit-scrollbar {
+      display: block;
+      width: 8rpx;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background-color: rgba($primary-color, 0.5);
+      border-radius: 6rpx;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background-color: rgba($primary-color, 0.1);
+      border-radius: 6rpx;
+    }
+  }
+  
+  .scroll-hint {
+    position: absolute;
+    bottom: 10rpx;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.9));
+    padding: 20rpx 0 10rpx;
+    animation: bounce 1.5s infinite;
     
     text {
-      font-size: 24rpx;
-      color: $primary-color;
+      font-size: 28rpx;
+      color: $text-secondary;
+      margin-top: 4rpx;
+    }
+  }
+  
+  .bottom-tip {
+    width: 100%;
+    text-align: center;
+    padding: 16rpx 0;
+    
+    text {
+      font-size: 28rpx;
+      color: $text-muted;
+    }
+  }
+  
+  .bottom-space {
+    width: 100%;
+    height: 60rpx; // 底部留白，防止内容被提示遮挡
+  }
+  
+  .medals-grid {
+    display: flex;
+    flex-wrap: wrap;
+    .medal-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 25%;
+      margin-bottom: 24rpx;
+      
+      .medal-image {
+        width: 130rpx;
+        height: 130rpx;
+        margin-bottom: 8rpx;
+        transition: transform 0.2s ease;
+        
+        &:active {
+          transform: scale(0.95);
+        }
+      }
+      
+      .medal-name {
+        font-size: 28rpx;
+        color: $text-color;
+        text-align: center;
+        width: 90%;
+        white-space: normal;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+      }
+    }
+    
+    .empty-medals {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 300rpx;
+      
+      .empty-medal-icon {
+        width: 100rpx;
+        height: 100rpx;
+        margin-bottom: 20rpx;
+        opacity: 0.5;
+      }
+      
+      text {
+        font-size: 28rpx;
+        color: $text-muted;
+      }
     }
   }
 }
@@ -585,7 +1091,7 @@ page {
   background-color: $card-color;
   border-radius: 16rpx;
   padding: 30rpx;
-  margin-bottom: 30rpx;
+  margin: 20rpx;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
   
   .card-header {
@@ -595,7 +1101,7 @@ page {
     margin-bottom: 20rpx;
     
     .card-title {
-      font-size: 28rpx;
+      font-size: 32rpx;
       font-weight: bold;
       color: $text-color;
     }
@@ -605,13 +1111,13 @@ page {
       align-items: center;
       
       .iconfont {
-        font-size: 26rpx;
+        font-size: 30rpx;
         color: $primary-color;
         margin-right: 4rpx;
       }
       
       .edit-text {
-        font-size: 24rpx;
+        font-size: 28rpx;
         color: $primary-color;
       }
     }
@@ -628,12 +1134,12 @@ page {
     }
     
     .item-label {
-      font-size: 26rpx;
+      font-size: 30rpx;
       color: $text-secondary;
     }
     
     .item-value {
-      font-size: 26rpx;
+      font-size: 30rpx;
       color: $text-color;
       font-weight: 500;
       
@@ -647,7 +1153,7 @@ page {
     padding: 16rpx 0;
     
     text {
-      font-size: 26rpx;
+      font-size: 30rpx;
       color: $text-color;
       line-height: 1.6;
     }
@@ -661,12 +1167,12 @@ page {
     gap: 16rpx;
     
     .skill-tag {
-      padding: 8rpx 20rpx;
+      padding: 10rpx 22rpx;
       background-color: rgba($primary-color, 0.1);
       border-radius: 30rpx;
       
       text {
-        font-size: 24rpx;
+        font-size: 28rpx;
         color: $primary-color;
       }
     }
@@ -677,7 +1183,7 @@ page {
       padding: 20rpx 0;
       
       text {
-        font-size: 24rpx;
+        font-size: 28rpx;
         color: $text-muted;
       }
     }
@@ -704,13 +1210,13 @@ page {
         margin-bottom: 8rpx;
         
         .award-name {
-          font-size: 26rpx;
+          font-size: 30rpx;
           font-weight: bold;
           color: $text-color;
         }
         
         .award-level {
-          font-size: 24rpx;
+          font-size: 28rpx;
           color: $primary-color;
           background-color: rgba($primary-color, 0.1);
           padding: 4rpx 12rpx;
@@ -723,7 +1229,7 @@ page {
         justify-content: space-between;
         
         .award-org, .award-time {
-          font-size: 24rpx;
+          font-size: 28rpx;
           color: $text-secondary;
         }
       }
@@ -735,7 +1241,7 @@ page {
       padding: 20rpx 0;
       
       text {
-        font-size: 24rpx;
+        font-size: 28rpx;
         color: $text-muted;
       }
     }
@@ -746,24 +1252,99 @@ page {
 .refresh-btn {
   position: fixed;
   right: 30rpx;
-  bottom: 60rpx;
-  width: 90rpx;
-  height: 90rpx;
+  bottom: 240rpx;
+  width: 110rpx;
+  height: 110rpx;
   border-radius: 50%;
-
+  background: linear-gradient(135deg, #4f83fc, #3B82F6);
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 4rpx 12rpx rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4rpx 16rpx rgba(59, 130, 246, 0.4);
   z-index: 100;
   
   .iconfont {
-    font-size: 40rpx;
+    font-size: 48rpx;
     color: #ffffff;
   }
   
   .refreshing {
     animation: spin 1s linear infinite;
   }
+}
+
+// 勋章大图预览相关样式
+.medal-preview-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.medal-preview-content {
+  width: 90%;
+  max-width: 600rpx;
+  background-color: $card-color;
+  border-radius: 20rpx;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.15);
+}
+
+.medal-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 30rpx;
+  border-bottom: 1rpx solid $border-color;
+}
+
+.medal-preview-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: $text-color;
+}
+
+.medal-preview-close {
+  padding: 10rpx;
+}
+
+.medal-preview-image {
+  width: 100%;
+  height: 550rpx;
+  padding: 20rpx;
+  transition: transform 0.2s ease;
+}
+
+.medal-preview-info {
+  padding: 20rpx 30rpx 30rpx;
+}
+
+.medal-preview-desc {
+  font-size: 32rpx;
+  color: $text-color;
+  line-height: 1.6;
+  margin-bottom: 20rpx;
+}
+
+.medal-preview-hint {
+  text-align: center;
+  
+  text {
+    font-size: 28rpx;
+    color: $text-muted;
+  }
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%) rotate(25deg); }
+  100% { transform: translateX(100%) rotate(25deg); }
 }
 </style> 

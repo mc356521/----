@@ -201,6 +201,8 @@
   z-index: 999;
   background-color: #fff;
   box-shadow: 0 0.0625rem 0.3125rem rgba(0, 0, 0, 0.05);
+  /* 适配安全区域 */
+  padding-top: env(safe-area-inset-top, 0);
 }
 
 /* 顶部导航栏 */
@@ -208,7 +210,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.625rem 0.9375rem;
+  padding: 3.125rem 0.9375rem 0.625rem 0.9375rem;
 }
 .header-bar .back-btn {
   width: 1.875rem;
@@ -346,7 +348,7 @@
   transition: padding-top 0.3s ease;
 }
 .tasks-container {
-  padding: 0.625rem;
+  padding: 1.5625rem 0.625rem;
 }
 
 /* 任务卡片 */
@@ -516,7 +518,7 @@
 .float-btn {
   position: fixed;
   right: 0.9375rem;
-  bottom: 3.125rem;
+  bottom: calc(3.125rem + env(safe-area-inset-bottom, 0));
   width: 3.125rem;
   height: 3.125rem;
   border-radius: 50%;
@@ -526,6 +528,7 @@
   justify-content: center;
   align-items: center;
   box-shadow: 0 0.125rem 0.5rem rgba(74, 144, 226, 0.3);
+  z-index: 900;
 }
 .float-btn .iconfont {
   font-size: 1.5625rem;

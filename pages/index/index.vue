@@ -136,11 +136,11 @@
         <view class="section-header">
           <view class="title-with-icon">
             <text class="section-title animate__animated animate__fadeInLeft">热门队伍</text>
-            <image :src="icons.remen" class="title-hot-icon"></image>
+            <SvgIcon name="remen" class="title-hot-icon"></SvgIcon>
           </view>
 
           <view class="ai-recommend-btn" @click="showAiRecommendPopup" @longpress="resetAiRecommendForTesting">
-            <image :src="icons.zhinnegtuijzudui" class="ai-icon"></image>
+            <SvgIcon name="zhinnegtuijzudui" class="ai-icon"></SvgIcon>
             <text class="ai-text">AI智能推荐</text>
           </view>
         </view>
@@ -387,9 +387,14 @@ function navigateTo(page) {
     uni.switchTab({
       url: '/pages/task-square/index'
     });
-  } else if (page === 'recommend') {
-    // 打开AI智能推荐页面
-    navigateToAiRecommend();
+  } else if (page === 'project') {
+    uni.navigateTo({
+      url: '/pages/project/project-showcase'
+    });
+  } else if (page === 'schedule') {
+    uni.navigateTo({
+      url: '/pages/schedule/index'
+    });
   } else {
     uni.showToast({
       title: `导航到${page}页面`,
@@ -415,7 +420,12 @@ function viewAll(type) {
     uni.navigateTo({
       url: '/pages/team/recommended' // 假设有个推荐队伍页面
     });
-  } else {
+  }else if (type === 'schedule') {
+    uni.navigateTo({
+      url: '/pages/schedule/index' // 假设有个推荐队伍页面
+    });
+  }
+  else {
     uni.navigateTo({
       url: '/pages/team/list'
     });

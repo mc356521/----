@@ -25,6 +25,9 @@
       </view>
 
     </view>
+    
+
+    
     <view 
       class="tab-item" 
       :class="{ active: activeTab === 'team' }" 
@@ -55,7 +58,7 @@ const props = defineProps({
   activeTab: {
     type: String,
     default: 'home',
-    validator: (value) => ['home', 'competition', 'task-square', 'team', 'profile'].includes(value)
+    validator: (value) => ['home', 'competition', 'schedule', 'team', 'profile'].includes(value)
   }
 });
 
@@ -97,7 +100,7 @@ function switchTab(tab) {
     const tabRoutes = {
       'home': '/pages/index/index',
       'competition': '/pages/competition/index',
-      'task-square': '/pages/task-square/index',
+      'schedule': '/pages/schedule/index',
       'team': '/pages/team/list',
       'profile': '/pages/profile/index'
     };
@@ -194,6 +197,14 @@ function showPublishMenu() {
           url: '/pages/task-square/create'
         });
       }
+    },
+    {
+      text: '添加日程',
+      action: () => {
+        uni.navigateTo({
+          url: '/pages/schedule/index?action=add'
+        });
+      }
     }
   );
   
@@ -212,6 +223,52 @@ function showPublishMenu() {
     }
   });
 }
+
+// 可用的图标数据
+const tabbarData = [
+  {
+    pagePath: '/pages/index/index',
+    text: '首页',
+    iconPath: '/static/svg/home-inactive.svg',
+    selectedIconPath: '/static/svg/home-active.svg',
+    tab: 'home'
+  },
+  {
+    pagePath: '/pages/competition/index',
+    text: '竞赛',
+    iconPath: '/static/svg/competition-inactive.svg',
+    selectedIconPath: '/static/svg/competition-active.svg',
+    tab: 'competition'
+  },
+  {
+    pagePath: '', // 中间按钮特殊处理
+    text: '',
+    iconPath: '',
+    selectedIconPath: '',
+    tab: 'create'
+  },
+  {
+    pagePath: '/pages/schedule/index',
+    text: '日程',
+    iconPath: '/static/svg/schedule-inactive.svg',
+    selectedIconPath: '/static/svg/schedule-active.svg',
+    tab: 'schedule'
+  },
+  {
+    pagePath: '/pages/team/list',
+    text: '队伍',
+    iconPath: '/static/svg/team-inactive.svg',
+    selectedIconPath: '/static/svg/team-active.svg',
+    tab: 'team'
+  },
+  {
+    pagePath: '/pages/profile/index',
+    text: '我的',
+    iconPath: '/static/svg/profile-inactive.svg',
+    selectedIconPath: '/static/svg/profile-active.svg',
+    tab: 'profile'
+  }
+];
 </script>
 
 <style lang="scss">

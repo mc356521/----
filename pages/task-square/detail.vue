@@ -4,7 +4,7 @@
     <header-bar
       title="任务详情"
       :show-search="false"
-      :show-filter="false"
+      :show-filter="true"
       @back="goBack"
     ></header-bar>
     

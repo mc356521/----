@@ -15,6 +15,21 @@
 			}
 		},
 		{
+			"path": "pages/project/project-showcase",
+			"style": {
+				"navigationBarTitleText": "项目展示",
+				"navigationStyle": "custom",
+				"enablePullDownRefresh": true
+			}
+		},
+		{
+			"path": "pages/project/detail",
+			"style": {
+				"navigationBarTitleText": "项目详情",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/task-square/index",
 			"style": {
 				"navigationStyle": "custom",
@@ -159,6 +174,39 @@
 			"style": {
 				"navigationBarTitleText": "WebSocket测试"
 			}
+		},
+		{
+			"path": "pages/schedule/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "日程安排",
+				"enablePullDownRefresh": true
+			}
+		},
+		{
+			"path": "pages/project/create",
+			"style": {
+				"navigationStyle": "custom",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/profile/medal-detail",
+			"style": {
+				"navigationBarTitleText": "荣誉勋章",
+				"navigationStyle": "custom",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/profile/apply-badge",
+			"style": {
+				"navigationStyle": "custom",
+				"app-plus": {
+					"bounce": "none",
+					"titleNView": false
+				}
+			}
 		}
 	],
 	"globalStyle": {
@@ -184,14 +232,11 @@
 		"selectedColor": "#3B82F6",
 		"list": [
 			{
-				"pagePath": "pages/index/index"
+				"pagePath": "pages/index/index",
+				"text": " "
 			}, 
 			{
 				"pagePath": "pages/competition/index",
-				"text": " "
-			},
-			{
-				"pagePath": "pages/task-square/index",
 				"text": " "
 			},
 			{

@@ -1,38 +1,60 @@
-// 核心颜色变量
-$primary-color: #247ae4;
-$success-color: #10B981;
-$warning-color: #F59E0B;
-$danger-color: #EF4444;
-$info-color: #64748B;
-
-// 背景色与卡片
-$background-color: #f8fafc;
-$card-color: #ffffff;
+// 主题颜色
+$primary-color: #2d8cf0;
+$success-color: #19be6b;
+$warning-color: #ff9900;
+$danger-color: #ed4014;
+$info-color: #909399;
 
 // 文本颜色
 $text-color: #333333;
-$text-secondary: #6B7280;
-$text-muted: #344347;
+$text-secondary: #666666;
+$text-muted: #999999;
 $text-light: #ffffff;
 
-// 边框与阴影
-$border-color: #E5E7EB;
-$shadow-sm: 0 2rpx 6rpx rgba(91, 51, 51, 0.05);
-$shadow-md: 0 4rpx 10rpx rgba(0, 0, 0, 0.1);
-$shadow-lg: 0 8rpx 30rpx rgba(0, 0, 0, 0.1);
+// 边框和背景颜色
+$border-color: #e5e7eb;
+$background-color: #f5f7fa;
+$card-color: #ffffff;
 
-// 圆角
-$border-radius-sm: 8rpx;
-$border-radius-md: 12rpx;
-$border-radius-lg: 16rpx;
+// 字体大小
+$font-size-small: 24rpx;
+$font-size-base: 28rpx;
+$font-size-medium: 32rpx;
+$font-size-large: 36rpx;
+$font-size-xlarge: 40rpx;
+
+// 圆角大小
+$border-radius-small: 4rpx;
+$border-radius-base: 8rpx;
+$border-radius-medium: 12rpx;
+$border-radius-large: 16rpx;
+$border-radius-circle: 100rpx;
 $border-radius-full: 100rpx;
 
 // 间距
-$spacing-xs: 10rpx;
-$spacing-sm: 16rpx;
-$spacing-md: 24rpx; 
-$spacing-lg: 30rpx;
-$spacing-xl: 40rpx;
+$spacing-mini: 4rpx;
+$spacing-xs: 8rpx;
+$spacing-sm: 12rpx;
+$spacing-md: 16rpx;
+$spacing-base: 16rpx;
+$spacing-lg: 24rpx;
+$spacing-xl: 32rpx;
+$spacing-medium: 24rpx;
+$spacing-large: 32rpx;
+$spacing-xlarge: 48rpx;
+
+// 阴影
+$shadow-sm: 0 1rpx 6rpx rgba(0, 0, 0, 0.08);
+$shadow-md: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
+$box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.1);
+$box-shadow-medium: 0 4rpx 16rpx rgba(0, 0, 0, 0.12);
+$box-shadow-large: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
+
+// 过渡时间
+$transition-base: all 0.3s ease;
+$transition-fast: all 0.2s ease;
+$transition-slow: all 0.4s ease;
 
 // 标签颜色
 $tag-blue-bg: #EFF6FF;

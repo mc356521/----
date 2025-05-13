@@ -68,21 +68,29 @@
     <!-- 成员信息和操作 -->
     <view class="team-bottom">
       <view class="flex-center">
-        <view class="team-avatars">
-          <template v-if="avatars && avatars.length > 0">
-            <image 
-              v-for="(avatar, aIndex) in avatars.slice(0, 3)" 
-              :key="aIndex" 
-              :src="avatar" 
-              class="team-avatar">
-            </image>
-          </template>
-          <view v-else class="empty-avatar">
-            <image :src="icons.Baominrenshu" class="avatar-icon"></image>
-          </view>
+        <!-- 当有成员时显示头像 -->
+        <view class="team-avatars" v-if="hasMembers">
+          <image 
+            v-for="(avatar, aIndex) in avatars.slice(0, 3)" 
+            :key="aIndex" 
+            :src="avatar" 
+            class="team-avatar">
+          </image>
         </view>
-        <text class="member-count">{{ getMemberCount() }}人已加入</text>
+        <!-- 无成员时显示的空状态设计 -->
+        <view v-else class="empty-team-state">
+          <view class="empty-avatar">
+            <SvgIcon name="Baominrenshu" size="20" class="avatar-icon"></SvgIcon>
+          </view>
+          <text class="empty-text">暂无成员</text>
+        </view>
+        
+        <!-- 成员计数 -->
+        <view class="member-count-wrapper" v-if="hasMembers">
+          <text class="member-count">{{ getMemberCount() }}人已加入</text>
+        </view>
       </view>
+      <!-- 按钮区域 -->
       <view 
         v-if="canJoin"
         class="join-btn blue-join" 
@@ -175,6 +183,11 @@ const avatars = computed(() => {
     }
   }
   return [];
+});
+
+// 检查是否有成员加入
+const hasMembers = computed(() => {
+  return getMemberCount() > 0 && avatars.value.length > 0;
 });
 
 const canJoin = computed(() => {
@@ -451,32 +464,53 @@ $border-radius-lg: 16rpx;
           margin-right: -16rpx;
           transition: transform 0.3s;
         }
+      }
+      
+      // 新增：无成员时的空状态设计
+      .empty-team-state {
+        @include flex-center;
+        background-color: rgba($primary-color, 0.05);
+        padding: 4rpx 16rpx;
+        border-radius: 100rpx;
         
         .empty-avatar {
-          width: 48rpx;
-          height: 48rpx;
+          width: 36rpx;
+          height: 36rpx;
           border-radius: 50%;
-          background-color: #F3F4F6;
+          background-color: rgba($primary-color, 0.1);
           display: flex;
           justify-content: center;
           align-items: center;
+          margin-right: 8rpx;
           
           .avatar-icon {
-            width: 32rpx;
-            height: 32rpx;
+            width: 24rpx;
+            height: 24rpx;
+            color: $primary-color;
           }
+        }
+        
+        .empty-text {
+          font-size: 24rpx;
+          color: $primary-color;
         }
       }
       
-      .member-count {
-        font-size: 22rpx;
-        color: $text-muted;
-        margin-left: 20rpx;
-      }
-      
-      .max-count {
-        font-size: 22rpx;
-        color: $text-muted;
+      // 增强成员计数样式
+      .member-count-wrapper {
+        display: flex;
+        align-items: center;
+        
+        .member-count {
+          font-size: 24rpx;
+          color: $text-muted;
+          margin-left: 10rpx;
+        }
+        
+        .max-count {
+          font-size: 24rpx;
+          color: $text-muted;
+        }
       }
     }
     
@@ -485,7 +519,7 @@ $border-radius-lg: 16rpx;
       border-radius: 100rpx;
       white-space: nowrap;
       font-size: 26rpx;
-	  margin-right: 10rpx;
+	    margin-right: 10rpx;
       text-align: center;
       &.blue-join {
         background-color: $primary-color;

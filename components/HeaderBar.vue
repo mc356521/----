@@ -83,6 +83,9 @@ const currentCategory = ref(props.defaultCategory);
 // 未读消息数量
 const unreadCount = ref(0);
 
+// 安全区高度
+const safeAreaTop = ref(0);
+
 // 判断当前页面是否为tabBar页面
 const isTabBarPage = computed(() => {
   const pages = getCurrentPages();
@@ -97,12 +100,15 @@ const isTabBarPage = computed(() => {
 // 计算HeaderBar的高度
 const headerHeight = computed(() => {
   // 基础高度（标题栏）
-  let height = 90; //   
+  let height = 140; // 包含了标题栏高度和上下padding (60rpx顶部 + 70rpx内容区 + 10rpx底部)
   
   // 如果有分类标签，添加分类标签高度
   if (props.categories && props.categories.length > 0) {
     height += 70; // rpx，包含分类标签高度和上下padding
   }
+  
+  // 添加设备安全区高度
+  height += safeAreaTop.value;
   
   return height;
 });
@@ -148,7 +154,23 @@ function goBack() {
       return; // 父组件已处理，不再执行默认行为
     }
     
-   
+    // 执行默认的返回行为
+    if (pages.length > 1) {
+      uni.navigateBack({
+        delta: 1,
+        fail: () => {
+          console.log('返回失败，尝试回到首页');
+          uni.switchTab({
+            url: '/pages/index/index'
+          });
+        }
+      });
+    } else {
+      // 如果没有上一页，则跳转到首页
+      uni.switchTab({
+        url: '/pages/index/index'
+      });
+    }
   }, 100); // 延迟100ms，给父组件留出处理时间
 }
 
@@ -201,8 +223,7 @@ defineExpose({
   isTabBarPage // 暴露tabBar页面状态
 });
 
-// 获取实际的安全区域高度
-let safeAreaHeight = ref(0);
+// 计时器引用
 let timer = null;
 
 onMounted(() => {
@@ -210,7 +231,10 @@ onMounted(() => {
   uni.getSystemInfo({
     success: (res) => {
       if (res.safeArea && res.safeArea.top) {
-        safeAreaHeight.value = res.safeArea.top;
+        // 将px转换为rpx (750rpx = 设计稿宽度)
+        const screenWidth = res.screenWidth;
+        safeAreaTop.value = Math.round((res.safeArea.top * 750) / screenWidth);
+        console.log('安全区高度(rpx):', safeAreaTop.value);
       }
     }
   });
@@ -256,12 +280,15 @@ onUnmounted(() => {
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
   /* 添加安全区域适配 */
-  padding-top: env(safe-area-inset-top); // 适配刘海屏
+  padding-top: 0; /* 先清除原有的固定值 */
+  /* 动态适配安全区域高度 */
+  padding-top: env(safe-area-inset-top, 0);
   width: 100%;
   
   .header-title {
     @include flex-between;
-    padding: 40rpx $spacing-lg  5rpx  $spacing-lg;
+    /* 增加上方安全区域额外间距，确保在所有设备上显示良好 */
+    padding: 60rpx $spacing-lg 10rpx $spacing-lg;
     
     .back-btn {
       width: 70rpx;

@@ -3,7 +3,7 @@
     <!-- 顶部导航栏 -->
     <view class="header">
       <view class="back-btn" @click="goBack">
-        <text class="iconfont icon-arrow-left"></text>
+        <SvgIcon name="back" size="20"></SvgIcon>
       </view>
       <text class="header-title">编辑个人简介</text>
       <view class="save-btn" @click="saveChanges">
@@ -58,7 +58,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import userApi from '@/api/modules/user';
-
+import SvgIcon from '@/components/SvgIcon.vue';
 // 用户信息状态
 const userInfo = ref({
   bio: '',
@@ -247,14 +247,14 @@ page {
 // 内容区域
 .content-scroll {
   flex: 1;
-  padding: 30rpx;
+  padding:0 30rpx;
 }
 
 // 表单区域
 .form-section {
   background-color: $card-color;
   border-radius: 16rpx;
-  padding: 30rpx;
+  padding:0 30rpx;
   position: relative;
   margin-bottom: 30rpx;
   

@@ -6,7 +6,8 @@
       title="AI智能推荐"
       :show-search="false"
       :show-filter="false"
-      :show-ai-recommend="false"> 
+      :show-ai-recommend="false"
+      @back="handleBack"> 
     </header-bar>
 
     <!-- 页面内容 -->
@@ -78,8 +79,8 @@ export default {
       recommendedTeams: [],
       aiSummary: '',
       
-      // HeaderBar占位高度
-      headerPlaceholderHeight: '120rpx',
+      // HeaderBar占位高度，初始值设置得更高一些，以避免内容被导航栏遮挡
+      headerPlaceholderHeight: '200rpx',
       
       // 缓存有效时间（3小时，单位：毫秒）
       cacheValidDuration: 3 * 60 * 60 * 1000
@@ -111,6 +112,9 @@ export default {
       return;
     }
     
+    // 获取设备信息，为了更准确地设置安全区域高度
+    this.getSystemInfo();
+    
     // 先尝试读取缓存
     const cacheLoaded = this.checkCacheAndLoad();
     
@@ -122,17 +126,51 @@ export default {
   
   // 页面显示时触发
   onShow() {
-    // 获取HeaderBar组件引用
-    if (this.$refs.headerBarRef) {
-      this.updateHeaderHeight();
-    }
+    // 获取HeaderBar组件引用并更新高度
+    setTimeout(() => {
+      if (this.$refs.headerBarRef) {
+        this.updateHeaderHeight();
+      }
+    }, 50); // 短延迟以确保组件已完全挂载和渲染
   },
   
   methods: {
+    // 获取系统信息并设置安全区域高度
+    getSystemInfo() {
+      uni.getSystemInfo({
+        success: (res) => {
+          // 获取安全区域高度并转换为rpx
+          if (res.safeArea && res.safeArea.top) {
+            const safeAreaTopRpx = Math.round((res.safeArea.top * 750) / res.screenWidth);
+            // 给headerPlaceholderHeight增加安全区域高度
+            this.headerPlaceholderHeight = (200 + safeAreaTopRpx) + 'rpx';
+          }
+        }
+      });
+    },
+    
+    // 处理返回按钮点击事件
+    handleBack() {
+      console.log('AI推荐页面：处理返回事件');
+      uni.navigateBack({
+        delta: 1,
+        fail: () => {
+          // 如果返回失败，则跳转到首页
+          console.log('返回失败，跳转到首页');
+          uni.switchTab({
+            url: '/pages/index/index'
+          });
+        }
+      });
+    },
+    
     // 更新HeaderBar占位高度
     updateHeaderHeight() {
       if (this.$refs.headerBarRef && this.$refs.headerBarRef.headerHeight) {
-        this.headerPlaceholderHeight = this.$refs.headerBarRef.headerHeight + 'rpx';
+        // 从HeaderBar组件获取高度，并增加一些额外间距
+        const headerHeight = this.$refs.headerBarRef.headerHeight;
+        this.headerPlaceholderHeight = (headerHeight + 20) + 'rpx';
+        console.log('更新HeaderBar占位高度:', this.headerPlaceholderHeight);
       }
     },
     
@@ -403,7 +441,7 @@ export default {
 .content-scroll {
   flex: 1;
   box-sizing: border-box;
-  padding: 20rpx;
+  padding:0 20rpx;
 }
 
 // AI分析摘要

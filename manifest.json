@@ -41,7 +41,7 @@
                 ]
             },
             "ios" : {
-                "dSYMs" : true
+                "dSYMs" : false
             },
             /* ios打包配置 */
             "sdkConfigs" : {}

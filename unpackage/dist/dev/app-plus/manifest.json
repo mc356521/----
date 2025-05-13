@@ -61,7 +61,7 @@
         ]
       },
       "apple": {
-        "dSYMs": true
+        "dSYMs": false
       },
       "plugins": {
         "audio": {
@@ -109,14 +109,11 @@
       "height": "1px",
       "list": [
         {
-          "pagePath": "pages/index/index"
-        },
-        {
-          "pagePath": "pages/competition/index",
+          "pagePath": "pages/index/index",
           "text": " "
         },
         {
-          "pagePath": "pages/task-square/index",
+          "pagePath": "pages/competition/index",
           "text": " "
         },
         {
