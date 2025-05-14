@@ -16,9 +16,11 @@
  * API模块集中导出
  */
 import userApi from './modules/user';
-import teamApi from './modules/team';
 import competitionsApi from './modules/competitions';
+import teamApi from './modules/team';
+import tasksApi from './modules/tasks';
 import * as taskApplicationsApi from './modules/taskApplications';
+import competitionResults from './modules/competitionResults';
 
 // 导入其他模块API (示例，根据需要添加)
 // import courseApi from './modules/course';
@@ -27,9 +29,11 @@ import * as taskApplicationsApi from './modules/taskApplications';
 // 统一导出
 export default {
   user: userApi,
-  team: teamApi,
   competitions: competitionsApi,
+  team: teamApi,
+  tasks: tasksApi,
   taskApplications: taskApplicationsApi,
+  competitionResults,
   // 其他模块
   // course: courseApi,
   // notice: noticeApi

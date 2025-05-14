@@ -18,6 +18,20 @@ export function getTaskList(params) {
 }
 
 /**
+ * 获取任务参与者列表
+ * @param {Number} taskId - 任务ID
+ * @param {Object} params - 查询参数，包括pageNum(页码)、pageSize(每页数量)、status(参与状态，可选)
+ * @returns {Promise} 返回请求结果
+ */
+export function getTaskParticipants(taskId, params) {
+  return request({
+    url: `${baseApiUrl}/tasks/${taskId}/participants`,
+    method: 'GET',
+    params
+  });
+}
+
+/**
  * 获取任务详情
  * @param {Number} id - 任务ID
  * @returns {Promise} 返回请求结果
@@ -162,6 +176,45 @@ export function getMyParticipatedTasks(params) {
   });
 }
 
+/**
+ * 移除任务参与者
+ * @param {Number} taskId - 任务ID
+ * @param {Number} participantId - 参与者用户ID 
+ * @returns {Promise} 返回请求结果
+ */
+export function removeTaskParticipant(taskId, participantId) {
+  return request({
+    url: `${baseApiUrl}/tasks/${taskId}/participants/${participantId}`,
+    method: 'DELETE'
+  });
+}
+
+/**
+ * 更新任务参与记录的状态
+ * @param {Number} participationId - 参与记录ID
+ * @param {Object} data - 包含status(状态)和reason(可选理由)
+ * @param {Number} taskId - 任务ID
+ * @returns {Promise} 返回请求结果
+ * 
+ * status可能的值:
+ * - 'in_progress': 进行中
+ * - 'completed': 已完成
+ * - 'left': 已离开
+ */
+export function updateParticipationStatus(participationId, data, taskId) {
+  // 确保数据对象中包含taskId
+  const requestData = {
+    ...data,
+    taskId: taskId
+  };
+  
+  return request({
+    url: `${baseApiUrl}/tasks/my/participation/record/${participationId}/status`,
+    method: 'PUT',
+    data: requestData
+  });
+}
+
 export default {
   getTaskList,
   getTaskDetail,
@@ -174,5 +227,8 @@ export default {
   getTaskCategories,
   getRewardTypes,
   getMyCreatedTasks,
-  getMyParticipatedTasks
+  getMyParticipatedTasks,
+  getTaskParticipants,
+  removeTaskParticipant,
+  updateParticipationStatus
 };

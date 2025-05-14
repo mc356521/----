@@ -76,6 +76,10 @@
             @click="switchTab('schedule')">赛程安排</view>
           <view 
             class="flex-1 py-3 text-center text-sm font-medium" 
+            :class="currentTab === 'results' ? 'tab-active' : 'text-gray-500'"
+            @click="switchTab('results')">比赛结果</view>
+          <view 
+            class="flex-1 py-3 text-center text-sm font-medium" 
             :class="currentTab === 'teams' ? 'tab-active' : 'text-gray-500'"
             @click="switchTab('teams')">参赛队伍</view>
         </view>
@@ -153,20 +157,20 @@
           
           <view v-else>
             <view v-for="(stage, index) in competitionStages" :key="stage.id" class="timeline-item">
-              <view class="timeline-dot-container">
-                <view class="timeline-dot" :class="stage.active ? 'active-dot' : ''">
-                  <text class="timeline-dot-text">{{ index + 1 }}</text>
-                </view>
+            <view class="timeline-dot-container">
+              <view class="timeline-dot" :class="stage.active ? 'active-dot' : ''">
+                <text class="timeline-dot-text">{{ index + 1 }}</text>
               </view>
-              <view class="timeline-content" :class="stage.active ? 'active-content' : ''">
-                <view class="flex-row justify-between items-center mb-2">
+            </view>
+            <view class="timeline-content" :class="stage.active ? 'active-content' : ''">
+              <view class="flex-row justify-between items-center mb-2">
                   <text class="stage-title" :class="stage.active ? 'text-blue-800' : 'text-gray-700'">{{ stage.title }}</text>
-                  <text class="status-text" :class="stage.active ? 'active-status' : 'inactive-status'">{{ stage.status }}</text>
-                </view>
+                <text class="status-text" :class="stage.active ? 'active-status' : 'inactive-status'">{{ stage.status }}</text>
+              </view>
                 <view class="stage-period-container">
                   <SvgIcon name="shijian" class="stage-icon"></SvgIcon>
                   <text class="stage-period">{{ stage.period }}</text>
-                </view>
+            </view>
                 <view class="stage-desc-container">
                   <text class="stage-desc">{{ stage.description }}</text>
                 </view>
@@ -177,6 +181,104 @@
               </view>
             </view>
           </view>
+        </view>
+      </view>
+      
+      <!-- 比赛结果内容 -->
+      <view v-if="currentTab === 'results'" class="bg-white p-4 mt-2 shadow-sm">
+        <!-- 阶段选择筛选器 -->
+        <view class="mb-4">
+          <view class="text-gray-600 text-sm mb-2">比赛阶段</view>
+          <scroll-view scroll-x class="filter-scroll" show-scrollbar="false">
+            <view class="stage-filter-container">
+              <view 
+                class="stage-filter-item" 
+                :class="{ 'active': selectedStageId === 'all' }"
+                @click="filterResultsByStage('all')">
+                全部
+              </view>
+              <view 
+                v-for="stage in competitionStages" 
+                :key="stage.id"
+                class="stage-filter-item" 
+                :class="{ 'active': selectedStageId === stage.id }"
+                @click="filterResultsByStage(stage.id)">
+                {{ stage.title }}
+              </view>
+            </view>
+          </scroll-view>
+        </view>
+        
+        <!-- 结果列表 -->
+        <view v-if="competitionResults.length > 0" class="results-list">
+          <view v-for="result in filteredResults" :key="result.id" class="result-card">
+            <view class="result-header">
+              <view class="flex-row items-center">
+                <image :src="result.teamLogo || '/static/image/default-logo.png'" class="team-logo"></image>
+                <view class="ml-3">
+                  <text class="font-bold text-gray-800">{{ result.teamName }}</text>
+                  <view class="flex-row items-center mt-1">
+                    <text class="text-xs text-gray-600">{{ result.teamMembers || 0 }}人团队</text>
+                  </view>
+                </view>
+              </view>
+              <view :class="['award-badge', getAwardClass(result.awardType)]">
+                {{ result.awardType }}
+              </view>
+            </view>
+            
+            <!-- 添加队员头像行 -->
+            <view v-if="result.memberAvatars && result.memberAvatars.length > 0" class="member-avatars-row">
+              <image 
+                v-for="(avatar, index) in result.memberAvatars" 
+                :key="index" 
+                :src="avatar || '/static/images/default-avatar.png'" 
+                class="member-avatar">
+              </image>
+              <view v-if="result.memberCount > result.memberAvatars.length" class="more-members">
+                +{{ result.memberCount - result.memberAvatars.length }}
+              </view>
+            </view>
+            
+            <view class="result-content">
+              <view class="result-detail-item">
+                <text class="result-label">比赛阶段:</text>
+                <text class="result-value">{{ getStageNameById(result.stageId) }}</text>
+              </view>
+              
+              <view class="result-detail-item" v-if="result.announcedAt">
+                <text class="result-label">公布时间:</text>
+                <text class="result-value">{{ result.formattedDate }}</text>
+              </view>
+              
+              <view class="result-detail-item" v-if="result.awardDetails && result.awardDetails.bonus">
+                <text class="result-label">奖金:</text>
+                <text class="result-value">{{ result.awardDetails.bonus }}元</text>
+              </view>
+              
+              <view class="result-detail-item" v-if="result.awardDetails && result.awardDetails.certificate">
+                <text class="result-label">证书编号:</text>
+                <text class="result-value">{{ result.awardDetails.certificate }}</text>
+              </view>
+              
+              <view class="result-detail-item" v-if="result.metadata && result.metadata.sponsor">
+                <text class="result-label">赞助方:</text>
+                <text class="result-value">{{ result.metadata.sponsor }}</text>
+              </view>
+            </view>
+            
+            <view class="result-footer">
+              <text class="status-text" :class="{'text-green-600': result.resultStatus === 'announced'}">
+                {{ result.resultStatus === 'announced' ? '已公布' : '待公布' }}
+              </text>
+              <button class="view-team-btn" @click.stop="viewTeamDetail(result.teamId)">查看队伍</button>
+            </view>
+          </view>
+        </view>
+        
+        <!-- 空状态 -->
+        <view v-else class="empty-state">
+          <text class="text-gray-500">暂无比赛结果</text>
         </view>
       </view>
       
@@ -352,6 +454,16 @@ const searchText = ref('');
 // 收藏状态
 const isFavorite = ref(false);
 
+// 比赛结果相关
+const selectedStageId = ref('all');
+const competitionResults = ref([]);
+const filteredResults = computed(() => {
+  if (selectedStageId.value === 'all') {
+    return competitionResults.value;
+  }
+  return competitionResults.value.filter(result => result.stageId == selectedStageId.value);
+});
+
 // 获取竞赛详情数据
 async function getCompetitionDetail(id) {
   loading.value = true;
@@ -397,6 +509,9 @@ async function getCompetitionDetail(id) {
       
       // 获取竞赛阶段
       getCompetitionStages(data.id);
+      
+      // 获取比赛结果
+      getCompetitionResults(data.id);
       
       console.log('竞赛详情数据:', competition.value);
     } else {
@@ -540,6 +655,8 @@ async function getCompetitionTeams(refresh = true) {
           } else if (Array.isArray(team.teamMemberAvatars)) {
             avatars = team.teamMemberAvatars.filter(avatar => avatar);
           }
+        } else if (team.teamMembers && Array.isArray(team.teamMembers)) {
+          avatars = team.teamMembers.slice(0, 3); // 最多显示3个头像
         }
         
         // 设置状态颜色
@@ -662,6 +779,11 @@ function switchTab(tab) {
   // 当切换到队伍标签页时，自动加载队伍数据
   if (tab === 'teams' && teams.value.length === 0) {
     getCompetitionTeams();
+  }
+  
+  // 当切换到结果标签页时，自动加载结果数据
+  if (tab === 'results' && competitionResults.value.length === 0) {
+    getCompetitionResults(competitionId.value);
   }
 }
 
@@ -848,6 +970,270 @@ function shareCompetition() {
     icon: 'none',
     duration: 2000
   });
+}
+
+// 获取比赛结果
+async function getCompetitionResults(competitionId) {
+  try {
+    console.log('开始获取比赛结果数据，竞赛ID:', competitionId);
+    const res = await api.competitionResults.getCompetitionResults(competitionId);
+    console.log('获取到比赛结果响应:', res);
+    
+    if (res && res.code === 200 && res.data) {
+      // 如果返回的是单个结果，转换为数组
+      const resultsData = Array.isArray(res.data) ? res.data : [res.data];
+      console.log('处理比赛结果数据:', resultsData);
+      
+      // 处理结果数据
+      const processedResults = await Promise.all(resultsData.map(async (result) => {
+        // 解析奖项详情和元数据
+        let awardDetails = {};
+        let metadata = {};
+        
+        try {
+          if (result.awardDetails) {
+            awardDetails = typeof result.awardDetails === 'string' 
+              ? JSON.parse(result.awardDetails) 
+              : result.awardDetails;
+          }
+          
+          if (result.metadata) {
+            metadata = typeof result.metadata === 'string' 
+              ? JSON.parse(result.metadata) 
+              : result.metadata;
+          }
+        } catch (e) {
+          console.error('解析JSON数据失败:', e);
+        }
+        
+        // 获取队伍信息
+        let teamName = '未知队伍';
+        let teamLogo = '';
+        let teamMembers = 0;
+        let memberAvatars = [];
+        
+        try {
+          // 调用API获取队伍详情
+          console.log('开始获取队伍信息，队伍ID:', result.teamId);
+          const teamRes = await api.competitionResults.getTeamDetail(result.teamId);
+          console.log('获取到队伍响应:', teamRes);
+          
+          if (teamRes && teamRes.code === 200 && teamRes.data) {
+            teamName = teamRes.data.name || '未知队伍';
+            teamLogo = teamRes.data.logo || '';
+            
+            // 优先从roles计算团队成员数量，并确保队长计入团队人数
+            if (teamRes.data.roles && Array.isArray(teamRes.data.roles)) {
+              // 计算所有角色的currentCount总和
+              teamMembers = teamRes.data.roles.reduce((total, role) => {
+                return total + (role.currentCount || 0);
+              }, 0);
+              
+              // 确保队长计入团队人数（队长可能不在roles中单独计算）
+              // 如果有leaderId，假设队长可能未被计入角色数量中，加1
+              teamMembers += 1;
+              
+              console.log('从roles计算的团队成员数量(包含队长):', teamMembers);
+            } else if (teamRes.data.memberCount !== undefined && teamRes.data.memberCount !== null) {
+              teamMembers = teamRes.data.memberCount;
+              // 确保加上队长
+              if (teamRes.data.leaderId && !teamRes.data.isLeaderCountedInMemberCount) {
+                teamMembers += 1;
+              }
+            } else if (teamRes.data.currentMemberCount !== undefined && teamRes.data.currentMemberCount !== null) {
+              teamMembers = teamRes.data.currentMemberCount;
+              // 确保加上队长
+              if (teamRes.data.leaderId && !teamRes.data.isLeaderCountedInCurrentMemberCount) {
+                teamMembers += 1;
+              }
+            } else if (teamRes.data.teamMembers && Array.isArray(teamRes.data.teamMembers)) {
+              teamMembers = teamRes.data.teamMembers.length;
+            } else if (teamRes.data.members && Array.isArray(teamRes.data.members)) {
+              teamMembers = teamRes.data.members.length;
+            } else {
+              // 如果没有其他数据，至少有一个队长
+              teamMembers = 1;
+            }
+            
+            // 调用专门的接口获取团队成员信息
+            try {
+              const membersRes = await api.competitionResults.getTeamMembers(result.teamId);
+              console.log('获取团队成员响应:', membersRes);
+              
+              if (membersRes && membersRes.code === 200 && membersRes.data) {
+                const members = membersRes.data;
+                
+                // 从成员数据中获取头像
+                if (Array.isArray(members)) {
+                  // 更新团队成员数量
+                  teamMembers = members.length;
+                  
+                  // 提取成员头像
+                  members.forEach(member => {
+                    if (member.userAvatarUrl) {
+                      memberAvatars.push(member.userAvatarUrl);
+                    } else if (member.avatarUrl) {
+                      memberAvatars.push(member.avatarUrl);
+                    }
+                  });
+                  
+                  // 排序头像，确保队长在前
+                  const leaderMember = members.find(m => m.isLeader === true);
+                  if (leaderMember && leaderMember.userAvatarUrl) {
+                    // 移除队长头像（避免重复）
+                    memberAvatars = memberAvatars.filter(avatar => avatar !== leaderMember.userAvatarUrl);
+                    // 将队长头像放在第一位
+                    memberAvatars.unshift(leaderMember.userAvatarUrl);
+                  }
+                  
+                  console.log('从团队成员接口获取的头像:', memberAvatars);
+                }
+              }
+            } catch (memberError) {
+              console.error('获取团队成员失败:', memberError);
+            }
+            
+            // 如果没有通过成员接口获取到头像，尝试其他方式
+            if (memberAvatars.length === 0) {
+              console.log('检查队伍详情数据结构:', teamRes.data);
+              
+              // 首先从data数组中获取队员头像
+              if (teamRes.data.data && Array.isArray(teamRes.data.data)) {
+                const memberData = teamRes.data.data;
+                console.log('发现队员data数组:', memberData);
+                
+                // 从队员数据中提取头像URL
+                memberData.forEach(member => {
+                  if (member.avatar) {
+                    memberAvatars.push(member.avatar);
+                  } else if (member.avatarUrl) {
+                    memberAvatars.push(member.avatarUrl);
+                  } else if (member.userAvatar) {
+                    memberAvatars.push(member.userAvatar);
+                  }
+                });
+                
+                console.log('从data数组提取的队员头像:', memberAvatars);
+              }
+              
+              if (teamRes.data.memberAvatars) {
+                // 如果是字符串，可能是逗号分隔的URL列表
+                if (typeof teamRes.data.memberAvatars === 'string') {
+                  const avatarsFromString = teamRes.data.memberAvatars.split(',').filter(url => url && url.trim());
+                  memberAvatars = [...memberAvatars, ...avatarsFromString];
+                } else if (Array.isArray(teamRes.data.memberAvatars)) {
+                  memberAvatars = [...memberAvatars, ...teamRes.data.memberAvatars.filter(url => url)];
+                }
+              } else if (teamRes.data.teamMemberAvatars) {
+                // 备选字段
+                if (typeof teamRes.data.teamMemberAvatars === 'string') {
+                  const avatarsFromString = teamRes.data.teamMemberAvatars.split(',').filter(url => url && url.trim());
+                  memberAvatars = [...memberAvatars, ...avatarsFromString];
+                } else if (Array.isArray(teamRes.data.teamMemberAvatars)) {
+                  memberAvatars = [...memberAvatars, ...teamRes.data.teamMemberAvatars.filter(url => url)];
+                }
+              } else if (teamRes.data.members && Array.isArray(teamRes.data.members)) {
+                // 从members数组中提取头像
+                const avatarsFromMembers = teamRes.data.members
+                  .filter(member => member && member.avatarUrl)
+                  .map(member => member.avatarUrl);
+                memberAvatars = [...memberAvatars, ...avatarsFromMembers];
+              }
+              
+              // 确保队长头像在列表中且排在第一位
+              if (teamRes.data.leaderAvatarUrl) {
+                // 检查队长头像是否已经在列表中，如果在，则移除
+                memberAvatars = memberAvatars.filter(avatar => avatar !== teamRes.data.leaderAvatarUrl);
+                // 将队长头像添加到列表最前面
+                memberAvatars.unshift(teamRes.data.leaderAvatarUrl);
+              }
+            }
+            
+            // 移除重复的头像
+            memberAvatars = [...new Set(memberAvatars)].filter(Boolean);
+            
+            console.log('最终处理后的成员头像列表:', memberAvatars);
+          }
+        } catch (e) {
+          console.error('获取队伍信息失败:', e);
+        }
+        
+        return {
+          ...result,
+          awardDetails,
+          metadata,
+          teamName,
+          teamLogo,
+          teamMembers,
+          memberAvatars,
+          memberCount: teamMembers, // 添加memberCount字段用于显示
+          formattedDate: formatDate(result.announcedAt)
+        };
+      }));
+      
+      competitionResults.value = processedResults;
+      console.log('最终处理的比赛结果数据:', competitionResults.value);
+      
+      // 如果没有数据，显示提示
+      if (competitionResults.value.length === 0) {
+        uni.showToast({
+          title: '暂无比赛结果数据',
+          icon: 'none'
+        });
+      }
+    } else {
+      console.warn('获取比赛结果失败或无数据:', res);
+      uni.showToast({
+        title: '暂无比赛结果',
+        icon: 'none'
+      });
+    }
+  } catch (error) {
+    console.error('获取比赛结果错误:', error);
+    uni.showToast({
+      title: '获取比赛结果失败',
+      icon: 'none'
+    });
+  }
+}
+
+// 添加日期格式化函数
+function formatDate(dateString) {
+  if (!dateString) return '未知时间';
+  
+  try {
+    const date = new Date(dateString);
+    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+  } catch (e) {
+    console.error('日期格式化失败:', e);
+    return '日期格式有误';
+  }
+}
+
+// 根据阶段ID获取阶段名称
+function getStageNameById(stageId) {
+  const stage = competitionStages.value.find(s => s.id == stageId);
+  return stage ? stage.title : '未知阶段';
+}
+
+// 根据奖项类型获取样式类
+function getAwardClass(awardType) {
+  switch(awardType) {
+    case '金奖': return 'gold-award';
+    case '银奖': return 'silver-award';
+    case '铜奖': return 'bronze-award';
+    case '特等奖': return 'special-award';
+    case '一等奖': return 'first-award';
+    case '二等奖': return 'second-award';
+    case '三等奖': return 'third-award';
+    case '优秀奖': return 'excellent-award';
+    default: return '';
+  }
+}
+
+// 筛选比赛结果
+function filterResultsByStage(stageId) {
+  selectedStageId.value = stageId;
 }
 </script>
 
@@ -1663,5 +2049,174 @@ page {
   height: 32rpx;
   margin-right: 8rpx;
   color: #6b7280;
+}
+
+/* 比赛结果相关样式 */
+.stage-filter-container {
+  display: flex;
+  padding: 10rpx 0;
+}
+
+.stage-filter-item {
+  padding: 12rpx 24rpx;
+  margin-right: 20rpx;
+  font-size: 28rpx;
+  color: #666;
+  background-color: #f5f5f5;
+  border-radius: 30rpx;
+  white-space: nowrap;
+}
+
+.stage-filter-item.active {
+  color: #fff;
+  background-color: #4a90e2;
+  font-weight: 500;
+}
+
+.filter-scroll {
+  white-space: nowrap;
+  width: 100%;
+}
+
+.results-list {
+  margin-top: 20rpx;
+}
+
+.result-card {
+  background-color: #fff;
+  border-radius: 12rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.team-logo {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 10rpx;
+}
+
+.award-badge {
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+  font-size: 26rpx;
+  font-weight: bold;
+  text-align: center;
+}
+
+.gold-award {
+  background-color: rgba(255, 215, 0, 0.15);
+  color: #FF9800;
+}
+
+.silver-award {
+  background-color: rgba(192, 192, 192, 0.15);
+  color: #757575;
+}
+
+.bronze-award {
+  background-color: rgba(205, 127, 50, 0.15);
+  color: #8D6E63;
+}
+
+.special-award {
+  background-color: rgba(156, 39, 176, 0.15);
+  color: #9C27B0;
+}
+
+.first-award {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: #4CAF50;
+}
+
+.second-award {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: #2196F3;
+}
+
+.third-award {
+  background-color: rgba(255, 152, 0, 0.15);
+  color: #FF9800;
+}
+
+.excellent-award {
+  background-color: rgba(139, 195, 74, 0.15);
+  color: #8BC34A;
+}
+
+.result-content {
+  padding: 10rpx 0;
+  border-top: 1rpx solid #f0f0f0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.result-detail-item {
+  display: flex;
+  margin: 16rpx 0;
+}
+
+.result-label {
+  width: 180rpx;
+  font-size: 26rpx;
+  color: #999;
+}
+
+.result-value {
+  flex: 1;
+  font-size: 26rpx;
+  color: #333;
+}
+
+.result-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20rpx;
+}
+
+.view-team-btn {
+  font-size: 24rpx;
+  color: #4a90e2;
+  background: none;
+  border: 1rpx solid #4a90e2;
+  border-radius: 30rpx;
+  padding: 6rpx 24rpx;
+}
+
+/* 成员头像样式 */
+.member-avatars-row {
+  display: flex;
+  flex-wrap: nowrap;
+  margin: 10rpx 0 20rpx 0;
+  overflow-x: auto;
+  padding: 8rpx 0;
+}
+
+.member-avatar {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  margin-right: 10rpx;
+  border: 2rpx solid #ffffff;
+  box-shadow: 0 1rpx 3rpx rgba(0, 0, 0, 0.1);
+}
+
+.more-members {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  color: #666;
+  font-size: 22rpx;
 }
 </style> 

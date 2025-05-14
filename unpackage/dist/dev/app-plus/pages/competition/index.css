@@ -478,7 +478,7 @@ body {
   color: rgba(255, 255, 255, 0.8);
   margin-right: 0.1875rem;
 }
-.section .hot-swiper .hot-swiper-item .hot-item .hot-overlay .hot-info .hot-info-item .hot-date, .section .hot-swiper .hot-swiper-item .hot-item .hot-overlay .hot-info .hot-info-item .hot-team {
+.section .hot-swiper .hot-swiper-item .hot-item .hot-overlay .hot-info .hot-info-item .hot-date, .section .hot-swiper .hot-swiper-item .hot-item .hot-overlay .hot-info .hot-info-item .hot-team, .section .hot-swiper .hot-swiper-item .hot-item .hot-overlay .hot-info .hot-info-item .hot-team-count {
   font-size: 0.6875rem;
   color: rgba(255, 255, 255, 0.8);
 }

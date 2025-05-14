@@ -172,12 +172,9 @@ body {
   background-color: #FFFFFF;
   min-height: 100vh;
 }
-.top-image {
-  margin-bottom: 1.875rem;
-}
 .campus-image {
   width: 100%;
-  height: 9.375rem;
+  height: 12.5rem;
   border-radius: 0.625rem;
   box-shadow: 0 0.15625rem 0.46875rem rgba(0,0,0,0.1);
 }

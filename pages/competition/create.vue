@@ -29,186 +29,186 @@
     <scroll-view scroll-y class="form-content">
       <!-- 第一步：竞赛基本信息 -->
       <view v-if="currentStep === 0">
-        <view class="form-section">
-          <text class="section-title">基本信息</text>
-          
-          <!-- 竞赛标题 -->
-          <view class="form-item">
-            <view class="form-label">
-              <text>竞赛标题</text>
-              <text class="required">*</text>
-            </view>
-            <uni-easyinput
-              type="text" 
-              v-model="form.title" 
+      <view class="form-section">
+        <text class="section-title">基本信息</text>
+        
+        <!-- 竞赛标题 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text>竞赛标题</text>
+            <text class="required">*</text>
+          </view>
+          <uni-easyinput
+            type="text" 
+            v-model="form.title" 
               placeholder="请输入竞赛名称（5-50字）" 
-              :clearable="false">
-            </uni-easyinput>
+            :clearable="false">
+          </uni-easyinput>
+        </view>
+        
+        <!-- 竞赛分类 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text>竞赛分类</text>
+            <text class="required">*</text>
           </view>
-          
-          <!-- 竞赛分类 -->
-          <view class="form-item">
-            <view class="form-label">
-              <text>竞赛分类</text>
-              <text class="required">*</text>
+          <view class="category-grid">
+            <view 
+              v-for="(item, index) in categoryOptions" 
+              :key="index"
+              class="category-item"
+              :class="{ 'category-active': form.categoryId === item.id }"
+              @click="form.categoryId = item.id"
+            >
+              <text class="category-icon" :class="item.icon"></text>
+              <text>{{ item.label }}</text>
             </view>
-            <view class="category-grid">
-              <view 
-                v-for="(item, index) in categoryOptions" 
-                :key="index"
-                class="category-item"
-                :class="{ 'category-active': form.categoryId === item.id }"
-                @click="form.categoryId = item.id"
-              >
-                <text class="category-icon" :class="item.icon"></text>
-                <text>{{ item.label }}</text>
-              </view>
-            </view>
-          </view>
-          
-          <!-- 竞赛级别 -->
-          <view class="form-item">
-            <view class="form-label">
-              <text>竞赛级别</text>
-              <text class="required">*</text>
-            </view>
-            <scroll-view class="level-scroll" scroll-x>
-              <view class="level-list">
-                <view 
-                  v-for="(level, index) in levelOptions" 
-                  :key="index"
-                  class="level-item"
-                  :class="{ 'level-active': form.level === level }"
-                  @click="form.level = level"
-                >
-                  <text>{{ level }}</text>
-                </view>
-              </view>
-            </scroll-view>
-          </view>
-          
-          <!-- 竞赛简介 -->
-          <view class="form-item">
-            <view class="form-label">
-              <text>竞赛简介</text>
-              <text class="required">*</text>
-            </view>
-            <textarea 
-              v-model="form.shortDescription" 
-              placeholder="请填写竞赛简介（10-30个字）" 
-              class="form-textarea"
-              maxlength="140"
-            />
-          </view>
-          
-          <!-- 竞赛介绍 -->
-          <view class="form-item">
-            <view class="form-label">
-              <text>竞赛介绍</text>
-              <text class="required">*</text>
-            </view>
-            <textarea 
-              v-model="form.description" 
-              placeholder="请详细描述竞赛背景、目的和意义（50-1000字）" 
-              class="form-textarea"
-              maxlength="2000"
-            />
-          </view>
-          
-          <!-- 参赛要求 -->
-          <view class="form-item">
-            <view class="form-label">
-              <text>参赛要求</text>
-              <text class="required">*</text>
-            </view>
-            <textarea 
-              v-model="form.requirements" 
-              placeholder="请说明参赛资格、人数限制等要求（20-500字）" 
-              class="form-textarea form-textarea-medium"
-              maxlength="1000"
-            />
           </view>
         </view>
         
-        <view class="form-section">
-          <text class="section-title">时间与团队</text>
-          
+        <!-- 竞赛级别 -->
+          <view class="form-item">
+          <view class="form-label">
+            <text>竞赛级别</text>
+            <text class="required">*</text>
+          </view>
+          <scroll-view class="level-scroll" scroll-x>
+            <view class="level-list">
+              <view 
+                v-for="(level, index) in levelOptions" 
+                :key="index"
+                class="level-item"
+                :class="{ 'level-active': form.level === level }"
+                @click="form.level = level"
+              >
+                <text>{{ level }}</text>
+              </view>
+            </view>
+          </scroll-view>
+      </view>
+        
+        <!-- 竞赛简介 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text>竞赛简介</text>
+            <text class="required">*</text>
+          </view>
+          <textarea 
+            v-model="form.shortDescription" 
+            placeholder="请填写竞赛简介（10-30个字）" 
+            class="form-textarea"
+            maxlength="140"
+          />
+        </view>
+        
+        <!-- 竞赛介绍 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text>竞赛介绍</text>
+            <text class="required">*</text>
+          </view>
+          <textarea 
+            v-model="form.description" 
+            placeholder="请详细描述竞赛背景、目的和意义（50-1000字）" 
+            class="form-textarea"
+            maxlength="2000"
+          />
+        </view>
+        
+        <!-- 参赛要求 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text>参赛要求</text>
+            <text class="required">*</text>
+          </view>
+          <textarea 
+            v-model="form.requirements" 
+            placeholder="请说明参赛资格、人数限制等要求（20-500字）" 
+            class="form-textarea form-textarea-medium"
+            maxlength="1000"
+          />
+        </view>
+      </view>
+      
+      <view class="form-section">
+        <text class="section-title">时间与团队</text>
+        
           <!-- 报名时间 -->
-          <view class="form-item">
-            <view class="form-label">
+        <view class="form-item">
+          <view class="form-label">
               <text>报名时间</text>
-              <text class="required">*</text>
+            <text class="required">*</text>
+          </view>
+          <view class="time-grid">
+            <view class="time-column">
+              <text class="time-label">报名开始时间</text>
+              <picker 
+                mode="date" 
+                :value="form.registrationStart" 
+                @change="e => form.registrationStart = e.detail.value"
+                class="date-picker"
+              >
+                <view class="picker-view">
+                  <text v-if="form.registrationStart">{{ form.registrationStart }}</text>
+                  <text v-else class="placeholder-text">选择日期</text>
+                </view>
+              </picker>
             </view>
-            <view class="time-grid">
-              <view class="time-column">
-                <text class="time-label">报名开始时间</text>
-                <picker 
-                  mode="date" 
-                  :value="form.registrationStart" 
-                  @change="e => form.registrationStart = e.detail.value"
-                  class="date-picker"
-                >
-                  <view class="picker-view">
-                    <text v-if="form.registrationStart">{{ form.registrationStart }}</text>
-                    <text v-else class="placeholder-text">选择日期</text>
-                  </view>
-                </picker>
-              </view>
-              <view class="time-column">
-                <text class="time-label">报名截止时间</text>
-                <picker 
-                  mode="date" 
-                  :value="form.registrationEnd" 
-                  @change="e => form.registrationEnd = e.detail.value"
-                  class="date-picker"
-                >
-                  <view class="picker-view">
-                    <text v-if="form.registrationEnd">{{ form.registrationEnd }}</text>
-                    <text v-else class="placeholder-text">选择日期</text>
-                  </view>
-                </picker>
-              </view>
+            <view class="time-column">
+              <text class="time-label">报名截止时间</text>
+              <picker 
+                mode="date" 
+                :value="form.registrationEnd" 
+                @change="e => form.registrationEnd = e.detail.value"
+                class="date-picker"
+              >
+                <view class="picker-view">
+                  <text v-if="form.registrationEnd">{{ form.registrationEnd }}</text>
+                  <text v-else class="placeholder-text">选择日期</text>
+                </view>
+              </picker>
             </view>
           </view>
-          
-          <!-- 团队人数 -->
-          <view class="form-item">
-            <view class="form-label">
-              <text>团队人数</text>
-              <text class="required">*</text>
+        </view>
+        
+        <!-- 团队人数 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text>团队人数</text>
+            <text class="required">*</text>
+          </view>
+          <view class="time-grid">
+            <view class="time-column">
+              <text class="time-label">最少人数</text>
+              <uni-easyinput
+                type="number" 
+                v-model="form.teamMin" 
+                placeholder="输入人数" 
+                :clearable="false">
+              </uni-easyinput> 
             </view>
-            <view class="time-grid">
-              <view class="time-column">
-                <text class="time-label">最少人数</text>
-                <uni-easyinput
-                  type="number" 
-                  v-model="form.teamMin" 
-                  placeholder="输入人数" 
-                  :clearable="false">
-                </uni-easyinput> 
-              </view>
-              <view class="time-column">
-                <text class="time-label">最多人数</text>
-                <uni-easyinput
-                  type="number" 
-                  v-model="form.teamMax" 
-                  placeholder="输入人数" 
-                  :clearable="false">
-                </uni-easyinput> 
-              </view>
+            <view class="time-column">
+              <text class="time-label">最多人数</text>
+              <uni-easyinput
+                type="number" 
+                v-model="form.teamMax" 
+                placeholder="输入人数" 
+                :clearable="false">
+              </uni-easyinput> 
             </view>
           </view>
-          
-          <!-- 是否设为热门 -->
-          <view class="hot-toggle">
-            <view class="hot-info">
-              <text class="hot-title">设为热门竞赛</text>
-              <text class="hot-desc">热门竞赛将在首页和竞赛列表优先展示</text>
-            </view>
-            <switch 
-              :checked="form.isHot" 
-              @change="e => form.isHot = e.detail.value"
-              color="#00aaff"/>
+        </view>
+        
+        <!-- 是否设为热门 -->
+        <view class="hot-toggle">
+          <view class="hot-info">
+            <text class="hot-title">设为热门竞赛</text>
+            <text class="hot-desc">热门竞赛将在首页和竞赛列表优先展示</text>
+          </view>
+          <switch 
+            :checked="form.isHot" 
+            @change="e => form.isHot = e.detail.value"
+            color="#00aaff"/>
           </view>
         </view>
       </view>
@@ -283,78 +283,78 @@
       
       <!-- 第三步：联系方式与附件 -->
       <view v-if="currentStep === 2">
-        <view class="form-section">
-          <text class="section-title">联系方式与附件</text>
-          
-          <!-- 官方网站 -->
-          <view class="form-item">
-            <view class="form-label">
-              <text>官方网站（可选）</text>
-            </view>
-            <uni-easyinput 
-              type="text" 
-              v-model="form.websiteUrl" 
-              placeholder="输入网站" 
-              :clearable="false">
-            </uni-easyinput>
+      <view class="form-section">
+        <text class="section-title">联系方式与附件</text>
+        
+        <!-- 官方网站 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text>官方网站（可选）</text>
           </view>
-          
-          <!-- 联系方式 -->
-          <view class="form-item">
-            <view class="form-label">
-              <text>联系方式</text>
-              <text class="required">*</text>
-            </view>
-            <view class="contact-grid">
-              <view class="contact-row">
-                <view class="contact-input">
-                  <text class="contact-icon iconfont icon-user"></text>
-                  <input type="text" v-model="form.name" placeholder="联系人" />
-                </view>
-                <view class="contact-input">
-                  <text class="contact-icon iconfont icon-qq"></text>
-                  <input type="text" v-model="form.contactQQ" placeholder="QQ群" />
-                </view>
-              </view>
-              <view class="contact-input contact-email">
-                <text class="contact-icon iconfont icon-email"></text>
-                <input type="text" v-model="form.contactEmail" placeholder="联系邮箱" />
-              </view>
-            </view>
+          <uni-easyinput 
+            type="text" 
+            v-model="form.websiteUrl" 
+            placeholder="输入网站" 
+            :clearable="false">
+          </uni-easyinput>
+        </view>
+        
+        <!-- 联系方式 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text>联系方式</text>
+            <text class="required">*</text>
           </view>
-          
-          <!-- 上传封面 -->
-          <view class="form-item">
-            <view class="form-label">
-              <text>竞赛封面</text>
-              <text class="required">*</text>
-            </view>
-            <view class="upload-box" @click="uploadCover">
-              <view v-if="!form.coverUrl" class="upload-placeholder">
-                <text class="upload-icon iconfont icon-image"></text>
-                <text class="upload-text">点击上传或拖拽图片至此处</text>
-                <text class="upload-tip">建议尺寸：800x400，文件大小不超过2MB</text>
+          <view class="contact-grid">
+            <view class="contact-row">
+              <view class="contact-input">
+                <text class="contact-icon iconfont icon-user"></text>
+                <input type="text" v-model="form.name" placeholder="联系人" />
               </view>
-              <image v-else :src="form.coverUrl" mode="aspectFill" class="cover-image"></image>
+              <view class="contact-input">
+                <text class="contact-icon iconfont icon-qq"></text>
+                <input type="text" v-model="form.contactQQ" placeholder="QQ群" />
+              </view>
+            </view>
+            <view class="contact-input contact-email">
+              <text class="contact-icon iconfont icon-email"></text>
+              <input type="text" v-model="form.contactEmail" placeholder="联系邮箱" />
             </view>
           </view>
-          
-          <!-- 上传附件 -->
-          <view class="form-item">
-            <view class="form-label">
-              <text>竞赛附件（可选）</text>
+        </view>
+        
+        <!-- 上传封面 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text>竞赛封面</text>
+            <text class="required">*</text>
+          </view>
+          <view class="upload-box" @click="uploadCover">
+            <view v-if="!form.coverUrl" class="upload-placeholder">
+              <text class="upload-icon iconfont icon-image"></text>
+              <text class="upload-text">点击上传或拖拽图片至此处</text>
+              <text class="upload-tip">建议尺寸：800x400，文件大小不超过2MB</text>
             </view>
-            <view class="upload-box" @click="uploadAttachment">
-              <view v-if="form.attachments.length === 0" class="upload-placeholder">
-                <text class="upload-icon iconfont icon-file"></text>
-                <text class="upload-text">点击上传或拖拽文件至此处</text>
-                <text class="upload-tip">支持PDF、Word、PPT等格式，单个文件不超过10MB</text>
-              </view>
-              <view v-else class="file-list">
-                <view v-for="(file, index) in form.attachments" :key="index" class="file-item">
-                  <text class="file-icon iconfont icon-file"></text>
-                  <text class="file-name">{{ file.name }}</text>
-                  <text class="delete-icon iconfont icon-close" @click.stop="removeFile(index)"></text>
+            <image v-else :src="form.coverUrl" mode="aspectFill" class="cover-image"></image>
+          </view>
+        </view>
+        
+        <!-- 上传附件 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text>竞赛附件（可选）</text>
+          </view>
+          <view class="upload-box" @click="uploadAttachment">
+            <view v-if="form.attachments.length === 0" class="upload-placeholder">
+              <text class="upload-icon iconfont icon-file"></text>
+              <text class="upload-text">点击上传或拖拽文件至此处</text>
+              <text class="upload-tip">支持PDF、Word、PPT等格式，单个文件不超过10MB</text>
+            </view>
+            <view v-else class="file-list">
+              <view v-for="(file, index) in form.attachments" :key="index" class="file-item">
+                <text class="file-icon iconfont icon-file"></text>
+                <text class="file-name">{{ file.name }}</text>
+                <text class="delete-icon iconfont icon-close" @click.stop="removeFile(index)"></text>
                 </view>
               </view>
             </view>
@@ -833,7 +833,7 @@ function goBack() {
     content: '离开后当前编辑的内容将不会保存，确定要离开吗？',
     success: (res) => {
       if (res.confirm) {
-        uni.navigateBack();
+  uni.navigateBack();
       }
     }
   });

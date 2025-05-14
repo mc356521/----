@@ -226,6 +226,30 @@ const competitionsApi = {
       url: `/competitionStages/list/${competitionId}`,
       method: 'GET'
     });
+  },
+  
+  /**
+   * 获取比赛结果
+   * @param {Number|String} competitionId - 竞赛ID
+   * @returns {Promise} 请求结果Promise对象
+   */
+  getCompetitionResults(competitionId) {
+    return request({
+      url: `/competitionResults/${competitionId}`,
+      method: 'GET'
+    });
+  },
+  
+  /**
+   * 获取竞赛报名团队数量
+   * @param {Number|String} competitionId - 竞赛ID
+   * @returns {Promise} 请求结果Promise对象，包含团队数量信息
+   */
+  getCompetitionTeamCount(competitionId) {
+    return request({
+      url: `/competitions/${competitionId}/team-count`,
+      method: 'GET'
+    });
   }
 };
 

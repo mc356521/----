@@ -83,6 +83,9 @@
           <view class="grid-item-content">
             <SvgIcon name="renshu"  color="#4A90E2" />
             <text class="grid-item-value">{{ taskDetail.currentParticipants }}/{{ taskDetail.maxParticipants }} 人</text>
+            <view class="view-participants" v-if="taskDetail.currentParticipants > 0" @click="openParticipantsPopup">
+              <text>查看</text>
+            </view>
           </view>
         </view>
       </view>
@@ -121,15 +124,19 @@
         {{ getApplyButtonText() }}
       </button>
     </view>
+    
+    <!-- 任务参与者弹窗 -->
+    <task-participants-popup ref="participantsPopup" :task-id="taskId"></task-participants-popup>
   </view>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive } from 'vue';
+import { ref, computed, onMounted, reactive, nextTick } from 'vue';
 import request from '@/utils/request';
 import api from '@/api';
 import HeaderBar from '@/components/HeaderBar.vue'; // 引入顶部导航栏组件
 import SvgIcon from '@/components/SvgIcon.vue'; // 引入SVG图标组件
+import TaskParticipantsPopup from '@/components/team/TaskParticipantsPopup.vue'; // 引入任务参与者弹窗组件
 
 // 默认头像
 const defaultAvatar = 'https://via.placeholder.com/100';
@@ -140,6 +147,7 @@ const isFavorite = ref(false);
 const viewCounted = ref(false);
 const favoriteCount = ref(0);
 const isAlreadyApplied = ref(false); // 是否已申请
+const participantsPopup = ref(null); // 参与者列表弹窗引用
 
 // 任务详情数据
 const taskDetail = ref({
@@ -762,6 +770,21 @@ async function doUpdateTaskStatus(status, cancelReason = '') {
     });
   }
 }
+
+// 打开参与者列表弹窗
+function openParticipantsPopup() {
+  if (taskId.value) {
+    // 直接触发事件，不做权限检查
+    uni.$emit('openParticipantsPopup');
+    
+    // 确保任务ID已经传递到弹窗组件
+    nextTick(() => {
+      if (participantsPopup.value) {
+        participantsPopup.value.open();
+      }
+    });
+  }
+}
 </script>
 
 <style lang="scss">
@@ -934,6 +957,18 @@ $border-color: #eeeeee;
         font-weight: 500;
         color: $text-primary;
         margin-left: 16rpx;
+      }
+      
+      .view-participants {
+        margin-left: 16rpx;
+        padding: 4rpx 16rpx;
+        background-color: rgba($primary-color, 0.1);
+        border-radius: 8rpx;
+        
+        text {
+          font-size: 24rpx;
+          color: $primary-color;
+        }
       }
       
       .reward-text {

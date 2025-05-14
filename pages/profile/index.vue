@@ -38,7 +38,7 @@
             <text class="stat-value">{{ userInfo.awardsHistory ? userInfo.awardsHistory.length : 0 }}</text>
             <text class="stat-label">我的任务</text>
           </view>
-          <view class="stat-item" @click="navigateTo('settings')">
+          <view class="stat-item" @click="navigateTo('myAwards')">
             <text class="stat-value ">{{ userInfo.awardsCount || 0 }}</text>
             <text class="stat-label">我的获奖</text>
           </view>
@@ -55,9 +55,9 @@
           <text class="menu-text">实物奖励</text>
           <text class="iconfont icon-arrow-left menu-arrow"></text>
         </view>
-        <view class="menu-item" @click="navigateTo('myAwards')">
+        <view class="menu-item" @click="navigateTo('apply-badge')">
           <text class="iconfont icon-star menu-icon"></text>
-          <text class="menu-text" @click="navigateTo('apply-badge')">勋章申请</text>
+          <text class="menu-text">勋章申请</text>
           <text class="iconfont icon-arrow-left menu-arrow"></text>
         </view>
         <view class="menu-item" @click="navigateTo('applications')">
@@ -190,7 +190,12 @@ function navigateTo(page) {
   	})
    return;
   }
-  
+  else if (page === 'myAwards') {
+    uni.navigateTo({
+      url: '/pages/profile/my-awards'
+    });
+    return;
+  }
 }
 // 退出登录
 function logout() {

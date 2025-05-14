@@ -20,7 +20,7 @@
                 indicator-dots indicator-active-color="#247ae4" indicator-color="rgba(0, 0, 0, 0.2)">
           <swiper-item>
             <view class="swiper-item">
-              <image src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800" mode="aspectFill"></image>
+              <image src="/static/image/Lianxi/mc/LOG1.png" mode="aspectFill"></image>
               <view class="swiper-overlay">
                 <text class="swiper-title">中国大学生计算机设计大赛(第18届)</text>
                 <view class="swiper-date">
@@ -102,7 +102,7 @@
           <view class="competition-item card-hover animate__animated animate__fadeInUp" style="animation-delay: 0.1s" @click="viewDetail('competition', competition.id)" v-for="competition in competitionsList" :key="competition.id">
             <view class="competition-flex">
               <view class="competition-image-container">
-                <image class="competition-image" :src="coverImageUrl || 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800'" mode="aspectFill"></image>
+                <image class="competition-image" :src="competition.coverImageUrl || 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800'" mode="aspectFill"></image>
               </view>
               <view class="competition-content">
                 <view class="flex-between">
@@ -384,7 +384,7 @@ function navigateTo(page) {
       url: '/pages/team/list'
     });
   } else if (page === 'task-square') {
-    uni.switchTab({
+    uni.navigateTo({
       url: '/pages/task-square/index'
     });
   } else if (page === 'project') {

@@ -484,6 +484,223 @@ if (uni.restoreGlobal) {
       });
     }
   };
+  const competitionsApi = {
+    /**
+     * 获取竞赛列表
+     * @param {Object} params - 查询参数
+     * @param {String} [params.pageNum] - 页码，可选
+     * @param {String} [params.pageSize] - 页数大小，可选
+     * @param {Array} [params.keyword] - 关键字数组，可选
+     * @param {String} [params.categoryId] - 类型，可选
+     * @param {String} [params.level] - 等级，可选
+     * @param {Boolean} [params.isHot] - 是否热门竞赛，可选
+     * @returns {Promise} 请求结果Promise对象
+     */
+    getCompetitionsList(params = {}) {
+      return request({
+        url: "/competitions/list",
+        method: "GET",
+        params
+      });
+    },
+    /**
+     * 获取竞赛详情
+     * @param {Number|String} id - 竞赛ID
+     * @returns {Promise} 请求结果Promise对象
+     */
+    getCompetitionDetail(id) {
+      const token = getToken();
+      if (!token) {
+        uni.showToast({
+          title: "请先登录",
+          icon: "none"
+        });
+        setTimeout(() => {
+          uni.navigateTo({
+            url: "/pages/login/login"
+          });
+        }, 1500);
+        return Promise.reject(new Error("未登录"));
+      }
+      return request({
+        url: `/competitions/${id}`,
+        method: "GET",
+        header: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+    },
+    /**
+     * 创建竞赛（仅管理员可用）
+     * @param {Object} data - 竞赛信息
+     * @param {String} data.title - 竞赛标题
+     * @param {String} data.registrationStart - 报名开始时间
+     * @param {String} data.registrationDeadline - 报名截止时间
+     * @param {String} data.status - 竞赛状态
+     * @param {String} data.level - 竞赛级别
+     * @param {String} data.organizer - 主办方
+     * @param {String} data.description - 详细描述
+     * @param {String} [data.shortDescription] - 简短描述
+     * @param {String} [data.requirements] - 参赛要求
+     * @param {Boolean} [data.isHot] - 是否热门竞赛
+     * @param {Number} data.teamSize - 团队最小人数
+     * @param {Number} data.teamMax - 团队最大人数
+     * @param {String} [data.websiteUrl] - 竞赛官网
+     * @param {Object} data.contactInfo - 联系信息
+     * @param {Array} data.categoryIds - 关联的分类ID列表
+     * @returns {Promise} 请求结果Promise对象
+     */
+    createCompetition(data) {
+      const token = getToken();
+      if (!token) {
+        uni.showToast({
+          title: "请先登录",
+          icon: "none"
+        });
+        setTimeout(() => {
+          uni.navigateTo({
+            url: "/pages/login/login"
+          });
+        }, 1500);
+        return Promise.reject(new Error("未登录"));
+      }
+      formatAppLog("log", "at api/modules/competitions.js:99", "准备创建竞赛，数据:", data);
+      return request({
+        url: "/competitions",
+        method: "POST",
+        data,
+        header: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      }).then((res) => {
+        formatAppLog("log", "at api/modules/competitions.js:110", "创建竞赛响应:", res);
+        return res;
+      }).catch((err) => {
+        formatAppLog("error", "at api/modules/competitions.js:113", "创建竞赛出错:", err);
+        throw err;
+      });
+    },
+    /**
+     * 创建比赛阶段
+     * @param {Object} data - 阶段信息
+     * @param {Number} data.competitionId - 关联的竞赛ID
+     * @param {String} data.stageName - 阶段名称
+     * @param {String} data.startTime - 开始时间
+     * @param {String} data.endTime - 结束时间
+     * @param {String} data.description - 阶段描述
+     * @param {String} data.status - 阶段状态 (pending/active/completed)
+     * @param {String} data.metadata - 元数据JSON字符串，包含地点等信息
+     * @returns {Promise} 请求结果Promise对象
+     */
+    createCompetitionStage(data) {
+      const token = getToken();
+      if (!token) {
+        uni.showToast({
+          title: "请先登录",
+          icon: "none"
+        });
+        setTimeout(() => {
+          uni.navigateTo({
+            url: "/pages/login/login"
+          });
+        }, 1500);
+        return Promise.reject(new Error("未登录"));
+      }
+      return request({
+        url: "/competitionStages",
+        method: "POST",
+        data,
+        header: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      });
+    },
+    /**
+     * 批量创建比赛阶段
+     * @param {Array} stages - 阶段信息数组
+     * @param {Number} competitionId - 关联的竞赛ID
+     * @returns {Promise} 请求结果Promise对象
+     */
+    createCompetitionStages(stages, competitionId) {
+      const token = getToken();
+      if (!token) {
+        uni.showToast({
+          title: "请先登录",
+          icon: "none"
+        });
+        setTimeout(() => {
+          uni.navigateTo({
+            url: "/pages/login/login"
+          });
+        }, 1500);
+        return Promise.reject(new Error("未登录"));
+      }
+      const stagesWithCompetitionId = stages.map((stage) => ({
+        ...stage,
+        competitionId
+      }));
+      return Promise.all(
+        stagesWithCompetitionId.map(
+          (stage) => this.createCompetitionStage(stage)
+        )
+      );
+    },
+    /**
+     * 获取所有竞赛分类
+     * @returns {Promise} 包含所有竞赛分类的Promise对象
+     */
+    getCompetitionCategories() {
+      return request({
+        url: "/competitions/categories",
+        method: "GET"
+      });
+    },
+    /**
+     * 获取竞赛基本信息列表（用于选择）
+     * @returns {Promise} 包含竞赛基本信息的Promise对象
+     */
+    getCompetitionsBasicInfo() {
+      return request({
+        url: "/competitions/basic-info",
+        method: "GET"
+      });
+    },
+    /**
+     * 获取竞赛阶段列表
+     * @param {Number|String} competitionId - 竞赛ID
+     * @returns {Promise} 请求结果Promise对象
+     */
+    getCompetitionStages(competitionId) {
+      return request({
+        url: `/competitionStages/list/${competitionId}`,
+        method: "GET"
+      });
+    },
+    /**
+     * 获取比赛结果
+     * @param {Number|String} competitionId - 竞赛ID
+     * @returns {Promise} 请求结果Promise对象
+     */
+    getCompetitionResults(competitionId) {
+      return request({
+        url: `/competitionResults/${competitionId}`,
+        method: "GET"
+      });
+    },
+    /**
+     * 获取竞赛报名团队数量
+     * @param {Number|String} competitionId - 竞赛ID
+     * @returns {Promise} 请求结果Promise对象，包含团队数量信息
+     */
+    getCompetitionTeamCount(competitionId) {
+      return request({
+        url: `/competitions/${competitionId}/team-count`,
+        method: "GET"
+      });
+    }
+  };
   const teamApi = {
     /**
      * 获取团队列表
@@ -688,162 +905,164 @@ if (uni.restoreGlobal) {
       });
     }
   };
-  const competitionsApi = {
-    /**
-     * 获取竞赛列表
-     * @param {Object} params - 查询参数
-     * @param {String} [params.pageNum] - 页码，可选
-     * @param {String} [params.pageSize] - 页数大小，可选
-     * @param {Array} [params.keyword] - 关键字数组，可选
-     * @param {String} [params.categoryId] - 类型，可选
-     * @param {String} [params.level] - 等级，可选
-     * @param {Boolean} [params.isHot] - 是否热门竞赛，可选
-     * @returns {Promise} 请求结果Promise对象
-     */
-    getCompetitionsList(params = {}) {
-      return request({
-        url: "/competitions/list",
-        method: "GET",
-        params
-      });
-    },
-    /**
-     * 获取竞赛详情
-     * @param {Number|String} id - 竞赛ID
-     * @returns {Promise} 请求结果Promise对象
-     */
-    getCompetitionDetail(id) {
-      const token = getToken();
-      if (!token) {
-        uni.showToast({
-          title: "请先登录",
-          icon: "none"
-        });
-        setTimeout(() => {
-          uni.navigateTo({
-            url: "/pages/login/login"
-          });
-        }, 1500);
-        return Promise.reject(new Error("未登录"));
-      }
-      return request({
-        url: `/competitions/${id}`,
-        method: "GET",
-        header: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-    },
-    /**
-     * 创建竞赛（仅管理员可用）
-     * @param {Object} data - 竞赛信息
-     * @param {String} data.title - 竞赛标题
-     * @param {String} data.registrationStart - 报名开始时间
-     * @param {String} data.registrationDeadline - 报名截止时间
-     * @param {String} data.status - 竞赛状态
-     * @param {String} data.level - 竞赛级别
-     * @param {String} data.organizer - 主办方
-     * @param {String} data.description - 详细描述
-     * @param {String} [data.shortDescription] - 简短描述
-     * @param {String} [data.requirements] - 参赛要求
-     * @param {Boolean} [data.isHot] - 是否热门竞赛
-     * @param {Number} data.teamSize - 团队最小人数
-     * @param {Number} data.teamMax - 团队最大人数
-     * @param {String} [data.websiteUrl] - 竞赛官网
-     * @param {Object} data.contactInfo - 联系信息
-     * @param {Array} data.categoryIds - 关联的分类ID列表
-     * @returns {Promise} 请求结果Promise对象
-     */
-    createCompetition(data) {
-      const token = getToken();
-      if (!token) {
-        uni.showToast({
-          title: "请先登录",
-          icon: "none"
-        });
-        setTimeout(() => {
-          uni.navigateTo({
-            url: "/pages/login/login"
-          });
-        }, 1500);
-        return Promise.reject(new Error("未登录"));
-      }
-      formatAppLog("log", "at api/modules/competitions.js:99", "准备创建竞赛，数据:", data);
-      return request({
-        url: "/competitions",
-        method: "POST",
-        data,
-        header: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        }
-      }).then((res) => {
-        formatAppLog("log", "at api/modules/competitions.js:110", "创建竞赛响应:", res);
-        return res;
-      }).catch((err) => {
-        formatAppLog("error", "at api/modules/competitions.js:113", "创建竞赛出错:", err);
-        throw err;
-      });
-    },
-    /**
-     * 获取所有竞赛分类
-     * @returns {Promise} 包含所有竞赛分类的Promise对象
-     */
-    getCompetitionCategories() {
-      return request({
-        url: "/competitions/categories",
-        method: "GET"
-      });
-    },
-    /**
-     * 获取竞赛基本信息列表（用于选择）
-     * @returns {Promise} 包含竞赛基本信息的Promise对象
-     */
-    getCompetitionsBasicInfo() {
-      return request({
-        url: "/competitions/basic-info",
-        method: "GET"
-      });
-    }
-  };
   const baseApiUrl$1 = config.baseUrl;
+  function getTaskList(params) {
+    return request({
+      url: `${baseApiUrl$1}/tasks/list`,
+      method: "GET",
+      params
+    });
+  }
+  function getTaskParticipants(taskId, params) {
+    return request({
+      url: `${baseApiUrl$1}/tasks/${taskId}/participants`,
+      method: "GET",
+      params
+    });
+  }
+  function getTaskDetail(id) {
+    return request({
+      url: `${baseApiUrl$1}/tasks/${id}`,
+      method: "GET"
+    });
+  }
+  function createTask(data) {
+    return request({
+      url: `${baseApiUrl$1}/tasks`,
+      method: "POST",
+      data
+    });
+  }
+  function updateTask(id, data) {
+    return request({
+      url: `${baseApiUrl$1}/tasks/${id}`,
+      method: "PUT",
+      data
+    });
+  }
+  function updateTaskStatus(id, data) {
+    return request({
+      url: `${baseApiUrl$1}/tasks/${id}/status`,
+      method: "PUT",
+      data
+    });
+  }
+  function deleteTask(id) {
+    return request({
+      url: `${baseApiUrl$1}/tasks/${id}`,
+      method: "DELETE"
+    });
+  }
+  function toggleFavoriteTask(id, isFavorite) {
+    return request({
+      url: `${baseApiUrl$1}/tasks/${id}/favorite`,
+      method: isFavorite ? "POST" : "DELETE"
+    });
+  }
+  function applyTask(id) {
+    return request({
+      url: `${baseApiUrl$1}/tasks/${id}/apply`,
+      method: "POST"
+    });
+  }
+  function getTaskCategories() {
+    return request({
+      url: `${baseApiUrl$1}/taskCategories`,
+      method: "GET"
+    });
+  }
+  function getRewardTypes() {
+    return request({
+      url: `${baseApiUrl$1}/rewardTypes`,
+      method: "GET"
+    });
+  }
+  function getMyCreatedTasks(params) {
+    return request({
+      url: `${baseApiUrl$1}/tasks/my/created`,
+      method: "GET",
+      params
+    });
+  }
+  function getMyParticipatedTasks(params) {
+    return request({
+      url: `${baseApiUrl$1}/tasks/my/participated`,
+      method: "GET",
+      params
+    });
+  }
+  function removeTaskParticipant(taskId, participantId) {
+    return request({
+      url: `${baseApiUrl$1}/tasks/${taskId}/participants/${participantId}`,
+      method: "DELETE"
+    });
+  }
+  function updateParticipationStatus(participationId, data, taskId) {
+    const requestData = {
+      ...data,
+      taskId
+    };
+    return request({
+      url: `${baseApiUrl$1}/tasks/my/participation/record/${participationId}/status`,
+      method: "PUT",
+      data: requestData
+    });
+  }
+  const tasksApi = {
+    getTaskList,
+    getTaskDetail,
+    createTask,
+    updateTask,
+    updateTaskStatus,
+    deleteTask,
+    toggleFavoriteTask,
+    applyTask,
+    getTaskCategories,
+    getRewardTypes,
+    getMyCreatedTasks,
+    getMyParticipatedTasks,
+    getTaskParticipants,
+    removeTaskParticipant,
+    updateParticipationStatus
+  };
+  const baseApiUrl = config.baseUrl;
   function createTaskApplication(data) {
     return request({
-      url: `${baseApiUrl$1}/task-applications`,
+      url: `${baseApiUrl}/task-applications`,
       method: "POST",
       data
     });
   }
   function getTaskApplicationList(params) {
     return request({
-      url: `${baseApiUrl$1}/task-applications/list`,
+      url: `${baseApiUrl}/task-applications/list`,
       method: "GET",
       params
     });
   }
   function updateTaskApplication(id, data) {
     return request({
-      url: `${baseApiUrl$1}/task-applications/${id}`,
+      url: `${baseApiUrl}/task-applications/${id}`,
       method: "PUT",
       data
     });
   }
   function cancelTaskApplication(id) {
     return request({
-      url: `${baseApiUrl$1}/task-applications/${id}`,
+      url: `${baseApiUrl}/task-applications/${id}`,
       method: "DELETE"
     });
   }
   function checkTaskApplication(taskId) {
     return request({
-      url: `${baseApiUrl$1}/task-participations/check`,
+      url: `${baseApiUrl}/task-participations/check`,
       method: "GET",
       params: { taskId }
     });
   }
   function getTaskApplicationDetail(id) {
     return request({
-      url: `${baseApiUrl$1}/task-applications/${id}`,
+      url: `${baseApiUrl}/task-applications/${id}`,
       method: "GET"
     });
   }
@@ -865,11 +1084,99 @@ if (uni.restoreGlobal) {
     getTaskApplicationList,
     updateTaskApplication
   }, Symbol.toStringTag, { value: "Module" }));
+  const competitionResultsApi = {
+    /**
+     * 获取比赛结果列表
+     * @param {Number|String} competitionId - 竞赛ID
+     * @returns {Promise} 请求结果Promise对象
+     */
+    getCompetitionResults(competitionId) {
+      const token = getToken();
+      if (!token) {
+        uni.showToast({
+          title: "请先登录",
+          icon: "none"
+        });
+        setTimeout(() => {
+          uni.navigateTo({
+            url: "/pages/login/login"
+          });
+        }, 1500);
+        return Promise.reject(new Error("未登录"));
+      }
+      return request({
+        url: `/competitionResults/competition/${competitionId}`,
+        method: "GET",
+        header: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+    },
+    /**
+     * 获取队伍详情
+     * @param {Number|String} teamId - 队伍ID
+     * @returns {Promise} 请求结果Promise对象
+     */
+    getTeamDetail(teamId) {
+      return request({
+        url: `/teams/${teamId}`,
+        method: "GET"
+      });
+    },
+    /**
+     * 获取团队成员
+     * @param {Number|String} teamId - 团队ID
+     * @returns {Promise} 团队成员的Promise对象
+     */
+    getTeamMembers(teamId) {
+      return request({
+        url: `/teams/${teamId}/members`,
+        method: "GET"
+      });
+    },
+    /**
+     * 获取用户的获奖记录
+     * @param {Object} params - 查询参数
+     * @param {Number} [params.pageNum=1] - 页码
+     * @param {Number} [params.pageSize=10] - 每页记录数
+     * @returns {Promise} 请求结果Promise对象
+     */
+    getMyAwards(params = {}) {
+      const defaultParams = {
+        pageNum: 1,
+        pageSize: 10,
+        ...params
+      };
+      const token = getToken();
+      if (!token) {
+        uni.showToast({
+          title: "请先登录",
+          icon: "none"
+        });
+        setTimeout(() => {
+          uni.navigateTo({
+            url: "/pages/login/login"
+          });
+        }, 1500);
+        return Promise.reject(new Error("未登录"));
+      }
+      return request({
+        url: `/competitionResults/my-awards`,
+        method: "GET",
+        params: defaultParams,
+        header: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+    }
+  };
   const api = {
     user: userApi,
-    team: teamApi,
     competitions: competitionsApi,
-    taskApplications: taskApplicationsApi
+    team: teamApi,
+    tasks: tasksApi,
+    taskApplications: taskApplicationsApi,
+    competitionResults: competitionResultsApi
     // 其他模块
     // course: courseApi,
     // notice: noticeApi
@@ -1011,7 +1318,7 @@ if (uni.restoreGlobal) {
     return target;
   };
   const defaultFallbackIcon = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAAXNSR0IArs4c6QAAAIRlWElmTU0AKgAAAAgABQESAAMAAAABAAEAAAEaAAUAAAABAAAASgEbAAUAAAABAAAAUgEoAAMAAAABAAIAAIdpAAQAAAABAAAAWgAAAAAAAABIAAAAAQAAAEgAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAAADCgAwAEAAAAAQAAADAAAAAA9+0L2AAAAAlwSFlzAAALEwAACxMBAJqcGAAAAVlpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IlhNUCBDb3JlIDYuMC4wIj4KICAgPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICAgICAgPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iPgogICAgICAgICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogICAgICA8L3JkZjpEZXNjcmlwdGlvbj4KICAgPC9yZGY6UkRGPgo8L3g6eG1wbWV0YT4KGV7hBwAAAWlJREFUaAXtmLEOAiEQRFmNhYXGyt7Ozs7a3v//BL/EeJvsBh1Fkzi8xLAMbIC5eS+XK7fbzUopxUktpRT9/S5M/K5Kpafyn+J3lW8YJZUYsUDATkACCDigEAwBCSgg4IBCMASUU0C5/DYYl+86XyxWx7lXP9p0PqyjhW1XoPYC24X8GhJQQAEHFIIhIAEFBBxQCIaABAQEnB9fYi+Pq7FX/bjO51j2a3NfxvVnc+7H8UDXe/M0D+wDSEABBxxQCIaABBQQcEAhGAISUEDAAYVgCEhAAQEHFIIhIAEFBBxQCIaABJbzQAghhGD8uUZ88uvrNe73u3k8Hubxnlc3jDGaj1k/z6ZPyONt3ufPKlR/gdmlLZsUUEABBxSCISABBQQcUAiGgAQUEHBAIRgCElBAwAGFYAhIQAEBBxSCIbCcB+ov5Dbvaxuou5yl7UJ+FQkoIAEHFIIhIAEFBBxQCIaABBQQcODvhfyYXSZ9dCWDAAAAAElFTkSuQmCC";
-  const _sfc_main$K = {
+  const _sfc_main$O = {
     __name: "SvgIcon",
     props: {
       // 图标名称（与icons.js中的导出名称一致）
@@ -1115,7 +1422,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$J(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$N(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock(
       "view",
       {
@@ -1150,11 +1457,12 @@ if (uni.restoreGlobal) {
       /* STYLE */
     );
   }
-  const SvgIcon = /* @__PURE__ */ _export_sfc(_sfc_main$K, [["render", _sfc_render$J], ["__scopeId", "data-v-4c110535"], ["__file", "D:/Uniapp/htmlTest/赛创项目/components/SvgIcon.vue"]]);
-  const _imports_0$9 = "/static/image/Lianxi/weixin.png";
-  const _imports_1$1 = "/static/image/Lianxi/qq.png";
-  const _imports_2$1 = "/static/image/Lianxi/Shouji.png";
-  const _sfc_main$J = {
+  const SvgIcon = /* @__PURE__ */ _export_sfc(_sfc_main$O, [["render", _sfc_render$N], ["__scopeId", "data-v-4c110535"], ["__file", "D:/Uniapp/htmlTest/赛创项目/components/SvgIcon.vue"]]);
+  const _imports_0$b = "/static/image/Lianxi/mc/LOG1.png";
+  const _imports_1$1 = "/static/image/Lianxi/weixin.png";
+  const _imports_2$1 = "/static/image/Lianxi/qq.png";
+  const _imports_3$1 = "/static/image/Lianxi/Shouji.png";
+  const _sfc_main$N = {
     __name: "login",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -1443,14 +1751,14 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$I(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$M(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 主内容区 "),
       vue.createElementVNode("view", { class: "content-area" }, [
         vue.createCommentVNode(" 顶部图片 "),
         vue.createElementVNode("view", { class: "top-image" }, [
           vue.createElementVNode("image", {
-            src: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
+            src: _imports_0$b,
             mode: "aspectFill",
             class: "campus-image"
           })
@@ -1737,7 +2045,7 @@ if (uni.restoreGlobal) {
               "hover-class": "social-btn-hover"
             }, [
               vue.createElementVNode("image", {
-                src: _imports_0$9,
+                src: _imports_1$1,
                 mode: "aspectFit",
                 class: "social-icon"
               })
@@ -1748,7 +2056,7 @@ if (uni.restoreGlobal) {
               "hover-class": "social-btn-hover"
             }, [
               vue.createElementVNode("image", {
-                src: _imports_1$1,
+                src: _imports_2$1,
                 mode: "aspectFit",
                 class: "social-icon"
               })
@@ -1759,7 +2067,7 @@ if (uni.restoreGlobal) {
               "hover-class": "social-btn-hover"
             }, [
               vue.createElementVNode("image", {
-                src: _imports_2$1,
+                src: _imports_3$1,
                 mode: "aspectFit",
                 class: "social-icon"
               })
@@ -1788,7 +2096,7 @@ if (uni.restoreGlobal) {
       ])
     ]);
   }
-  const PagesLoginLogin = /* @__PURE__ */ _export_sfc(_sfc_main$J, [["render", _sfc_render$I], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/login/login.vue"]]);
+  const PagesLoginLogin = /* @__PURE__ */ _export_sfc(_sfc_main$N, [["render", _sfc_render$M], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/login/login.vue"]]);
   class MPAnimation {
     constructor(options, _this) {
       this.options = options;
@@ -1901,7 +2209,7 @@ if (uni.restoreGlobal) {
     clearTimeout(_this.timer);
     return new MPAnimation(option, _this);
   }
-  const _sfc_main$I = {
+  const _sfc_main$M = {
     name: "uniTransition",
     emits: ["click", "change"],
     props: {
@@ -2152,7 +2460,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$H(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$L(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.withDirectives((vue.openBlock(), vue.createElementBlock("view", {
       ref: "ani",
       animation: $data.animationData,
@@ -2165,8 +2473,8 @@ if (uni.restoreGlobal) {
       [vue.vShow, $data.isShow]
     ]);
   }
-  const __easycom_0$3 = /* @__PURE__ */ _export_sfc(_sfc_main$I, [["render", _sfc_render$H], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-transition/components/uni-transition/uni-transition.vue"]]);
-  const _sfc_main$H = {
+  const __easycom_0$4 = /* @__PURE__ */ _export_sfc(_sfc_main$M, [["render", _sfc_render$L], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-transition/components/uni-transition/uni-transition.vue"]]);
+  const _sfc_main$L = {
     name: "uniPopup",
     components: {},
     emits: ["change", "maskClick"],
@@ -2516,8 +2824,8 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$G(_ctx, _cache, $props, $setup, $data, $options) {
-    const _component_uni_transition = resolveEasycom(vue.resolveDynamicComponent("uni-transition"), __easycom_0$3);
+  function _sfc_render$K(_ctx, _cache, $props, $setup, $data, $options) {
+    const _component_uni_transition = resolveEasycom(vue.resolveDynamicComponent("uni-transition"), __easycom_0$4);
     return $data.showPopup ? (vue.openBlock(), vue.createElementBlock(
       "view",
       {
@@ -2576,8 +2884,8 @@ if (uni.restoreGlobal) {
       /* CLASS */
     )) : vue.createCommentVNode("v-if", true);
   }
-  const uniPopup = /* @__PURE__ */ _export_sfc(_sfc_main$H, [["render", _sfc_render$G], ["__scopeId", "data-v-4dd3c44b"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-popup/components/uni-popup/uni-popup.vue"]]);
-  const _sfc_main$G = {
+  const __easycom_0$3 = /* @__PURE__ */ _export_sfc(_sfc_main$L, [["render", _sfc_render$K], ["__scopeId", "data-v-4dd3c44b"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-popup/components/uni-popup/uni-popup.vue"]]);
+  const _sfc_main$K = {
     __name: "TeamCard",
     props: {
       team: {
@@ -2679,7 +2987,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$F(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$J(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock(
       vue.Fragment,
       null,
@@ -2923,8 +3231,8 @@ if (uni.restoreGlobal) {
       /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */
     );
   }
-  const TeamCard = /* @__PURE__ */ _export_sfc(_sfc_main$G, [["render", _sfc_render$F], ["__scopeId", "data-v-49d62ae1"], ["__file", "D:/Uniapp/htmlTest/赛创项目/components/team/TeamCard.vue"]]);
-  const _sfc_main$F = {
+  const TeamCard = /* @__PURE__ */ _export_sfc(_sfc_main$K, [["render", _sfc_render$J], ["__scopeId", "data-v-49d62ae1"], ["__file", "D:/Uniapp/htmlTest/赛创项目/components/team/TeamCard.vue"]]);
+  const _sfc_main$J = {
     __name: "TabBar",
     props: {
       activeTab: {
@@ -3045,14 +3353,6 @@ if (uni.restoreGlobal) {
                 url: "/pages/task-square/create"
               });
             }
-          },
-          {
-            text: "添加日程",
-            action: () => {
-              uni.navigateTo({
-                url: "/pages/schedule/index?action=add"
-              });
-            }
           }
         );
         const itemList = menuOptions.map((option) => option.text);
@@ -3118,7 +3418,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$E(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$I(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock(
       "view",
       {
@@ -3248,7 +3548,7 @@ if (uni.restoreGlobal) {
       /* CLASS */
     );
   }
-  const TabBar = /* @__PURE__ */ _export_sfc(_sfc_main$F, [["render", _sfc_render$E], ["__scopeId", "data-v-89ca1f91"], ["__file", "D:/Uniapp/htmlTest/赛创项目/components/TabBar.vue"]]);
+  const TabBar = /* @__PURE__ */ _export_sfc(_sfc_main$J, [["render", _sfc_render$I], ["__scopeId", "data-v-89ca1f91"], ["__file", "D:/Uniapp/htmlTest/赛创项目/components/TabBar.vue"]]);
   function getNotificationList(params = {}) {
     return request({
       url: "/notifications",
@@ -3299,7 +3599,7 @@ if (uni.restoreGlobal) {
     deleteNotification,
     batchDeleteNotifications
   };
-  const _sfc_main$E = {
+  const _sfc_main$I = {
     __name: "HeaderBar",
     props: {
       title: {
@@ -3467,7 +3767,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$D(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$H(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "sticky-header" }, [
       vue.createElementVNode("view", { class: "header-title" }, [
         !$setup.isTabBarPage ? (vue.openBlock(), vue.createElementBlock("view", {
@@ -3554,7 +3854,7 @@ if (uni.restoreGlobal) {
       vue.renderSlot(_ctx.$slots, "default", {}, void 0, true)
     ]);
   }
-  const HeaderBar = /* @__PURE__ */ _export_sfc(_sfc_main$E, [["render", _sfc_render$D], ["__scopeId", "data-v-965d9a70"], ["__file", "D:/Uniapp/htmlTest/赛创项目/components/HeaderBar.vue"]]);
+  const HeaderBar = /* @__PURE__ */ _export_sfc(_sfc_main$I, [["render", _sfc_render$H], ["__scopeId", "data-v-965d9a70"], ["__file", "D:/Uniapp/htmlTest/赛创项目/components/HeaderBar.vue"]]);
   const getStoredState = () => {
     try {
       const storedState = uni.getStorageSync("userInteractionState");
@@ -3604,7 +3904,7 @@ if (uni.restoreGlobal) {
     clearState,
     resetAiRecommendState
   };
-  const _sfc_main$D = {
+  const _sfc_main$H = {
     __name: "index",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -3731,7 +4031,7 @@ if (uni.restoreGlobal) {
             url: "/pages/team/list"
           });
         } else if (page === "task-square") {
-          uni.switchTab({
+          uni.navigateTo({
             url: "/pages/task-square/index"
           });
         } else if (page === "project") {
@@ -4069,8 +4369,8 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$C(_ctx, _cache, $props, $setup, $data, $options) {
-    const _component_uni_popup = resolveEasycom(vue.resolveDynamicComponent("uni-popup"), uniPopup);
+  function _sfc_render$G(_ctx, _cache, $props, $setup, $data, $options) {
+    const _component_uni_popup = resolveEasycom(vue.resolveDynamicComponent("uni-popup"), __easycom_0$3);
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createVNode(
@@ -4113,9 +4413,9 @@ if (uni.restoreGlobal) {
                   vue.createElementVNode("text", { class: "swiper-title" }, "中国大学生计算机设计大赛(第18届)"),
                   vue.createElementVNode("view", { class: "swiper-date" }, [
                     vue.createElementVNode("image", {
-                      src: $setup.icons.baoming,
+                      src: _imports_0$b,
                       class: "date-icon"
-                    }, null, 8, ["src"]),
+                    }),
                     vue.createElementVNode("text", { class: "date-text" }, "报名截止：5月15日")
                   ])
                 ])
@@ -4481,8 +4781,8 @@ if (uni.restoreGlobal) {
       }, 8, ["show"])
     ]);
   }
-  const PagesIndexIndex = /* @__PURE__ */ _export_sfc(_sfc_main$D, [["render", _sfc_render$C], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/index/index.vue"]]);
-  const _sfc_main$C = {
+  const PagesIndexIndex = /* @__PURE__ */ _export_sfc(_sfc_main$H, [["render", _sfc_render$G], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/index/index.vue"]]);
+  const _sfc_main$G = {
     __name: "project-showcase",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -4775,7 +5075,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$B(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$F(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createVNode($setup["HeaderBar"], {
@@ -4918,9 +5218,9 @@ if (uni.restoreGlobal) {
       vue.createVNode($setup["TabBar"], { activeTab: "projects" })
     ]);
   }
-  const PagesProjectProjectShowcase = /* @__PURE__ */ _export_sfc(_sfc_main$C, [["render", _sfc_render$B], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/project/project-showcase.vue"]]);
-  const _imports_0$8 = "/static/image/placeholder.jpg";
-  const _sfc_main$B = {
+  const PagesProjectProjectShowcase = /* @__PURE__ */ _export_sfc(_sfc_main$G, [["render", _sfc_render$F], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/project/project-showcase.vue"]]);
+  const _imports_0$a = "/static/image/placeholder.jpg";
+  const _sfc_main$F = {
     __name: "detail",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -5235,7 +5535,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$A(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$E(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createVNode($setup["HeaderBar"], {
@@ -5251,7 +5551,7 @@ if (uni.restoreGlobal) {
         vue.createCommentVNode(" 项目封面图 "),
         vue.createElementVNode("view", { class: "project-cover" }, [
           vue.createElementVNode("image", {
-            src: _imports_0$8,
+            src: _imports_0$a,
             mode: "aspectFill",
             class: "cover-image"
           }),
@@ -5439,7 +5739,7 @@ if (uni.restoreGlobal) {
       ])
     ]);
   }
-  const PagesProjectDetail = /* @__PURE__ */ _export_sfc(_sfc_main$B, [["render", _sfc_render$A], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/project/detail.vue"]]);
+  const PagesProjectDetail = /* @__PURE__ */ _export_sfc(_sfc_main$F, [["render", _sfc_render$E], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/project/detail.vue"]]);
   const isObject = (val) => val !== null && typeof val === "object";
   const defaultDelimiters = ["{", "}"];
   class BaseFormatter {
@@ -5726,34 +6026,34 @@ if (uni.restoreGlobal) {
       }
     };
   }
-  const en$1 = {
+  const en$2 = {
     "uni-load-more.contentdown": "Pull up to show more",
     "uni-load-more.contentrefresh": "loading...",
     "uni-load-more.contentnomore": "No more data"
   };
-  const zhHans$1 = {
+  const zhHans$2 = {
     "uni-load-more.contentdown": "上拉显示更多",
     "uni-load-more.contentrefresh": "正在加载...",
     "uni-load-more.contentnomore": "没有更多数据了"
   };
-  const zhHant$1 = {
+  const zhHant$2 = {
     "uni-load-more.contentdown": "上拉顯示更多",
     "uni-load-more.contentrefresh": "正在加載...",
     "uni-load-more.contentnomore": "沒有更多數據了"
   };
-  const messages = {
-    en: en$1,
-    "zh-Hans": zhHans$1,
-    "zh-Hant": zhHant$1
+  const messages$1 = {
+    en: en$2,
+    "zh-Hans": zhHans$2,
+    "zh-Hant": zhHant$2
   };
   let platform;
   setTimeout(() => {
     platform = uni.getSystemInfoSync().platform;
   }, 16);
   const {
-    t: t$2
-  } = initVueI18n(messages);
-  const _sfc_main$A = {
+    t: t$3
+  } = initVueI18n(messages$1);
+  const _sfc_main$E = {
     name: "UniLoadMore",
     emits: ["clickLoadMore"],
     props: {
@@ -5805,13 +6105,13 @@ if (uni.restoreGlobal) {
         return (Math.floor(this.iconSize / 24) || 1) * 2;
       },
       contentdownText() {
-        return this.contentText.contentdown || t$2("uni-load-more.contentdown");
+        return this.contentText.contentdown || t$3("uni-load-more.contentdown");
       },
       contentrefreshText() {
-        return this.contentText.contentrefresh || t$2("uni-load-more.contentrefresh");
+        return this.contentText.contentrefresh || t$3("uni-load-more.contentrefresh");
       },
       contentnomoreText() {
-        return this.contentText.contentnomore || t$2("uni-load-more.contentnomore");
+        return this.contentText.contentnomore || t$3("uni-load-more.contentnomore");
       }
     },
     mounted() {
@@ -5835,7 +6135,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$z(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$D(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", {
       class: "uni-load-more",
       onClick: _cache[0] || (_cache[0] = (...args) => $options.onClick && $options.onClick(...args))
@@ -5910,11 +6210,11 @@ if (uni.restoreGlobal) {
       )) : vue.createCommentVNode("v-if", true)
     ]);
   }
-  const __easycom_0$2 = /* @__PURE__ */ _export_sfc(_sfc_main$A, [["render", _sfc_render$z], ["__scopeId", "data-v-9245e42c"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-load-more/components/uni-load-more/uni-load-more.vue"]]);
-  const _imports_0$7 = "/static/empty-task.png";
+  const __easycom_0$2 = /* @__PURE__ */ _export_sfc(_sfc_main$E, [["render", _sfc_render$D], ["__scopeId", "data-v-9245e42c"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-load-more/components/uni-load-more/uni-load-more.vue"]]);
+  const _imports_0$9 = "/static/empty-task.png";
   const defaultAvatar$1 = "https://via.placeholder.com/100";
   const mainCategoryCount = 4;
-  const _sfc_main$z = {
+  const _sfc_main$D = {
     __name: "index",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -5932,7 +6232,7 @@ if (uni.restoreGlobal) {
       const activeStatus = vue.ref("");
       const taskList = vue.ref([]);
       const page = vue.ref(1);
-      const pageSize = vue.ref(10);
+      const pageSize2 = vue.ref(10);
       const loading = vue.ref(false);
       const noMore = vue.ref(false);
       const loadingText = vue.ref({
@@ -5999,7 +6299,7 @@ if (uni.restoreGlobal) {
         try {
           const params = {
             pageNum: page.value,
-            pageSize: pageSize.value
+            pageSize: pageSize2.value
           };
           if (activeCategoryId.value !== 0) {
             params.categoryId = activeCategoryId.value;
@@ -6185,14 +6485,14 @@ if (uni.restoreGlobal) {
       function hasMoreCategories() {
         return categories.value.length > mainCategoryCount;
       }
-      const __returned__ = { defaultAvatar: defaultAvatar$1, categories, statusOptions, activeCategoryId, activeStatus, taskList, page, pageSize, loading, noMore, loadingText, isCategoryExpanded, refreshing, safeAreaTop, mainCategoryCount, headerHeight, getSystemInfo, getTaskCategories: getTaskCategories2, getTaskList: getTaskList2, formatDate, selectCategory, selectStatus, loadMore, getCategoryClass, getStatusClass, getRewardClass, viewTaskDetail, createTask: createTask2, onSearch, onNotification, goBack, getSelectedCategoryName, toggleCategoryExpand, getMainCategories, getMoreCategories, hasMoreCategories, ref: vue.ref, onMounted: vue.onMounted, reactive: vue.reactive, computed: vue.computed, get request() {
+      const __returned__ = { defaultAvatar: defaultAvatar$1, categories, statusOptions, activeCategoryId, activeStatus, taskList, page, pageSize: pageSize2, loading, noMore, loadingText, isCategoryExpanded, refreshing, safeAreaTop, mainCategoryCount, headerHeight, getSystemInfo, getTaskCategories: getTaskCategories2, getTaskList: getTaskList2, formatDate, selectCategory, selectStatus, loadMore, getCategoryClass, getStatusClass, getRewardClass, viewTaskDetail, createTask: createTask2, onSearch, onNotification, goBack, getSelectedCategoryName, toggleCategoryExpand, getMainCategories, getMoreCategories, hasMoreCategories, ref: vue.ref, onMounted: vue.onMounted, reactive: vue.reactive, computed: vue.computed, get request() {
         return request;
       }, SvgIcon };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
     }
   };
-  function _sfc_render$y(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$C(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_uni_load_more = resolveEasycom(vue.resolveDynamicComponent("uni-load-more"), __easycom_0$2);
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部固定区域 "),
@@ -6499,7 +6799,7 @@ if (uni.restoreGlobal) {
             }, [
               vue.createElementVNode("image", {
                 class: "empty-image",
-                src: _imports_0$7,
+                src: _imports_0$9,
                 mode: "aspectFit"
               }),
               vue.createElementVNode("text", { class: "empty-text" }, "暂无任务数据")
@@ -6543,802 +6843,7 @@ if (uni.restoreGlobal) {
       ])
     ]);
   }
-  const PagesTaskSquareIndex = /* @__PURE__ */ _export_sfc(_sfc_main$z, [["render", _sfc_render$y], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/task-square/index.vue"]]);
-  const defaultAvatar = "https://via.placeholder.com/100";
-  const _sfc_main$y = {
-    __name: "detail",
-    setup(__props, { expose: __expose }) {
-      const taskId = vue.ref(null);
-      const isFavorite = vue.ref(false);
-      const viewCounted = vue.ref(false);
-      const favoriteCount = vue.ref(0);
-      const isAlreadyApplied = vue.ref(false);
-      const taskDetail = vue.ref({
-        id: 0,
-        title: "",
-        description: "",
-        requirements: "",
-        contactInfo: "",
-        categoryId: 0,
-        categoryName: "",
-        creatorId: 0,
-        creatorName: "",
-        creatorAvatarUrl: "",
-        creatorMajor: "",
-        rewardTypeId: 0,
-        rewardTypeName: "",
-        rewardAmount: 0,
-        createdAt: "",
-        deadline: "",
-        status: "recruiting",
-        maxParticipants: 0,
-        currentParticipants: 0,
-        viewCount: 0,
-        location: ""
-      });
-      const contactInfo = vue.computed(() => {
-        if (!taskDetail.value.contactInfo)
-          return null;
-        try {
-          let contactData;
-          if (typeof taskDetail.value.contactInfo === "string") {
-            contactData = JSON.parse(taskDetail.value.contactInfo);
-          } else {
-            contactData = taskDetail.value.contactInfo;
-          }
-          return contactData;
-        } catch (e) {
-          formatAppLog("error", "at pages/task-square/detail.vue:182", "解析联系方式失败:", e);
-          return null;
-        }
-      });
-      const validContacts = vue.computed(() => {
-        if (!contactInfo.value)
-          return [];
-        return Object.entries(contactInfo.value).filter(([key, value]) => value && value.toString().trim() !== "").map(([key, value]) => ({ key, value }));
-      });
-      const isApplyDisabled = vue.computed(() => {
-        if (isAlreadyApplied.value) {
-          return true;
-        }
-        if (taskDetail.value.status !== "recruiting") {
-          return true;
-        }
-        if (taskDetail.value.currentParticipants >= taskDetail.value.maxParticipants) {
-          return true;
-        }
-        return false;
-      });
-      function getRewardIcon(type) {
-        switch (type) {
-          case "现金":
-            return "xianjin";
-          case "学分":
-            return "xuefen";
-          case "志愿服务":
-            return "zhiyaunshichang";
-          case "证书":
-            return "zhengshu";
-          case "实习机会":
-            return "shixijihui";
-          case "礼品":
-            return "liping";
-          default:
-            return "xianjin";
-        }
-      }
-      function getRewardIconColor(type) {
-        switch (type) {
-          case "现金":
-            return "#FF6B6B";
-          case "学分":
-            return "#4A90E2";
-          case "志愿服务":
-            return "#7ED321";
-          case "证书":
-            return "#FFC107";
-          default:
-            return "#4A90E2";
-        }
-      }
-      function getContactIcon(type) {
-        switch (type) {
-          case "phone":
-            return "dianhua";
-          case "wechat":
-            return "weixintubiao";
-          case "qq":
-            return "qqtubiao";
-          case "email":
-            return "youxiang";
-          default:
-            return "youxiang";
-        }
-      }
-      vue.onMounted(() => {
-        getTaskIdAndLoadDetail();
-      });
-      function getTaskIdAndLoadDetail() {
-        try {
-          let id = null;
-          const pages = getCurrentPages();
-          if (pages && pages.length > 0) {
-            const currentPage = pages[pages.length - 1];
-            if (currentPage.options && currentPage.options.id) {
-              id = currentPage.options.id;
-            } else if (currentPage.$page && currentPage.$page.fullPath) {
-              const fullPath = currentPage.$page.fullPath;
-              const queryIndex = fullPath.indexOf("?");
-              if (queryIndex > -1) {
-                const queryPart = fullPath.substring(queryIndex + 1);
-                const queryParams = queryPart.split("&");
-                for (let param of queryParams) {
-                  const [key, value] = param.split("=");
-                  if (key === "id" && value) {
-                    id = value;
-                    break;
-                  }
-                }
-              }
-            } else if (currentPage.__displayReporter && currentPage.__displayReporter.query) {
-              id = currentPage.__displayReporter.query.id;
-            }
-          }
-          if (id) {
-            taskId.value = id;
-            getTaskDetail2(id);
-          } else {
-            uni.showToast({
-              title: "无法获取任务信息",
-              icon: "none"
-            });
-            setTimeout(() => {
-              uni.navigateBack();
-            }, 1500);
-          }
-        } catch (error) {
-          formatAppLog("error", "at pages/task-square/detail.vue:329", "获取任务ID出错:", error);
-          uni.showToast({
-            title: "加载任务详情失败",
-            icon: "none"
-          });
-        }
-      }
-      __expose({
-        onLoad(options) {
-          if (options && options.id) {
-            taskId.value = options.id;
-            getTaskDetail2(options.id);
-          }
-        }
-      });
-      async function getTaskDetail2(id) {
-        if (!id) {
-          uni.showToast({
-            title: "任务ID无效",
-            icon: "none"
-          });
-          return;
-        }
-        try {
-          uni.showLoading({
-            title: "加载中..."
-          });
-          const res = await request({
-            url: `/tasks/${id}`,
-            method: "GET"
-          });
-          if (res.code === 200 && res.data) {
-            taskDetail.value = res.data;
-            checkIfAlreadyApplied(id);
-            if (taskDetail.value.title) {
-              uni.setNavigationBarTitle({
-                title: "任务详情"
-              });
-            }
-          } else {
-            formatAppLog("error", "at pages/task-square/detail.vue:381", "获取任务详情失败:", res);
-            uni.showToast({
-              title: "获取任务详情失败",
-              icon: "none"
-            });
-          }
-        } catch (error) {
-          formatAppLog("error", "at pages/task-square/detail.vue:390", "获取任务详情异常:", error);
-        } finally {
-          uni.hideLoading();
-        }
-      }
-      function formatDeadline(dateStr) {
-        if (!dateStr)
-          return "";
-        try {
-          const date = new Date(dateStr);
-          const now = /* @__PURE__ */ new Date();
-          const days = ["日", "一", "二", "三", "四", "五", "六"];
-          const hours = date.getHours().toString().padStart(2, "0");
-          const minutes = date.getMinutes().toString().padStart(2, "0");
-          const timeStr = `${hours}:${minutes}`;
-          if (date.getFullYear() === now.getFullYear()) {
-            const month = date.getMonth() + 1;
-            const day = date.getDate();
-            const weekday = days[date.getDay()];
-            return `${month}月${day}日 周${weekday} ${timeStr}`;
-          } else {
-            return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${timeStr}`;
-          }
-        } catch (e) {
-          return dateStr;
-        }
-      }
-      function formatTimeAgo(dateStr) {
-        if (!dateStr)
-          return "";
-        try {
-          const date = new Date(dateStr);
-          const now = /* @__PURE__ */ new Date();
-          const diff = now.getTime() - date.getTime();
-          const minute = 60 * 1e3;
-          const hour = 60 * minute;
-          const day = 24 * hour;
-          const week = 7 * day;
-          const month = 30 * day;
-          if (diff < minute) {
-            return "刚刚";
-          } else if (diff < hour) {
-            return Math.floor(diff / minute) + "分钟前";
-          } else if (diff < day) {
-            return Math.floor(diff / hour) + "小时前";
-          } else if (diff < week) {
-            return Math.floor(diff / day) + "天前";
-          } else if (diff < month) {
-            return Math.floor(diff / week) + "周前";
-          } else {
-            return Math.floor(diff / month) + "个月前";
-          }
-        } catch (e) {
-          return dateStr;
-        }
-      }
-      function getStatusText(status) {
-        switch (status) {
-          case "recruiting":
-            return "招募中";
-          case "ongoing":
-            return "进行中";
-          case "completed":
-            return "已完成";
-          case "ended":
-            return "已结束";
-          case "canceled":
-            return "已取消";
-          default:
-            return "未知状态";
-        }
-      }
-      function getStatusClass(status) {
-        switch (status) {
-          case "recruiting":
-            return "status-recruiting";
-          case "ongoing":
-            return "status-ongoing";
-          case "completed":
-            return "status-completed";
-          case "ended":
-            return "status-ended";
-          case "canceled":
-            return "status-canceled";
-          default:
-            return "";
-        }
-      }
-      function getRewardTypeText(type) {
-        switch (type) {
-          case "现金":
-            return "报酬";
-          case "学分":
-            return "学分奖励";
-          case "志愿服务":
-            return "志愿时长";
-          case "证书":
-            return "证书奖励";
-          default:
-            return "奖励";
-        }
-      }
-      function getRewardClass(type) {
-        switch (type) {
-          case "现金":
-            return "reward-orange";
-          case "学分":
-            return "reward-blue";
-          case "志愿服务":
-            return "reward-green";
-          case "证书":
-            return "reward-yellow";
-          default:
-            return "";
-        }
-      }
-      function getContactTypeText(type) {
-        switch (type) {
-          case "phone":
-            return "电话";
-          case "wechat":
-            return "微信";
-          case "qq":
-            return "QQ";
-          case "email":
-            return "邮箱";
-          default:
-            return type;
-        }
-      }
-      function copyContactInfo(value) {
-        uni.setClipboardData({
-          data: value,
-          success: () => {
-            uni.showToast({
-              title: "复制成功",
-              icon: "success"
-            });
-          }
-        });
-      }
-      function getApplyButtonText() {
-        if (isAlreadyApplied.value) {
-          return "已申请";
-        }
-        if (taskDetail.value.status === "recruiting") {
-          if (taskDetail.value.currentParticipants >= taskDetail.value.maxParticipants) {
-            return "名额已满";
-          }
-          return "立即申请";
-        } else if (taskDetail.value.status === "ongoing") {
-          return "进行中";
-        } else if (taskDetail.value.status === "completed") {
-          return "已完成";
-        } else if (taskDetail.value.status === "ended") {
-          return "已结束";
-        } else if (taskDetail.value.status === "canceled") {
-          return "已取消";
-        }
-        return "立即申请";
-      }
-      function goBack() {
-        const pages = getCurrentPages();
-        if (pages.length > 1) {
-          uni.navigateBack({
-            delta: 1,
-            success: () => {
-              formatAppLog("log", "at pages/task-square/detail.vue:595", "成功返回上一页");
-            },
-            fail: (err) => {
-              formatAppLog("error", "at pages/task-square/detail.vue:598", "返回失败", err);
-              uni.redirectTo({
-                url: "/pages/task-square/index"
-              });
-            }
-          });
-        } else {
-          uni.switchTab({
-            url: "/pages/index/index"
-          });
-        }
-        return true;
-      }
-      async function toggleFavorite() {
-        if (!taskId.value)
-          return;
-      }
-      async function checkIfAlreadyApplied(taskId2) {
-        try {
-          const response = await api.taskApplications.checkTaskApplication(taskId2);
-          if (response.code === 200 && response.data) {
-            isAlreadyApplied.value = response.data.participated || false;
-          }
-        } catch (error) {
-          formatAppLog("error", "at pages/task-square/detail.vue:645", "检查申请状态失败:", error);
-          isAlreadyApplied.value = false;
-        }
-      }
-      async function applyTask2() {
-        if (isApplyDisabled.value)
-          return;
-        uni.showModal({
-          title: "申请任务",
-          content: "确定要申请该任务吗？",
-          editable: true,
-          placeholderText: "可选择填写申请理由（如有特长、经验等）",
-          success: async (res) => {
-            if (res.confirm) {
-              try {
-                uni.showLoading({
-                  title: "提交申请中..."
-                });
-                const response = await api.taskApplications.createTaskApplication({
-                  taskId: taskId.value,
-                  message: res.content || "我对这个任务很感兴趣，希望能参与。",
-                  status: "pending"
-                  // 添加状态字段，表示申请待处理
-                });
-                uni.hideLoading();
-                if (response.code === 200) {
-                  uni.showToast({
-                    title: "申请成功，等待审核",
-                    icon: "success"
-                  });
-                  isAlreadyApplied.value = true;
-                  setTimeout(() => {
-                    uni.navigateTo({
-                      url: "/pages/application/application"
-                    });
-                  }, 1500);
-                } else {
-                  uni.showToast({
-                    title: response.message || "申请失败",
-                    icon: "none"
-                  });
-                }
-              } catch (error) {
-                uni.hideLoading();
-                formatAppLog("error", "at pages/task-square/detail.vue:699", "申请任务失败:", error);
-                uni.showToast({
-                  title: "申请失败，请稍后重试",
-                  icon: "none"
-                });
-              }
-            }
-          }
-        });
-      }
-      async function updateTaskStatus2(status, cancelReason = "") {
-        if (!taskId.value)
-          return;
-        if (status === "canceled" && !cancelReason) {
-          uni.showModal({
-            title: "取消任务",
-            content: "确定要取消该任务吗？",
-            editable: true,
-            placeholderText: "请填写取消原因",
-            success: async (res) => {
-              if (res.confirm && res.content) {
-                doUpdateTaskStatus(status, res.content);
-              } else if (res.confirm) {
-                uni.showToast({
-                  title: "取消原因不能为空",
-                  icon: "none"
-                });
-              }
-            }
-          });
-          return;
-        }
-        const statusTextMap = {
-          recruiting: "招募中",
-          ongoing: "进行中",
-          completed: "已完成",
-          ended: "已结束",
-          canceled: "已取消"
-        };
-        uni.showModal({
-          title: `更改状态为"${statusTextMap[status] || status}"`,
-          content: `确定要将任务状态更改为"${statusTextMap[status] || status}"吗？`,
-          success: async (res) => {
-            if (res.confirm) {
-              doUpdateTaskStatus(status, cancelReason);
-            }
-          }
-        });
-      }
-      async function doUpdateTaskStatus(status, cancelReason = "") {
-        try {
-          uni.showLoading({
-            title: "更新中..."
-          });
-          const data = { status };
-          if (status === "canceled") {
-            data.cancelReason = cancelReason;
-          }
-          const response = await api.tasks.updateTaskStatus(taskId.value, data);
-          uni.hideLoading();
-          if (response.code === 200) {
-            uni.showToast({
-              title: "状态更新成功",
-              icon: "success"
-            });
-            getTaskDetail2(taskId.value);
-          } else {
-            uni.showToast({
-              title: response.message || "更新失败",
-              icon: "none"
-            });
-          }
-        } catch (error) {
-          uni.hideLoading();
-          formatAppLog("error", "at pages/task-square/detail.vue:788", "更新任务状态失败:", error);
-          uni.showToast({
-            title: "网络异常，请稍后重试",
-            icon: "none"
-          });
-        }
-      }
-      const __returned__ = { defaultAvatar, taskId, isFavorite, viewCounted, favoriteCount, isAlreadyApplied, taskDetail, contactInfo, validContacts, isApplyDisabled, getRewardIcon, getRewardIconColor, getContactIcon, getTaskIdAndLoadDetail, getTaskDetail: getTaskDetail2, formatDeadline, formatTimeAgo, getStatusText, getStatusClass, getRewardTypeText, getRewardClass, getContactTypeText, copyContactInfo, getApplyButtonText, goBack, toggleFavorite, checkIfAlreadyApplied, applyTask: applyTask2, updateTaskStatus: updateTaskStatus2, doUpdateTaskStatus, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, reactive: vue.reactive, get request() {
-        return request;
-      }, get api() {
-        return api;
-      }, HeaderBar, SvgIcon };
-      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
-      return __returned__;
-    }
-  };
-  function _sfc_render$x(_ctx, _cache, $props, $setup, $data, $options) {
-    return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
-      vue.createCommentVNode(" 顶部导航栏 - 使用HeaderBar组件 "),
-      vue.createVNode($setup["HeaderBar"], {
-        title: "任务详情",
-        "show-search": false,
-        "show-filter": true,
-        onBack: $setup.goBack
-      }),
-      vue.createCommentVNode(" 任务详情内容 "),
-      vue.createElementVNode("scroll-view", {
-        "scroll-y": "",
-        class: "content-scroll"
-      }, [
-        vue.createCommentVNode(" 顶部基本信息卡片 "),
-        vue.createElementVNode("view", { class: "top-info-card" }, [
-          vue.createCommentVNode(" 任务标题和状态 "),
-          vue.createElementVNode("view", { class: "title-status-row" }, [
-            vue.createElementVNode(
-              "text",
-              { class: "task-title" },
-              vue.toDisplayString($setup.taskDetail.title),
-              1
-              /* TEXT */
-            ),
-            vue.createElementVNode(
-              "text",
-              {
-                class: vue.normalizeClass(["task-status-tag", $setup.getStatusClass($setup.taskDetail.status)])
-              },
-              vue.toDisplayString($setup.taskDetail.statusText),
-              3
-              /* TEXT, CLASS */
-            )
-          ]),
-          vue.createCommentVNode(" 发布者信息 "),
-          vue.createElementVNode("view", { class: "publisher-info-row" }, [
-            vue.createElementVNode("image", {
-              class: "publisher-avatar",
-              src: $setup.taskDetail.creatorAvatarUrl || $setup.defaultAvatar,
-              mode: "aspectFill"
-            }, null, 8, ["src"]),
-            vue.createElementVNode("view", { class: "publisher-text" }, [
-              vue.createElementVNode(
-                "text",
-                { class: "publisher-name" },
-                vue.toDisplayString($setup.taskDetail.creatorName),
-                1
-                /* TEXT */
-              ),
-              vue.createElementVNode(
-                "text",
-                { class: "publisher-extra" },
-                vue.toDisplayString($setup.taskDetail.creatorMajor) + " · " + vue.toDisplayString($setup.formatTimeAgo($setup.taskDetail.createdAt)) + "发布",
-                1
-                /* TEXT */
-              )
-            ])
-          ])
-        ]),
-        vue.createCommentVNode(" 任务详情卡片 "),
-        vue.createElementVNode("view", { class: "detail-card" }, [
-          vue.createElementVNode("view", { class: "card-title" }, "任务详情"),
-          vue.createElementVNode("view", { class: "card-content description-content" }, [
-            vue.createElementVNode(
-              "text",
-              { class: "description-text" },
-              vue.toDisplayString($setup.taskDetail.description),
-              1
-              /* TEXT */
-            )
-          ])
-        ]),
-        vue.createCommentVNode(" 任务需求卡片 "),
-        $setup.taskDetail.requirements ? (vue.openBlock(), vue.createElementBlock("view", {
-          key: 0,
-          class: "detail-card"
-        }, [
-          vue.createElementVNode("view", { class: "card-title" }, "任务要求"),
-          vue.createElementVNode("view", { class: "card-content description-content" }, [
-            vue.createElementVNode(
-              "text",
-              { class: "description-text" },
-              vue.toDisplayString($setup.taskDetail.requirements),
-              1
-              /* TEXT */
-            )
-          ])
-        ])) : vue.createCommentVNode("v-if", true),
-        vue.createCommentVNode(" 任务信息网格 "),
-        vue.createElementVNode("view", { class: "info-grid" }, [
-          vue.createCommentVNode(" 时间信息 "),
-          vue.createElementVNode("view", { class: "info-grid-item" }, [
-            vue.createElementVNode("text", { class: "grid-item-label" }, "时间"),
-            vue.createElementVNode("view", { class: "grid-item-content" }, [
-              vue.createVNode($setup["SvgIcon"], {
-                name: "shijian",
-                color: "#4A90E2"
-              }),
-              vue.createElementVNode(
-                "text",
-                { class: "grid-item-value" },
-                vue.toDisplayString($setup.formatDeadline($setup.taskDetail.deadline)),
-                1
-                /* TEXT */
-              )
-            ])
-          ]),
-          vue.createCommentVNode(" 地点信息 "),
-          $setup.taskDetail.location ? (vue.openBlock(), vue.createElementBlock("view", {
-            key: 0,
-            class: "info-grid-item"
-          }, [
-            vue.createElementVNode("text", { class: "grid-item-label" }, "地点"),
-            vue.createElementVNode("view", { class: "grid-item-content" }, [
-              vue.createVNode($setup["SvgIcon"], {
-                name: "weizhi",
-                color: "#4A90E2"
-              }),
-              vue.createElementVNode(
-                "text",
-                { class: "grid-item-value" },
-                vue.toDisplayString($setup.taskDetail.location),
-                1
-                /* TEXT */
-              )
-            ])
-          ])) : vue.createCommentVNode("v-if", true),
-          vue.createCommentVNode(" 奖励信息 "),
-          vue.createElementVNode("view", { class: "info-grid-item" }, [
-            vue.createElementVNode(
-              "text",
-              { class: "grid-item-label" },
-              vue.toDisplayString($setup.getRewardTypeText($setup.taskDetail.rewardTypeName)),
-              1
-              /* TEXT */
-            ),
-            vue.createElementVNode("view", { class: "grid-item-content" }, [
-              vue.createVNode($setup["SvgIcon"], {
-                name: $setup.getRewardIcon($setup.taskDetail.rewardTypeName),
-                color: $setup.getRewardIconColor($setup.taskDetail.rewardTypeName),
-                size: "28"
-              }, null, 8, ["name", "color"]),
-              vue.createElementVNode(
-                "text",
-                {
-                  class: vue.normalizeClass(["grid-item-value reward-text", $setup.getRewardClass($setup.taskDetail.rewardTypeName)])
-                },
-                [
-                  $setup.taskDetail.rewardTypeName === "现金" ? (vue.openBlock(), vue.createElementBlock(
-                    "text",
-                    { key: 0 },
-                    "¥" + vue.toDisplayString($setup.taskDetail.rewardAmount),
-                    1
-                    /* TEXT */
-                  )) : $setup.taskDetail.rewardTypeName === "学分" ? (vue.openBlock(), vue.createElementBlock(
-                    "text",
-                    { key: 1 },
-                    vue.toDisplayString($setup.taskDetail.rewardAmount) + " 学分",
-                    1
-                    /* TEXT */
-                  )) : (vue.openBlock(), vue.createElementBlock(
-                    "text",
-                    { key: 2 },
-                    vue.toDisplayString($setup.taskDetail.rewardTypeName),
-                    1
-                    /* TEXT */
-                  ))
-                ],
-                2
-                /* CLASS */
-              )
-            ])
-          ]),
-          vue.createCommentVNode(" 参与人数 "),
-          vue.createElementVNode("view", { class: "info-grid-item" }, [
-            vue.createElementVNode("text", { class: "grid-item-label" }, "参与人数"),
-            vue.createElementVNode("view", { class: "grid-item-content" }, [
-              vue.createVNode($setup["SvgIcon"], {
-                name: "renshu",
-                color: "#4A90E2"
-              }),
-              vue.createElementVNode(
-                "text",
-                { class: "grid-item-value" },
-                vue.toDisplayString($setup.taskDetail.currentParticipants) + "/" + vue.toDisplayString($setup.taskDetail.maxParticipants) + " 人",
-                1
-                /* TEXT */
-              )
-            ])
-          ])
-        ]),
-        vue.createCommentVNode(" 联系方式卡片 "),
-        $setup.validContacts.length > 0 ? (vue.openBlock(), vue.createElementBlock("view", {
-          key: 1,
-          class: "detail-card"
-        }, [
-          vue.createElementVNode("view", { class: "card-title" }, "联系方式"),
-          vue.createElementVNode("view", { class: "contact-list" }, [
-            (vue.openBlock(true), vue.createElementBlock(
-              vue.Fragment,
-              null,
-              vue.renderList($setup.validContacts, (contact) => {
-                return vue.openBlock(), vue.createElementBlock("view", {
-                  class: "contact-item",
-                  key: contact.key,
-                  onClick: ($event) => $setup.copyContactInfo(contact.value)
-                }, [
-                  vue.createElementVNode("view", { class: "contact-type-container" }, [
-                    vue.createVNode($setup["SvgIcon"], {
-                      name: $setup.getContactIcon(contact.key),
-                      color: "#4A90E2"
-                    }, null, 8, ["name"]),
-                    vue.createElementVNode(
-                      "text",
-                      { class: "contact-type" },
-                      vue.toDisplayString($setup.getContactTypeText(contact.key)),
-                      1
-                      /* TEXT */
-                    )
-                  ]),
-                  vue.createElementVNode("view", { class: "contact-value-container" }, [
-                    vue.createElementVNode(
-                      "text",
-                      { class: "contact-value" },
-                      vue.toDisplayString(contact.value),
-                      1
-                      /* TEXT */
-                    ),
-                    vue.createElementVNode("text", { class: "copy-hint" }, "点击复制")
-                  ])
-                ], 8, ["onClick"]);
-              }),
-              128
-              /* KEYED_FRAGMENT */
-            ))
-          ])
-        ])) : vue.createCommentVNode("v-if", true)
-      ]),
-      vue.createCommentVNode(" 底部操作栏 "),
-      vue.createElementVNode("view", { class: "bottom-actions" }, [
-        vue.createElementVNode("view", {
-          class: "action-btn favorite",
-          onClick: $setup.toggleFavorite
-        }, [
-          vue.createVNode($setup["SvgIcon"], {
-            name: $setup.isFavorite ? "souchang" : "weishouchang",
-            size: "36",
-            color: $setup.isFavorite ? "#FFC107" : "#666666"
-          }, null, 8, ["name", "color"]),
-          vue.createElementVNode(
-            "text",
-            null,
-            vue.toDisplayString($setup.isFavorite ? "已收藏" : "收藏"),
-            1
-            /* TEXT */
-          )
-        ]),
-        vue.createElementVNode("button", {
-          class: vue.normalizeClass(["apply-btn", { "disabled-btn": $setup.isApplyDisabled }]),
-          disabled: $setup.isApplyDisabled,
-          onClick: $setup.applyTask
-        }, vue.toDisplayString($setup.getApplyButtonText()), 11, ["disabled"])
-      ])
-    ]);
-  }
-  const PagesTaskSquareDetail = /* @__PURE__ */ _export_sfc(_sfc_main$y, [["render", _sfc_render$x], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/task-square/detail.vue"]]);
+  const PagesTaskSquareIndex = /* @__PURE__ */ _export_sfc(_sfc_main$D, [["render", _sfc_render$C], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/task-square/index.vue"]]);
   const fontData = [
     {
       "font_class": "arrow-down",
@@ -7989,7 +7494,7 @@ if (uni.restoreGlobal) {
     const reg = /^[0-9]*$/g;
     return typeof val === "number" || reg.test(val) ? val + "px" : val;
   };
-  const _sfc_main$x = {
+  const _sfc_main$C = {
     name: "UniIcons",
     emits: ["click"],
     props: {
@@ -8043,7 +7548,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$w(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$B(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock(
       "text",
       {
@@ -8058,7 +7563,1521 @@ if (uni.restoreGlobal) {
       /* CLASS, STYLE */
     );
   }
-  const __easycom_0$1 = /* @__PURE__ */ _export_sfc(_sfc_main$x, [["render", _sfc_render$w], ["__scopeId", "data-v-d31e1c47"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-icons/components/uni-icons/uni-icons.vue"]]);
+  const uniIcons = /* @__PURE__ */ _export_sfc(_sfc_main$C, [["render", _sfc_render$B], ["__scopeId", "data-v-d31e1c47"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-icons/components/uni-icons/uni-icons.vue"]]);
+  const en$1 = {
+    "uni-pagination.prevText": "prev",
+    "uni-pagination.nextText": "next",
+    "uni-pagination.piecePerPage": "piece/page"
+  };
+  const es = {
+    "uni-pagination.prevText": "anterior",
+    "uni-pagination.nextText": "prxima",
+    "uni-pagination.piecePerPage": "Art��culo/P��gina"
+  };
+  const fr = {
+    "uni-pagination.prevText": "précédente",
+    "uni-pagination.nextText": "suivante",
+    "uni-pagination.piecePerPage": "Articles/Pages"
+  };
+  const zhHans$1 = {
+    "uni-pagination.prevText": "上一页",
+    "uni-pagination.nextText": "下一页",
+    "uni-pagination.piecePerPage": "条/页"
+  };
+  const zhHant$1 = {
+    "uni-pagination.prevText": "上一頁",
+    "uni-pagination.nextText": "下一頁",
+    "uni-pagination.piecePerPage": "條/頁"
+  };
+  const messages = {
+    en: en$1,
+    es,
+    fr,
+    "zh-Hans": zhHans$1,
+    "zh-Hant": zhHant$1
+  };
+  const {
+    t: t$2
+  } = initVueI18n(messages);
+  const _sfc_main$B = {
+    name: "UniPagination",
+    emits: ["update:modelValue", "input", "change", "pageSizeChange"],
+    props: {
+      value: {
+        type: [Number, String],
+        default: 1
+      },
+      modelValue: {
+        type: [Number, String],
+        default: 1
+      },
+      prevText: {
+        type: String
+      },
+      nextText: {
+        type: String
+      },
+      piecePerPageText: {
+        type: String
+      },
+      current: {
+        type: [Number, String],
+        default: 1
+      },
+      total: {
+        // 数据总量
+        type: [Number, String],
+        default: 0
+      },
+      pageSize: {
+        // 每页数据量
+        type: [Number, String],
+        default: 10
+      },
+      showIcon: {
+        // 是否以 icon 形式展示按钮
+        type: [Boolean, String],
+        default: false
+      },
+      showPageSize: {
+        // 是否以 icon 形式展示按钮
+        type: [Boolean, String],
+        default: false
+      },
+      pagerCount: {
+        type: Number,
+        default: 7
+      },
+      pageSizeRange: {
+        type: Array,
+        default: () => [20, 50, 100, 500]
+      }
+    },
+    data() {
+      return {
+        pageSizeIndex: 0,
+        currentIndex: 1,
+        paperData: [],
+        pickerShow: false
+      };
+    },
+    computed: {
+      piecePerPage() {
+        return this.piecePerPageText || t$2("uni-pagination.piecePerPage");
+      },
+      prevPageText() {
+        return this.prevText || t$2("uni-pagination.prevText");
+      },
+      nextPageText() {
+        return this.nextText || t$2("uni-pagination.nextText");
+      },
+      maxPage() {
+        let maxPage = 1;
+        let total = Number(this.total);
+        let pageSize2 = Number(this.pageSize);
+        if (total && pageSize2) {
+          maxPage = Math.ceil(total / pageSize2);
+        }
+        return maxPage;
+      },
+      paper() {
+        const num = this.currentIndex;
+        const pagerCount = this.pagerCount;
+        const total = this.total;
+        const pageSize2 = this.pageSize;
+        let totalArr = [];
+        let showPagerArr = [];
+        let pagerNum = Math.ceil(total / pageSize2);
+        for (let i = 0; i < pagerNum; i++) {
+          totalArr.push(i + 1);
+        }
+        showPagerArr.push(1);
+        const totalNum = totalArr[totalArr.length - (pagerCount + 1) / 2];
+        totalArr.forEach((item, index) => {
+          if ((pagerCount + 1) / 2 >= num) {
+            if (item < pagerCount + 1 && item > 1) {
+              showPagerArr.push(item);
+            }
+          } else if (num + 2 <= totalNum) {
+            if (item > num - (pagerCount + 1) / 2 && item < num + (pagerCount + 1) / 2) {
+              showPagerArr.push(item);
+            }
+          } else {
+            if ((item > num - (pagerCount + 1) / 2 || pagerNum - pagerCount < item) && item < totalArr[totalArr.length - 1]) {
+              showPagerArr.push(item);
+            }
+          }
+        });
+        if (pagerNum > pagerCount) {
+          if ((pagerCount + 1) / 2 >= num) {
+            showPagerArr[showPagerArr.length - 1] = "...";
+          } else if (num + 2 <= totalNum) {
+            showPagerArr[1] = "...";
+            showPagerArr[showPagerArr.length - 1] = "...";
+          } else {
+            showPagerArr[1] = "...";
+          }
+          showPagerArr.push(totalArr[totalArr.length - 1]);
+        } else {
+          if ((pagerCount + 1) / 2 >= num)
+            ;
+          else if (num + 2 <= totalNum)
+            ;
+          else {
+            showPagerArr.shift();
+            showPagerArr.push(totalArr[totalArr.length - 1]);
+          }
+        }
+        return showPagerArr;
+      }
+    },
+    watch: {
+      current: {
+        immediate: true,
+        handler(val, old) {
+          if (val < 1) {
+            this.currentIndex = 1;
+          } else {
+            this.currentIndex = val;
+          }
+        }
+      },
+      value: {
+        immediate: true,
+        handler(val) {
+          if (Number(this.current) !== 1)
+            return;
+          if (val < 1) {
+            this.currentIndex = 1;
+          } else {
+            this.currentIndex = val;
+          }
+        }
+      },
+      pageSizeIndex(val) {
+        this.$emit("pageSizeChange", this.pageSizeRange[val]);
+      }
+    },
+    methods: {
+      pickerChange(e) {
+        this.pageSizeIndex = e.detail.value;
+        this.pickerClick();
+      },
+      pickerClick() {
+      },
+      // 选择标签
+      selectPage(e, index) {
+        if (parseInt(e)) {
+          this.currentIndex = e;
+          this.change("current");
+        } else {
+          let pagerNum = Math.ceil(this.total / this.pageSize);
+          if (index <= 1) {
+            if (this.currentIndex - 5 > 1) {
+              this.currentIndex -= 5;
+            } else {
+              this.currentIndex = 1;
+            }
+            return;
+          }
+          if (index >= 6) {
+            if (this.currentIndex + 5 > pagerNum) {
+              this.currentIndex = pagerNum;
+            } else {
+              this.currentIndex += 5;
+            }
+            return;
+          }
+        }
+      },
+      clickLeft() {
+        if (Number(this.currentIndex) === 1) {
+          return;
+        }
+        this.currentIndex -= 1;
+        this.change("prev");
+      },
+      clickRight() {
+        if (Number(this.currentIndex) >= this.maxPage) {
+          return;
+        }
+        this.currentIndex += 1;
+        this.change("next");
+      },
+      change(e) {
+        this.$emit("input", this.currentIndex);
+        this.$emit("update:modelValue", this.currentIndex);
+        this.$emit("change", {
+          type: e,
+          current: this.currentIndex
+        });
+      }
+    }
+  };
+  function _sfc_render$A(_ctx, _cache, $props, $setup, $data, $options) {
+    const _component_uni_icons = resolveEasycom(vue.resolveDynamicComponent("uni-icons"), uniIcons);
+    return vue.openBlock(), vue.createElementBlock("view", { class: "uni-pagination" }, [
+      $props.showPageSize === true || $props.showPageSize === "true" ? (vue.openBlock(), vue.createElementBlock("picker", {
+        key: 0,
+        class: "select-picker",
+        mode: "selector",
+        value: $data.pageSizeIndex,
+        range: $props.pageSizeRange,
+        onChange: _cache[0] || (_cache[0] = (...args) => $options.pickerChange && $options.pickerChange(...args)),
+        onCancel: _cache[1] || (_cache[1] = (...args) => $options.pickerClick && $options.pickerClick(...args)),
+        onClick: _cache[2] || (_cache[2] = (...args) => $options.pickerClick && $options.pickerClick(...args))
+      }, [
+        vue.createElementVNode("button", {
+          type: "default",
+          size: "mini",
+          plain: true
+        }, [
+          vue.createElementVNode(
+            "text",
+            null,
+            vue.toDisplayString($props.pageSizeRange[$data.pageSizeIndex]) + " " + vue.toDisplayString($options.piecePerPage),
+            1
+            /* TEXT */
+          ),
+          vue.createVNode(_component_uni_icons, {
+            class: "select-picker-icon",
+            type: "arrowdown",
+            size: "12",
+            color: "#999"
+          })
+        ])
+      ], 40, ["value", "range"])) : vue.createCommentVNode("v-if", true),
+      vue.createElementVNode(
+        "view",
+        { class: "uni-pagination__total is-phone-hide" },
+        "共 " + vue.toDisplayString($props.total) + " 条",
+        1
+        /* TEXT */
+      ),
+      vue.createElementVNode("view", {
+        class: vue.normalizeClass(["uni-pagination__btn", $data.currentIndex === 1 ? "uni-pagination--disabled" : "uni-pagination--enabled"]),
+        "hover-class": $data.currentIndex === 1 ? "" : "uni-pagination--hover",
+        "hover-start-time": 20,
+        "hover-stay-time": 70,
+        onClick: _cache[3] || (_cache[3] = (...args) => $options.clickLeft && $options.clickLeft(...args))
+      }, [
+        $props.showIcon === true || $props.showIcon === "true" ? (vue.openBlock(), vue.createBlock(_component_uni_icons, {
+          key: 0,
+          color: "#666",
+          size: "16",
+          type: "left"
+        })) : (vue.openBlock(), vue.createElementBlock(
+          "text",
+          {
+            key: 1,
+            class: "uni-pagination__child-btn"
+          },
+          vue.toDisplayString($options.prevPageText),
+          1
+          /* TEXT */
+        ))
+      ], 10, ["hover-class"]),
+      vue.createElementVNode("view", { class: "uni-pagination__num uni-pagination__num-flex-none" }, [
+        vue.createElementVNode("view", { class: "uni-pagination__num-current" }, [
+          vue.createElementVNode(
+            "text",
+            { class: "uni-pagination__num-current-text is-pc-hide current-index-text" },
+            vue.toDisplayString($data.currentIndex),
+            1
+            /* TEXT */
+          ),
+          vue.createElementVNode(
+            "text",
+            { class: "uni-pagination__num-current-text is-pc-hide" },
+            "/" + vue.toDisplayString($options.maxPage || 0),
+            1
+            /* TEXT */
+          ),
+          (vue.openBlock(true), vue.createElementBlock(
+            vue.Fragment,
+            null,
+            vue.renderList($options.paper, (item, index) => {
+              return vue.openBlock(), vue.createElementBlock("view", {
+                key: index,
+                class: vue.normalizeClass([{ "page--active": item === $data.currentIndex }, "uni-pagination__num-tag tag--active is-phone-hide"]),
+                onClick: ($event) => $options.selectPage(item, index)
+              }, [
+                vue.createElementVNode(
+                  "text",
+                  null,
+                  vue.toDisplayString(item),
+                  1
+                  /* TEXT */
+                )
+              ], 10, ["onClick"]);
+            }),
+            128
+            /* KEYED_FRAGMENT */
+          ))
+        ])
+      ]),
+      vue.createElementVNode("view", {
+        class: vue.normalizeClass(["uni-pagination__btn", $data.currentIndex >= $options.maxPage ? "uni-pagination--disabled" : "uni-pagination--enabled"]),
+        "hover-class": $data.currentIndex === $options.maxPage ? "" : "uni-pagination--hover",
+        "hover-start-time": 20,
+        "hover-stay-time": 70,
+        onClick: _cache[4] || (_cache[4] = (...args) => $options.clickRight && $options.clickRight(...args))
+      }, [
+        $props.showIcon === true || $props.showIcon === "true" ? (vue.openBlock(), vue.createBlock(_component_uni_icons, {
+          key: 0,
+          color: "#666",
+          size: "16",
+          type: "right"
+        })) : (vue.openBlock(), vue.createElementBlock(
+          "text",
+          {
+            key: 1,
+            class: "uni-pagination__child-btn"
+          },
+          vue.toDisplayString($options.nextPageText),
+          1
+          /* TEXT */
+        ))
+      ], 10, ["hover-class"])
+    ]);
+  }
+  const __easycom_0$1 = /* @__PURE__ */ _export_sfc(_sfc_main$B, [["render", _sfc_render$A], ["__scopeId", "data-v-88b7506d"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-pagination/components/uni-pagination/uni-pagination.vue"]]);
+  const _sfc_main$A = {
+    name: "TaskParticipantsPopup",
+    props: {
+      taskId: {
+        type: [Number, String],
+        required: true
+      }
+    },
+    data() {
+      return {
+        participants: [],
+        total: 0,
+        pageNum: 1,
+        pageSize: 10,
+        currentStatus: "",
+        // 为空时表示全部
+        statusOptions: [
+          { label: "全部", value: "" },
+          { label: "已加入", value: "joined" },
+          { label: "进行中", value: "in_progress" },
+          { label: "已完成", value: "completed" },
+          { label: "已退出", value: "left" },
+          { label: "被踢出", value: "kicked_out" }
+        ],
+        loading: false,
+        popupVisible: false
+        // 控制弹窗显示的内部状态
+      };
+    },
+    watch: {
+      // 监听taskId变化，确保每次taskId更新时都重新加载数据
+      taskId: {
+        handler(newVal) {
+          if (newVal) {
+            formatAppLog("log", "at components/team/TaskParticipantsPopup.vue:109", "taskId变化，重新加载数据:", newVal);
+            this.$nextTick(() => {
+              this.loadParticipants();
+            });
+          }
+        },
+        immediate: false
+        // 不立即触发，只在变化时触发
+      }
+    },
+    created() {
+      uni.$on("openParticipantsPopup", this.openPopup);
+      formatAppLog("log", "at components/team/TaskParticipantsPopup.vue:122", "TaskParticipantsPopup组件已创建，等待触发打开事件");
+    },
+    beforeDestroy() {
+      uni.$off("openParticipantsPopup", this.openPopup);
+    },
+    methods: {
+      // 对外暴露的方法，可以直接被父组件调用
+      open() {
+        formatAppLog("log", "at components/team/TaskParticipantsPopup.vue:131", "父组件直接调用open方法，任务ID:", this.taskId);
+        this.openPopup();
+      },
+      // 内部打开弹窗的实现
+      openPopup() {
+        formatAppLog("log", "at components/team/TaskParticipantsPopup.vue:136", "开始打开参与者弹窗，任务ID:", this.taskId);
+        try {
+          uni.showLoading({
+            title: "加载中..."
+          });
+          if (this.$refs.popup) {
+            formatAppLog("log", "at components/team/TaskParticipantsPopup.vue:146", "找到popup实例，调用open方法");
+            this.loadParticipants();
+            this.$refs.popup.open("center");
+          } else {
+            formatAppLog("error", "at components/team/TaskParticipantsPopup.vue:154", "popup实例不存在，尝试延迟打开");
+            setTimeout(() => {
+              if (this.$refs.popup) {
+                this.loadParticipants();
+                this.$refs.popup.open("center");
+              } else {
+              }
+            }, 100);
+          }
+        } catch (e) {
+          formatAppLog("error", "at components/team/TaskParticipantsPopup.vue:166", "打开弹窗出错:", e);
+          uni.showToast({
+            title: "打开弹窗出错",
+            icon: "none"
+          });
+        } finally {
+          setTimeout(() => {
+            uni.hideLoading();
+          }, 500);
+        }
+      },
+      close() {
+        this.$refs.popup.close();
+      },
+      changeStatus(status) {
+        formatAppLog("log", "at components/team/TaskParticipantsPopup.vue:182", "切换参与者状态筛选:", status);
+        this.currentStatus = status;
+        this.pageNum = 1;
+        this.loadParticipants();
+      },
+      handlePageChange(e) {
+        this.pageNum = e.current;
+        this.loadParticipants();
+      },
+      async loadParticipants() {
+        if (!this.taskId)
+          return;
+        this.loading = true;
+        try {
+          const params = {
+            pageNum: this.pageNum,
+            pageSize: this.pageSize
+          };
+          if (this.currentStatus) {
+            params.status = this.currentStatus;
+          }
+          formatAppLog("log", "at components/team/TaskParticipantsPopup.vue:206", "查询参与者，参数:", params);
+          const response = await tasksApi.getTaskParticipants(this.taskId, params);
+          if (response.code === 200 && response.data) {
+            this.participants = response.data.records || [];
+            this.total = response.data.total || 0;
+            formatAppLog("log", "at components/team/TaskParticipantsPopup.vue:214", "成功获取参与者数据，数量:", this.participants.length);
+          } else {
+            this.participants = [];
+            this.total = 0;
+            formatAppLog("log", "at components/team/TaskParticipantsPopup.vue:219", "获取参与者数据失败", response.message);
+          }
+        } catch (error) {
+          formatAppLog("error", "at components/team/TaskParticipantsPopup.vue:222", "获取参与者列表失败", error);
+          this.participants = [];
+          this.total = 0;
+        } finally {
+          this.loading = false;
+        }
+      },
+      getStatusText(status) {
+        const statusMap = {
+          "joined": "已加入",
+          "in_progress": "进行中",
+          "completed": "已完成",
+          "left": "已退出",
+          "kicked_out": "被踢出"
+        };
+        return statusMap[status] || "未知状态";
+      },
+      getStatusClass(status) {
+        const classMap = {
+          "joined": "status-joined",
+          "in_progress": "status-progress",
+          "completed": "status-completed",
+          "left": "status-left",
+          "kicked_out": "status-kicked-out"
+        };
+        return classMap[status] || "";
+      },
+      confirmRemoveParticipant(item) {
+        formatAppLog("log", "at components/team/TaskParticipantsPopup.vue:251", "准备删除参与者:", item);
+        uni.showModal({
+          title: "确认删除",
+          content: `确定要移除参与者 ${item.participantName} 吗？`,
+          confirmColor: "#f44336",
+          success: (res) => {
+            if (res.confirm) {
+              this.removeParticipant(item.userId);
+            }
+          }
+        });
+      },
+      async removeParticipant(participantId) {
+        try {
+          uni.showLoading({ title: "处理中..." });
+          const res = await tasksApi.removeTaskParticipant(this.taskId, participantId);
+          if (res.code === 200) {
+            uni.showToast({
+              title: "已成功移除参与者",
+              icon: "success"
+            });
+            this.loadParticipants();
+            uni.$emit("refreshTaskList");
+          } else {
+            uni.showToast({
+              title: res.message || "移除参与者失败",
+              icon: "none"
+            });
+          }
+        } catch (error) {
+          formatAppLog("error", "at components/team/TaskParticipantsPopup.vue:286", "移除参与者错误:", error);
+          uni.showToast({
+            title: "移除参与者失败，请稍后重试",
+            icon: "none"
+          });
+        } finally {
+          uni.hideLoading();
+        }
+      }
+    },
+    mounted() {
+      this.currentStatus = "";
+    }
+  };
+  function _sfc_render$z(_ctx, _cache, $props, $setup, $data, $options) {
+    const _component_uni_pagination = resolveEasycom(vue.resolveDynamicComponent("uni-pagination"), __easycom_0$1);
+    const _component_uni_popup = resolveEasycom(vue.resolveDynamicComponent("uni-popup"), __easycom_0$3);
+    return vue.openBlock(), vue.createElementBlock("view", null, [
+      vue.createVNode(
+        _component_uni_popup,
+        {
+          ref: "popup",
+          type: "center"
+        },
+        {
+          default: vue.withCtx(() => [
+            vue.createElementVNode("view", { class: "popup-content" }, [
+              vue.createElementVNode("view", { class: "popup-header" }, [
+                vue.createElementVNode("text", { class: "popup-title" }, "任务参与者"),
+                vue.createElementVNode("view", {
+                  class: "close-icon",
+                  onClick: _cache[0] || (_cache[0] = (...args) => $options.close && $options.close(...args))
+                }, [
+                  vue.createElementVNode("text", {
+                    class: "iconfont icon-guanbi",
+                    style: { "font-size": "36rpx", "color": "#666" }
+                  })
+                ])
+              ]),
+              vue.createElementVNode("view", { class: "status-tabs" }, [
+                (vue.openBlock(true), vue.createElementBlock(
+                  vue.Fragment,
+                  null,
+                  vue.renderList($data.statusOptions, (item, index) => {
+                    return vue.openBlock(), vue.createElementBlock("view", {
+                      key: index,
+                      class: vue.normalizeClass(["status-tab", $data.currentStatus === item.value ? "active" : ""]),
+                      onClick: ($event) => $options.changeStatus(item.value)
+                    }, vue.toDisplayString(item.label), 11, ["onClick"]);
+                  }),
+                  128
+                  /* KEYED_FRAGMENT */
+                ))
+              ]),
+              vue.createCommentVNode(" 加载中状态 "),
+              $data.loading ? (vue.openBlock(), vue.createElementBlock("view", {
+                key: 0,
+                class: "loading-container"
+              }, [
+                vue.createElementVNode("view", { class: "loading-spinner" }),
+                vue.createElementVNode("text", { class: "loading-text" }, "加载中...")
+              ])) : $data.participants.length > 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+                key: 1,
+                class: "participant-list"
+              }, [
+                (vue.openBlock(true), vue.createElementBlock(
+                  vue.Fragment,
+                  null,
+                  vue.renderList($data.participants, (item, index) => {
+                    return vue.openBlock(), vue.createElementBlock("view", {
+                      class: "participant-item",
+                      key: index
+                    }, [
+                      vue.createElementVNode("view", { class: "participant-avatar" }, [
+                        vue.createElementVNode("image", {
+                          src: item.avatarUrl || "/static/image/default-avatar.png",
+                          mode: "aspectFill"
+                        }, null, 8, ["src"])
+                      ]),
+                      vue.createElementVNode("view", { class: "participant-info" }, [
+                        vue.createElementVNode(
+                          "view",
+                          { class: "participant-name" },
+                          vue.toDisplayString(item.participantName),
+                          1
+                          /* TEXT */
+                        ),
+                        vue.createElementVNode("view", { class: "participant-details" }, [
+                          vue.createElementVNode(
+                            "text",
+                            null,
+                            vue.toDisplayString(item.participantMajor || "暂无专业信息"),
+                            1
+                            /* TEXT */
+                          ),
+                          item.participantStudentId ? (vue.openBlock(), vue.createElementBlock(
+                            "text",
+                            { key: 0 },
+                            "学号: " + vue.toDisplayString(item.participantStudentId),
+                            1
+                            /* TEXT */
+                          )) : vue.createCommentVNode("v-if", true)
+                        ])
+                      ]),
+                      vue.createElementVNode(
+                        "view",
+                        {
+                          class: vue.normalizeClass(["participant-status", $options.getStatusClass(item.status)])
+                        },
+                        vue.toDisplayString($options.getStatusText(item.status)),
+                        3
+                        /* TEXT, CLASS */
+                      ),
+                      vue.createCommentVNode(" 删除按钮 - 仅对已加入的参与者显示 "),
+                      item.status === "joined" ? (vue.openBlock(), vue.createElementBlock("view", {
+                        key: 0,
+                        class: "delete-btn",
+                        onClick: vue.withModifiers(($event) => $options.confirmRemoveParticipant(item), ["stop"])
+                      }, [
+                        vue.createElementVNode("text", {
+                          class: "iconfont icon-delete",
+                          style: { "font-size": "28rpx", "color": "#f44336" }
+                        }, "X")
+                      ], 8, ["onClick"])) : vue.createCommentVNode("v-if", true)
+                    ]);
+                  }),
+                  128
+                  /* KEYED_FRAGMENT */
+                ))
+              ])) : (vue.openBlock(), vue.createElementBlock("view", {
+                key: 2,
+                class: "empty-state"
+              }, [
+                vue.createElementVNode("text", { class: "empty-icon" }, "!"),
+                vue.createElementVNode("text", null, "暂无参与者信息")
+              ])),
+              vue.createElementVNode("view", { class: "popup-footer" }, [
+                $data.total > $data.pageSize ? (vue.openBlock(), vue.createBlock(_component_uni_pagination, {
+                  key: 0,
+                  total: $data.total,
+                  pageSize: $data.pageSize,
+                  current: $data.pageNum,
+                  onChange: $options.handlePageChange
+                }, null, 8, ["total", "pageSize", "current", "onChange"])) : vue.createCommentVNode("v-if", true)
+              ])
+            ])
+          ]),
+          _: 1
+          /* STABLE */
+        },
+        512
+        /* NEED_PATCH */
+      )
+    ]);
+  }
+  const TaskParticipantsPopup = /* @__PURE__ */ _export_sfc(_sfc_main$A, [["render", _sfc_render$z], ["__scopeId", "data-v-d6dd26a5"], ["__file", "D:/Uniapp/htmlTest/赛创项目/components/team/TaskParticipantsPopup.vue"]]);
+  const defaultAvatar = "https://via.placeholder.com/100";
+  const _sfc_main$z = {
+    __name: "detail",
+    setup(__props, { expose: __expose }) {
+      const taskId = vue.ref(null);
+      const isFavorite = vue.ref(false);
+      const viewCounted = vue.ref(false);
+      const favoriteCount = vue.ref(0);
+      const isAlreadyApplied = vue.ref(false);
+      const participantsPopup = vue.ref(null);
+      const taskDetail = vue.ref({
+        id: 0,
+        title: "",
+        description: "",
+        requirements: "",
+        contactInfo: "",
+        categoryId: 0,
+        categoryName: "",
+        creatorId: 0,
+        creatorName: "",
+        creatorAvatarUrl: "",
+        creatorMajor: "",
+        rewardTypeId: 0,
+        rewardTypeName: "",
+        rewardAmount: 0,
+        createdAt: "",
+        deadline: "",
+        status: "recruiting",
+        maxParticipants: 0,
+        currentParticipants: 0,
+        viewCount: 0,
+        location: ""
+      });
+      const contactInfo = vue.computed(() => {
+        if (!taskDetail.value.contactInfo)
+          return null;
+        try {
+          let contactData;
+          if (typeof taskDetail.value.contactInfo === "string") {
+            contactData = JSON.parse(taskDetail.value.contactInfo);
+          } else {
+            contactData = taskDetail.value.contactInfo;
+          }
+          return contactData;
+        } catch (e) {
+          formatAppLog("error", "at pages/task-square/detail.vue:190", "解析联系方式失败:", e);
+          return null;
+        }
+      });
+      const validContacts = vue.computed(() => {
+        if (!contactInfo.value)
+          return [];
+        return Object.entries(contactInfo.value).filter(([key, value]) => value && value.toString().trim() !== "").map(([key, value]) => ({ key, value }));
+      });
+      const isApplyDisabled = vue.computed(() => {
+        if (isAlreadyApplied.value) {
+          return true;
+        }
+        if (taskDetail.value.status !== "recruiting") {
+          return true;
+        }
+        if (taskDetail.value.currentParticipants >= taskDetail.value.maxParticipants) {
+          return true;
+        }
+        return false;
+      });
+      function getRewardIcon(type) {
+        switch (type) {
+          case "现金":
+            return "xianjin";
+          case "学分":
+            return "xuefen";
+          case "志愿服务":
+            return "zhiyaunshichang";
+          case "证书":
+            return "zhengshu";
+          case "实习机会":
+            return "shixijihui";
+          case "礼品":
+            return "liping";
+          default:
+            return "xianjin";
+        }
+      }
+      function getRewardIconColor(type) {
+        switch (type) {
+          case "现金":
+            return "#FF6B6B";
+          case "学分":
+            return "#4A90E2";
+          case "志愿服务":
+            return "#7ED321";
+          case "证书":
+            return "#FFC107";
+          default:
+            return "#4A90E2";
+        }
+      }
+      function getContactIcon(type) {
+        switch (type) {
+          case "phone":
+            return "dianhua";
+          case "wechat":
+            return "weixintubiao";
+          case "qq":
+            return "qqtubiao";
+          case "email":
+            return "youxiang";
+          default:
+            return "youxiang";
+        }
+      }
+      vue.onMounted(() => {
+        getTaskIdAndLoadDetail();
+      });
+      function getTaskIdAndLoadDetail() {
+        try {
+          let id = null;
+          const pages = getCurrentPages();
+          if (pages && pages.length > 0) {
+            const currentPage = pages[pages.length - 1];
+            if (currentPage.options && currentPage.options.id) {
+              id = currentPage.options.id;
+            } else if (currentPage.$page && currentPage.$page.fullPath) {
+              const fullPath = currentPage.$page.fullPath;
+              const queryIndex = fullPath.indexOf("?");
+              if (queryIndex > -1) {
+                const queryPart = fullPath.substring(queryIndex + 1);
+                const queryParams = queryPart.split("&");
+                for (let param of queryParams) {
+                  const [key, value] = param.split("=");
+                  if (key === "id" && value) {
+                    id = value;
+                    break;
+                  }
+                }
+              }
+            } else if (currentPage.__displayReporter && currentPage.__displayReporter.query) {
+              id = currentPage.__displayReporter.query.id;
+            }
+          }
+          if (id) {
+            taskId.value = id;
+            getTaskDetail2(id);
+          } else {
+            uni.showToast({
+              title: "无法获取任务信息",
+              icon: "none"
+            });
+            setTimeout(() => {
+              uni.navigateBack();
+            }, 1500);
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/task-square/detail.vue:337", "获取任务ID出错:", error);
+          uni.showToast({
+            title: "加载任务详情失败",
+            icon: "none"
+          });
+        }
+      }
+      __expose({
+        onLoad(options) {
+          if (options && options.id) {
+            taskId.value = options.id;
+            getTaskDetail2(options.id);
+          }
+        }
+      });
+      async function getTaskDetail2(id) {
+        if (!id) {
+          uni.showToast({
+            title: "任务ID无效",
+            icon: "none"
+          });
+          return;
+        }
+        try {
+          uni.showLoading({
+            title: "加载中..."
+          });
+          const res = await request({
+            url: `/tasks/${id}`,
+            method: "GET"
+          });
+          if (res.code === 200 && res.data) {
+            taskDetail.value = res.data;
+            checkIfAlreadyApplied(id);
+            if (taskDetail.value.title) {
+              uni.setNavigationBarTitle({
+                title: "任务详情"
+              });
+            }
+          } else {
+            formatAppLog("error", "at pages/task-square/detail.vue:389", "获取任务详情失败:", res);
+            uni.showToast({
+              title: "获取任务详情失败",
+              icon: "none"
+            });
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/task-square/detail.vue:398", "获取任务详情异常:", error);
+        } finally {
+          uni.hideLoading();
+        }
+      }
+      function formatDeadline(dateStr) {
+        if (!dateStr)
+          return "";
+        try {
+          const date = new Date(dateStr);
+          const now = /* @__PURE__ */ new Date();
+          const days = ["日", "一", "二", "三", "四", "五", "六"];
+          const hours = date.getHours().toString().padStart(2, "0");
+          const minutes = date.getMinutes().toString().padStart(2, "0");
+          const timeStr = `${hours}:${minutes}`;
+          if (date.getFullYear() === now.getFullYear()) {
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const weekday = days[date.getDay()];
+            return `${month}月${day}日 周${weekday} ${timeStr}`;
+          } else {
+            return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${timeStr}`;
+          }
+        } catch (e) {
+          return dateStr;
+        }
+      }
+      function formatTimeAgo(dateStr) {
+        if (!dateStr)
+          return "";
+        try {
+          const date = new Date(dateStr);
+          const now = /* @__PURE__ */ new Date();
+          const diff = now.getTime() - date.getTime();
+          const minute = 60 * 1e3;
+          const hour = 60 * minute;
+          const day = 24 * hour;
+          const week = 7 * day;
+          const month = 30 * day;
+          if (diff < minute) {
+            return "刚刚";
+          } else if (diff < hour) {
+            return Math.floor(diff / minute) + "分钟前";
+          } else if (diff < day) {
+            return Math.floor(diff / hour) + "小时前";
+          } else if (diff < week) {
+            return Math.floor(diff / day) + "天前";
+          } else if (diff < month) {
+            return Math.floor(diff / week) + "周前";
+          } else {
+            return Math.floor(diff / month) + "个月前";
+          }
+        } catch (e) {
+          return dateStr;
+        }
+      }
+      function getStatusText(status) {
+        switch (status) {
+          case "recruiting":
+            return "招募中";
+          case "ongoing":
+            return "进行中";
+          case "completed":
+            return "已完成";
+          case "ended":
+            return "已结束";
+          case "canceled":
+            return "已取消";
+          default:
+            return "未知状态";
+        }
+      }
+      function getStatusClass(status) {
+        switch (status) {
+          case "recruiting":
+            return "status-recruiting";
+          case "ongoing":
+            return "status-ongoing";
+          case "completed":
+            return "status-completed";
+          case "ended":
+            return "status-ended";
+          case "canceled":
+            return "status-canceled";
+          default:
+            return "";
+        }
+      }
+      function getRewardTypeText(type) {
+        switch (type) {
+          case "现金":
+            return "报酬";
+          case "学分":
+            return "学分奖励";
+          case "志愿服务":
+            return "志愿时长";
+          case "证书":
+            return "证书奖励";
+          default:
+            return "奖励";
+        }
+      }
+      function getRewardClass(type) {
+        switch (type) {
+          case "现金":
+            return "reward-orange";
+          case "学分":
+            return "reward-blue";
+          case "志愿服务":
+            return "reward-green";
+          case "证书":
+            return "reward-yellow";
+          default:
+            return "";
+        }
+      }
+      function getContactTypeText(type) {
+        switch (type) {
+          case "phone":
+            return "电话";
+          case "wechat":
+            return "微信";
+          case "qq":
+            return "QQ";
+          case "email":
+            return "邮箱";
+          default:
+            return type;
+        }
+      }
+      function copyContactInfo(value) {
+        uni.setClipboardData({
+          data: value,
+          success: () => {
+            uni.showToast({
+              title: "复制成功",
+              icon: "success"
+            });
+          }
+        });
+      }
+      function getApplyButtonText() {
+        if (isAlreadyApplied.value) {
+          return "已申请";
+        }
+        if (taskDetail.value.status === "recruiting") {
+          if (taskDetail.value.currentParticipants >= taskDetail.value.maxParticipants) {
+            return "名额已满";
+          }
+          return "立即申请";
+        } else if (taskDetail.value.status === "ongoing") {
+          return "进行中";
+        } else if (taskDetail.value.status === "completed") {
+          return "已完成";
+        } else if (taskDetail.value.status === "ended") {
+          return "已结束";
+        } else if (taskDetail.value.status === "canceled") {
+          return "已取消";
+        }
+        return "立即申请";
+      }
+      async function toggleFavorite() {
+        if (!taskId.value)
+          return;
+      }
+      async function checkIfAlreadyApplied(taskId2) {
+        try {
+          const response = await api.taskApplications.checkTaskApplication(taskId2);
+          if (response.code === 200 && response.data) {
+            isAlreadyApplied.value = response.data.participated || false;
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/task-square/detail.vue:622", "检查申请状态失败:", error);
+          isAlreadyApplied.value = false;
+        }
+      }
+      async function applyTask2() {
+        if (isApplyDisabled.value)
+          return;
+        uni.showModal({
+          title: "申请任务",
+          content: "确定要申请该任务吗？",
+          editable: true,
+          placeholderText: "可选择填写申请理由（如有特长、经验等）",
+          success: async (res) => {
+            if (res.confirm) {
+              try {
+                uni.showLoading({
+                  title: "提交申请中..."
+                });
+                const response = await api.taskApplications.createTaskApplication({
+                  taskId: taskId.value,
+                  message: res.content || "我对这个任务很感兴趣，希望能参与。",
+                  status: "pending"
+                  // 添加状态字段，表示申请待处理
+                });
+                uni.hideLoading();
+                if (response.code === 200) {
+                  uni.showToast({
+                    title: "申请成功，等待审核",
+                    icon: "success"
+                  });
+                  isAlreadyApplied.value = true;
+                  setTimeout(() => {
+                    uni.navigateTo({
+                      url: "/pages/application/application"
+                    });
+                  }, 1500);
+                } else {
+                  uni.showToast({
+                    title: response.message || "申请失败",
+                    icon: "none"
+                  });
+                }
+              } catch (error) {
+                uni.hideLoading();
+                formatAppLog("error", "at pages/task-square/detail.vue:676", "申请任务失败:", error);
+                uni.showToast({
+                  title: "申请失败，请稍后重试",
+                  icon: "none"
+                });
+              }
+            }
+          }
+        });
+      }
+      async function updateTaskStatus2(status, cancelReason = "") {
+        if (!taskId.value)
+          return;
+        if (status === "canceled" && !cancelReason) {
+          uni.showModal({
+            title: "取消任务",
+            content: "确定要取消该任务吗？",
+            editable: true,
+            placeholderText: "请填写取消原因",
+            success: async (res) => {
+              if (res.confirm && res.content) {
+                doUpdateTaskStatus(status, res.content);
+              } else if (res.confirm) {
+                uni.showToast({
+                  title: "取消原因不能为空",
+                  icon: "none"
+                });
+              }
+            }
+          });
+          return;
+        }
+        const statusTextMap = {
+          recruiting: "招募中",
+          ongoing: "进行中",
+          completed: "已完成",
+          ended: "已结束",
+          canceled: "已取消"
+        };
+        uni.showModal({
+          title: `更改状态为"${statusTextMap[status] || status}"`,
+          content: `确定要将任务状态更改为"${statusTextMap[status] || status}"吗？`,
+          success: async (res) => {
+            if (res.confirm) {
+              doUpdateTaskStatus(status, cancelReason);
+            }
+          }
+        });
+      }
+      async function doUpdateTaskStatus(status, cancelReason = "") {
+        try {
+          uni.showLoading({
+            title: "更新中..."
+          });
+          const data = { status };
+          if (status === "canceled") {
+            data.cancelReason = cancelReason;
+          }
+          const response = await api.tasks.updateTaskStatus(taskId.value, data);
+          uni.hideLoading();
+          if (response.code === 200) {
+            uni.showToast({
+              title: "状态更新成功",
+              icon: "success"
+            });
+            getTaskDetail2(taskId.value);
+          } else {
+            uni.showToast({
+              title: response.message || "更新失败",
+              icon: "none"
+            });
+          }
+        } catch (error) {
+          uni.hideLoading();
+          formatAppLog("error", "at pages/task-square/detail.vue:765", "更新任务状态失败:", error);
+          uni.showToast({
+            title: "网络异常，请稍后重试",
+            icon: "none"
+          });
+        }
+      }
+      function openParticipantsPopup() {
+        if (taskId.value) {
+          uni.$emit("openParticipantsPopup");
+          vue.nextTick(() => {
+            if (participantsPopup.value) {
+              participantsPopup.value.open();
+            }
+          });
+        }
+      }
+      const __returned__ = { defaultAvatar, taskId, isFavorite, viewCounted, favoriteCount, isAlreadyApplied, participantsPopup, taskDetail, contactInfo, validContacts, isApplyDisabled, getRewardIcon, getRewardIconColor, getContactIcon, getTaskIdAndLoadDetail, getTaskDetail: getTaskDetail2, formatDeadline, formatTimeAgo, getStatusText, getStatusClass, getRewardTypeText, getRewardClass, getContactTypeText, copyContactInfo, getApplyButtonText, toggleFavorite, checkIfAlreadyApplied, applyTask: applyTask2, updateTaskStatus: updateTaskStatus2, doUpdateTaskStatus, openParticipantsPopup, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, reactive: vue.reactive, nextTick: vue.nextTick, get request() {
+        return request;
+      }, get api() {
+        return api;
+      }, HeaderBar, SvgIcon, TaskParticipantsPopup };
+      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
+      return __returned__;
+    }
+  };
+  function _sfc_render$y(_ctx, _cache, $props, $setup, $data, $options) {
+    return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
+      vue.createCommentVNode(" 顶部导航栏 - 使用HeaderBar组件 "),
+      vue.createVNode($setup["HeaderBar"], {
+        title: "任务详情",
+        "show-search": false,
+        "show-filter": true
+      }),
+      vue.createCommentVNode(" 任务详情内容 "),
+      vue.createElementVNode("scroll-view", {
+        "scroll-y": "",
+        class: "content-scroll"
+      }, [
+        vue.createCommentVNode(" 顶部基本信息卡片 "),
+        vue.createElementVNode("view", { class: "top-info-card" }, [
+          vue.createCommentVNode(" 任务标题和状态 "),
+          vue.createElementVNode("view", { class: "title-status-row" }, [
+            vue.createElementVNode(
+              "text",
+              { class: "task-title" },
+              vue.toDisplayString($setup.taskDetail.title),
+              1
+              /* TEXT */
+            ),
+            vue.createElementVNode(
+              "text",
+              {
+                class: vue.normalizeClass(["task-status-tag", $setup.getStatusClass($setup.taskDetail.status)])
+              },
+              vue.toDisplayString($setup.taskDetail.statusText),
+              3
+              /* TEXT, CLASS */
+            )
+          ]),
+          vue.createCommentVNode(" 发布者信息 "),
+          vue.createElementVNode("view", { class: "publisher-info-row" }, [
+            vue.createElementVNode("image", {
+              class: "publisher-avatar",
+              src: $setup.taskDetail.creatorAvatarUrl || $setup.defaultAvatar,
+              mode: "aspectFill"
+            }, null, 8, ["src"]),
+            vue.createElementVNode("view", { class: "publisher-text" }, [
+              vue.createElementVNode(
+                "text",
+                { class: "publisher-name" },
+                vue.toDisplayString($setup.taskDetail.creatorName),
+                1
+                /* TEXT */
+              ),
+              vue.createElementVNode(
+                "text",
+                { class: "publisher-extra" },
+                vue.toDisplayString($setup.taskDetail.creatorMajor) + " · " + vue.toDisplayString($setup.formatTimeAgo($setup.taskDetail.createdAt)) + "发布",
+                1
+                /* TEXT */
+              )
+            ])
+          ])
+        ]),
+        vue.createCommentVNode(" 任务详情卡片 "),
+        vue.createElementVNode("view", { class: "detail-card" }, [
+          vue.createElementVNode("view", { class: "card-title" }, "任务详情"),
+          vue.createElementVNode("view", { class: "card-content description-content" }, [
+            vue.createElementVNode(
+              "text",
+              { class: "description-text" },
+              vue.toDisplayString($setup.taskDetail.description),
+              1
+              /* TEXT */
+            )
+          ])
+        ]),
+        vue.createCommentVNode(" 任务需求卡片 "),
+        $setup.taskDetail.requirements ? (vue.openBlock(), vue.createElementBlock("view", {
+          key: 0,
+          class: "detail-card"
+        }, [
+          vue.createElementVNode("view", { class: "card-title" }, "任务要求"),
+          vue.createElementVNode("view", { class: "card-content description-content" }, [
+            vue.createElementVNode(
+              "text",
+              { class: "description-text" },
+              vue.toDisplayString($setup.taskDetail.requirements),
+              1
+              /* TEXT */
+            )
+          ])
+        ])) : vue.createCommentVNode("v-if", true),
+        vue.createCommentVNode(" 任务信息网格 "),
+        vue.createElementVNode("view", { class: "info-grid" }, [
+          vue.createCommentVNode(" 时间信息 "),
+          vue.createElementVNode("view", { class: "info-grid-item" }, [
+            vue.createElementVNode("text", { class: "grid-item-label" }, "时间"),
+            vue.createElementVNode("view", { class: "grid-item-content" }, [
+              vue.createVNode($setup["SvgIcon"], {
+                name: "shijian",
+                color: "#4A90E2"
+              }),
+              vue.createElementVNode(
+                "text",
+                { class: "grid-item-value" },
+                vue.toDisplayString($setup.formatDeadline($setup.taskDetail.deadline)),
+                1
+                /* TEXT */
+              )
+            ])
+          ]),
+          vue.createCommentVNode(" 地点信息 "),
+          $setup.taskDetail.location ? (vue.openBlock(), vue.createElementBlock("view", {
+            key: 0,
+            class: "info-grid-item"
+          }, [
+            vue.createElementVNode("text", { class: "grid-item-label" }, "地点"),
+            vue.createElementVNode("view", { class: "grid-item-content" }, [
+              vue.createVNode($setup["SvgIcon"], {
+                name: "weizhi",
+                color: "#4A90E2"
+              }),
+              vue.createElementVNode(
+                "text",
+                { class: "grid-item-value" },
+                vue.toDisplayString($setup.taskDetail.location),
+                1
+                /* TEXT */
+              )
+            ])
+          ])) : vue.createCommentVNode("v-if", true),
+          vue.createCommentVNode(" 奖励信息 "),
+          vue.createElementVNode("view", { class: "info-grid-item" }, [
+            vue.createElementVNode(
+              "text",
+              { class: "grid-item-label" },
+              vue.toDisplayString($setup.getRewardTypeText($setup.taskDetail.rewardTypeName)),
+              1
+              /* TEXT */
+            ),
+            vue.createElementVNode("view", { class: "grid-item-content" }, [
+              vue.createVNode($setup["SvgIcon"], {
+                name: $setup.getRewardIcon($setup.taskDetail.rewardTypeName),
+                color: $setup.getRewardIconColor($setup.taskDetail.rewardTypeName),
+                size: "28"
+              }, null, 8, ["name", "color"]),
+              vue.createElementVNode(
+                "text",
+                {
+                  class: vue.normalizeClass(["grid-item-value reward-text", $setup.getRewardClass($setup.taskDetail.rewardTypeName)])
+                },
+                [
+                  $setup.taskDetail.rewardTypeName === "现金" ? (vue.openBlock(), vue.createElementBlock(
+                    "text",
+                    { key: 0 },
+                    "¥" + vue.toDisplayString($setup.taskDetail.rewardAmount),
+                    1
+                    /* TEXT */
+                  )) : $setup.taskDetail.rewardTypeName === "学分" ? (vue.openBlock(), vue.createElementBlock(
+                    "text",
+                    { key: 1 },
+                    vue.toDisplayString($setup.taskDetail.rewardAmount) + " 学分",
+                    1
+                    /* TEXT */
+                  )) : (vue.openBlock(), vue.createElementBlock(
+                    "text",
+                    { key: 2 },
+                    vue.toDisplayString($setup.taskDetail.rewardTypeName),
+                    1
+                    /* TEXT */
+                  ))
+                ],
+                2
+                /* CLASS */
+              )
+            ])
+          ]),
+          vue.createCommentVNode(" 参与人数 "),
+          vue.createElementVNode("view", { class: "info-grid-item" }, [
+            vue.createElementVNode("text", { class: "grid-item-label" }, "参与人数"),
+            vue.createElementVNode("view", { class: "grid-item-content" }, [
+              vue.createVNode($setup["SvgIcon"], {
+                name: "renshu",
+                color: "#4A90E2"
+              }),
+              vue.createElementVNode(
+                "text",
+                { class: "grid-item-value" },
+                vue.toDisplayString($setup.taskDetail.currentParticipants) + "/" + vue.toDisplayString($setup.taskDetail.maxParticipants) + " 人",
+                1
+                /* TEXT */
+              ),
+              $setup.taskDetail.currentParticipants > 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+                key: 0,
+                class: "view-participants",
+                onClick: $setup.openParticipantsPopup
+              }, [
+                vue.createElementVNode("text", null, "查看")
+              ])) : vue.createCommentVNode("v-if", true)
+            ])
+          ])
+        ]),
+        vue.createCommentVNode(" 联系方式卡片 "),
+        $setup.validContacts.length > 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+          key: 1,
+          class: "detail-card"
+        }, [
+          vue.createElementVNode("view", { class: "card-title" }, "联系方式"),
+          vue.createElementVNode("view", { class: "contact-list" }, [
+            (vue.openBlock(true), vue.createElementBlock(
+              vue.Fragment,
+              null,
+              vue.renderList($setup.validContacts, (contact) => {
+                return vue.openBlock(), vue.createElementBlock("view", {
+                  class: "contact-item",
+                  key: contact.key,
+                  onClick: ($event) => $setup.copyContactInfo(contact.value)
+                }, [
+                  vue.createElementVNode("view", { class: "contact-type-container" }, [
+                    vue.createVNode($setup["SvgIcon"], {
+                      name: $setup.getContactIcon(contact.key),
+                      color: "#4A90E2"
+                    }, null, 8, ["name"]),
+                    vue.createElementVNode(
+                      "text",
+                      { class: "contact-type" },
+                      vue.toDisplayString($setup.getContactTypeText(contact.key)),
+                      1
+                      /* TEXT */
+                    )
+                  ]),
+                  vue.createElementVNode("view", { class: "contact-value-container" }, [
+                    vue.createElementVNode(
+                      "text",
+                      { class: "contact-value" },
+                      vue.toDisplayString(contact.value),
+                      1
+                      /* TEXT */
+                    ),
+                    vue.createElementVNode("text", { class: "copy-hint" }, "点击复制")
+                  ])
+                ], 8, ["onClick"]);
+              }),
+              128
+              /* KEYED_FRAGMENT */
+            ))
+          ])
+        ])) : vue.createCommentVNode("v-if", true)
+      ]),
+      vue.createCommentVNode(" 底部操作栏 "),
+      vue.createElementVNode("view", { class: "bottom-actions" }, [
+        vue.createElementVNode("view", {
+          class: "action-btn favorite",
+          onClick: $setup.toggleFavorite
+        }, [
+          vue.createVNode($setup["SvgIcon"], {
+            name: $setup.isFavorite ? "souchang" : "weishouchang",
+            size: "36",
+            color: $setup.isFavorite ? "#FFC107" : "#666666"
+          }, null, 8, ["name", "color"]),
+          vue.createElementVNode(
+            "text",
+            null,
+            vue.toDisplayString($setup.isFavorite ? "已收藏" : "收藏"),
+            1
+            /* TEXT */
+          )
+        ]),
+        vue.createElementVNode("button", {
+          class: vue.normalizeClass(["apply-btn", { "disabled-btn": $setup.isApplyDisabled }]),
+          disabled: $setup.isApplyDisabled,
+          onClick: $setup.applyTask
+        }, vue.toDisplayString($setup.getApplyButtonText()), 11, ["disabled"])
+      ]),
+      vue.createCommentVNode(" 任务参与者弹窗 "),
+      vue.createVNode($setup["TaskParticipantsPopup"], {
+        ref: "participantsPopup",
+        "task-id": $setup.taskId
+      }, null, 8, ["task-id"])
+    ]);
+  }
+  const PagesTaskSquareDetail = /* @__PURE__ */ _export_sfc(_sfc_main$z, [["render", _sfc_render$y], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/task-square/detail.vue"]]);
   function obj2strClass(obj) {
     let classess = "";
     for (let key in obj) {
@@ -8077,7 +9096,7 @@ if (uni.restoreGlobal) {
     }
     return style;
   }
-  const _sfc_main$w = {
+  const _sfc_main$y = {
     name: "uni-easyinput",
     emits: [
       "click",
@@ -8319,8 +9338,8 @@ if (uni.restoreGlobal) {
        * 输入时触发
        * @param {Object} event
        */
-      onInput(event) {
-        let value = event.detail.value;
+      onInput(event2) {
+        let value = event2.detail.value;
         if (this.trim) {
           if (typeof this.trim === "boolean" && this.trim) {
             value = this.trimStr(value);
@@ -8346,9 +9365,9 @@ if (uni.restoreGlobal) {
         });
         this.$emit("focus", null);
       },
-      _Focus(event) {
+      _Focus(event2) {
         this.focusShow = true;
-        this.$emit("focus", event);
+        this.$emit("focus", event2);
       },
       /**
        * 外部调用方法
@@ -8359,10 +9378,10 @@ if (uni.restoreGlobal) {
         this.focused = false;
         this.$emit("blur", null);
       },
-      _Blur(event) {
-        event.detail.value;
+      _Blur(event2) {
+        event2.detail.value;
         this.focusShow = false;
-        this.$emit("blur", event);
+        this.$emit("blur", event2);
         if (this.isEnter === false) {
           this.$emit("change", this.val);
         }
@@ -8389,7 +9408,7 @@ if (uni.restoreGlobal) {
        * 清理内容
        * @param {Object} event
        */
-      onClear(event) {
+      onClear(event2) {
         this.val = "";
         this.$emit("input", "");
         this.$emit("update:modelValue", "");
@@ -8400,8 +9419,8 @@ if (uni.restoreGlobal) {
        * 兼容性：微信小程序2.7.0+、App 3.1.0+
        * @param {Object} event
        */
-      onkeyboardheightchange(event) {
-        this.$emit("keyboardheightchange", event);
+      onkeyboardheightchange(event2) {
+        this.$emit("keyboardheightchange", event2);
       },
       /**
        * 去除空格
@@ -8426,8 +9445,8 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$v(_ctx, _cache, $props, $setup, $data, $options) {
-    const _component_uni_icons = resolveEasycom(vue.resolveDynamicComponent("uni-icons"), __easycom_0$1);
+  function _sfc_render$x(_ctx, _cache, $props, $setup, $data, $options) {
+    const _component_uni_icons = resolveEasycom(vue.resolveDynamicComponent("uni-icons"), uniIcons);
     return vue.openBlock(), vue.createElementBlock(
       "view",
       {
@@ -8551,8 +9570,8 @@ if (uni.restoreGlobal) {
       /* CLASS, STYLE */
     );
   }
-  const __easycom_0 = /* @__PURE__ */ _export_sfc(_sfc_main$w, [["render", _sfc_render$v], ["__scopeId", "data-v-09fd5285"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-easyinput/components/uni-easyinput/uni-easyinput.vue"]]);
-  const _sfc_main$v = {
+  const __easycom_0 = /* @__PURE__ */ _export_sfc(_sfc_main$y, [["render", _sfc_render$x], ["__scopeId", "data-v-09fd5285"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-easyinput/components/uni-easyinput/uni-easyinput.vue"]]);
+  const _sfc_main$x = {
     name: "uniFormsItem",
     options: {
       virtualHost: true
@@ -8884,7 +9903,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$u(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$w(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock(
       "view",
       {
@@ -8940,7 +9959,7 @@ if (uni.restoreGlobal) {
       /* CLASS */
     );
   }
-  const __easycom_1$1 = /* @__PURE__ */ _export_sfc(_sfc_main$v, [["render", _sfc_render$u], ["__scopeId", "data-v-462874dd"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-forms/components/uni-forms-item/uni-forms-item.vue"]]);
+  const __easycom_1$1 = /* @__PURE__ */ _export_sfc(_sfc_main$x, [["render", _sfc_render$w], ["__scopeId", "data-v-462874dd"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-forms/components/uni-forms-item/uni-forms-item.vue"]]);
   let Calendar$1 = class Calendar {
     constructor({
       selected,
@@ -9296,7 +10315,7 @@ if (uni.restoreGlobal) {
     }
     return value;
   }
-  const _sfc_main$u = {
+  const _sfc_main$w = {
     props: {
       weeks: {
         type: Object,
@@ -9330,7 +10349,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$t(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$v(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock(
       "view",
       {
@@ -9386,7 +10405,7 @@ if (uni.restoreGlobal) {
       /* CLASS, NEED_HYDRATION */
     );
   }
-  const calendarItem = /* @__PURE__ */ _export_sfc(_sfc_main$u, [["render", _sfc_render$t], ["__scopeId", "data-v-3c762a01"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-datetime-picker/components/uni-datetime-picker/calendar-item.vue"]]);
+  const calendarItem = /* @__PURE__ */ _export_sfc(_sfc_main$w, [["render", _sfc_render$v], ["__scopeId", "data-v-3c762a01"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-datetime-picker/components/uni-datetime-picker/calendar-item.vue"]]);
   const en = {
     "uni-datetime-picker.selectDate": "select date",
     "uni-datetime-picker.selectTime": "select time",
@@ -9461,7 +10480,7 @@ if (uni.restoreGlobal) {
   const {
     t: t$1
   } = initVueI18n(i18nMessages);
-  const _sfc_main$t = {
+  const _sfc_main$v = {
     name: "UniDatetimePicker",
     data() {
       return {
@@ -10065,7 +11084,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$s(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$u(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "uni-datetime-picker" }, [
       vue.createElementVNode("view", {
         onClick: _cache[0] || (_cache[0] = (...args) => $options.initTimePicker && $options.initTimePicker(...args))
@@ -10342,11 +11361,11 @@ if (uni.restoreGlobal) {
       )) : vue.createCommentVNode("v-if", true)
     ]);
   }
-  const TimePicker = /* @__PURE__ */ _export_sfc(_sfc_main$t, [["render", _sfc_render$s], ["__scopeId", "data-v-1d532b70"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-datetime-picker/components/uni-datetime-picker/time-picker.vue"]]);
+  const TimePicker = /* @__PURE__ */ _export_sfc(_sfc_main$v, [["render", _sfc_render$u], ["__scopeId", "data-v-1d532b70"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-datetime-picker/components/uni-datetime-picker/time-picker.vue"]]);
   const {
     t
   } = initVueI18n(i18nMessages);
-  const _sfc_main$s = {
+  const _sfc_main$u = {
     components: {
       calendarItem,
       timePicker: TimePicker
@@ -10827,10 +11846,10 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$r(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$t(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_calendar_item = vue.resolveComponent("calendar-item");
     const _component_time_picker = vue.resolveComponent("time-picker");
-    const _component_uni_icons = resolveEasycom(vue.resolveDynamicComponent("uni-icons"), __easycom_0$1);
+    const _component_uni_icons = resolveEasycom(vue.resolveDynamicComponent("uni-icons"), uniIcons);
     return vue.openBlock(), vue.createElementBlock(
       "view",
       {
@@ -11120,8 +12139,8 @@ if (uni.restoreGlobal) {
       /* NEED_HYDRATION */
     );
   }
-  const Calendar = /* @__PURE__ */ _export_sfc(_sfc_main$s, [["render", _sfc_render$r], ["__scopeId", "data-v-1d379219"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-datetime-picker/components/uni-datetime-picker/calendar.vue"]]);
-  const _sfc_main$r = {
+  const Calendar = /* @__PURE__ */ _export_sfc(_sfc_main$u, [["render", _sfc_render$t], ["__scopeId", "data-v-1d379219"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-datetime-picker/components/uni-datetime-picker/calendar.vue"]]);
+  const _sfc_main$t = {
     name: "UniDatetimePicker",
     options: {
       virtualHost: true
@@ -11777,8 +12796,8 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$q(_ctx, _cache, $props, $setup, $data, $options) {
-    const _component_uni_icons = resolveEasycom(vue.resolveDynamicComponent("uni-icons"), __easycom_0$1);
+  function _sfc_render$s(_ctx, _cache, $props, $setup, $data, $options) {
+    const _component_uni_icons = resolveEasycom(vue.resolveDynamicComponent("uni-icons"), uniIcons);
     const _component_time_picker = vue.resolveComponent("time-picker");
     const _component_Calendar = vue.resolveComponent("Calendar");
     return vue.openBlock(), vue.createElementBlock("view", { class: "uni-date" }, [
@@ -12121,8 +13140,8 @@ if (uni.restoreGlobal) {
       }, null, 8, ["date", "defTime", "start-date", "end-date", "selectableTimes", "startPlaceholder", "endPlaceholder", "default-value", "pleStatus", "range", "hasTime", "hideSecond", "onConfirm", "onMaskClose", "onChange"])) : vue.createCommentVNode("v-if", true)
     ]);
   }
-  const __easycom_1 = /* @__PURE__ */ _export_sfc(_sfc_main$r, [["render", _sfc_render$q], ["__scopeId", "data-v-9802168a"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-datetime-picker/components/uni-datetime-picker/uni-datetime-picker.vue"]]);
-  const _sfc_main$q = {
+  const __easycom_1 = /* @__PURE__ */ _export_sfc(_sfc_main$t, [["render", _sfc_render$s], ["__scopeId", "data-v-9802168a"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-datetime-picker/components/uni-datetime-picker/uni-datetime-picker.vue"]]);
+  const _sfc_main$s = {
     name: "UniNumberBox",
     emits: ["change", "input", "update:modelValue", "blur", "focus"],
     props: {
@@ -12227,9 +13246,9 @@ if (uni.restoreGlobal) {
         }
         return scale;
       },
-      _onBlur(event) {
-        this.$emit("blur", event);
-        let value = event.detail.value;
+      _onBlur(event2) {
+        this.$emit("blur", event2);
+        let value = event2.detail.value;
         if (isNaN(value)) {
           this.inputValue = this.value;
           return;
@@ -12246,12 +13265,12 @@ if (uni.restoreGlobal) {
         this.$emit("update:modelValue", +this.inputValue);
         this.$emit("change", +this.inputValue);
       },
-      _onFocus(event) {
-        this.$emit("focus", event);
+      _onFocus(event2) {
+        this.$emit("focus", event2);
       }
     }
   };
-  function _sfc_render$p(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$r(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "uni-numbox" }, [
       vue.createElementVNode(
         "view",
@@ -12310,7 +13329,7 @@ if (uni.restoreGlobal) {
       )
     ]);
   }
-  const __easycom_3 = /* @__PURE__ */ _export_sfc(_sfc_main$q, [["render", _sfc_render$p], ["__scopeId", "data-v-7ae2ee72"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-number-box/components/uni-number-box/uni-number-box.vue"]]);
+  const __easycom_3 = /* @__PURE__ */ _export_sfc(_sfc_main$s, [["render", _sfc_render$r], ["__scopeId", "data-v-7ae2ee72"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-number-box/components/uni-number-box/uni-number-box.vue"]]);
   var pattern = {
     email: /^\S+?@\S+?\.\S+?$/,
     idcard: /^[1-9]\d{5}(18|19|([23]\d))\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$/,
@@ -12874,7 +13893,7 @@ if (uni.restoreGlobal) {
       return false;
     }
   };
-  const _sfc_main$p = {
+  const _sfc_main$r = {
     name: "uniForms",
     emits: ["validate", "submit"],
     options: {
@@ -13171,92 +14190,15 @@ if (uni.restoreGlobal) {
       _isEqual: isEqual
     }
   };
-  function _sfc_render$o(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$q(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "uni-forms" }, [
       vue.createElementVNode("form", null, [
         vue.renderSlot(_ctx.$slots, "default", {}, void 0, true)
       ])
     ]);
   }
-  const __easycom_4 = /* @__PURE__ */ _export_sfc(_sfc_main$p, [["render", _sfc_render$o], ["__scopeId", "data-v-9a1e3c32"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-forms/components/uni-forms/uni-forms.vue"]]);
-  const baseApiUrl = config.baseUrl;
-  function getTaskList(params) {
-    return request({
-      url: `${baseApiUrl}/tasks/list`,
-      method: "GET",
-      params
-    });
-  }
-  function getTaskDetail(id) {
-    return request({
-      url: `${baseApiUrl}/tasks/${id}`,
-      method: "GET"
-    });
-  }
-  function createTask(data) {
-    return request({
-      url: `${baseApiUrl}/tasks`,
-      method: "POST",
-      data
-    });
-  }
-  function updateTask(id, data) {
-    return request({
-      url: `${baseApiUrl}/tasks/${id}`,
-      method: "PUT",
-      data
-    });
-  }
-  function updateTaskStatus(id, data) {
-    return request({
-      url: `${baseApiUrl}/tasks/${id}/status`,
-      method: "PUT",
-      data
-    });
-  }
-  function deleteTask(id) {
-    return request({
-      url: `${baseApiUrl}/tasks/${id}`,
-      method: "DELETE"
-    });
-  }
-  function toggleFavoriteTask(id, isFavorite) {
-    return request({
-      url: `${baseApiUrl}/tasks/${id}/favorite`,
-      method: isFavorite ? "POST" : "DELETE"
-    });
-  }
-  function applyTask(id) {
-    return request({
-      url: `${baseApiUrl}/tasks/${id}/apply`,
-      method: "POST"
-    });
-  }
-  function getTaskCategories() {
-    return request({
-      url: `${baseApiUrl}/taskCategories`,
-      method: "GET"
-    });
-  }
-  function getRewardTypes() {
-    return request({
-      url: `${baseApiUrl}/rewardTypes`,
-      method: "GET"
-    });
-  }
-  const tasksApi = {
-    getTaskList,
-    getTaskDetail,
-    createTask,
-    updateTask,
-    updateTaskStatus,
-    deleteTask,
-    toggleFavoriteTask,
-    applyTask,
-    getTaskCategories,
-    getRewardTypes
-  };
-  const _sfc_main$o = {
+  const __easycom_4 = /* @__PURE__ */ _export_sfc(_sfc_main$r, [["render", _sfc_render$q], ["__scopeId", "data-v-9a1e3c32"], ["__file", "D:/Uniapp/htmlTest/赛创项目/uni_modules/uni-forms/components/uni-forms/uni-forms.vue"]]);
+  const _sfc_main$q = {
     __name: "create",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -13549,7 +14491,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$n(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$p(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_uni_easyinput = resolveEasycom(vue.resolveDynamicComponent("uni-easyinput"), __easycom_0);
     const _component_uni_forms_item = resolveEasycom(vue.resolveDynamicComponent("uni-forms-item"), __easycom_1$1);
     const _component_uni_datetime_picker = resolveEasycom(vue.resolveDynamicComponent("uni-datetime-picker"), __easycom_1);
@@ -14012,8 +14954,8 @@ if (uni.restoreGlobal) {
       ])
     ]);
   }
-  const PagesTaskSquareCreate = /* @__PURE__ */ _export_sfc(_sfc_main$o, [["render", _sfc_render$n], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/task-square/create.vue"]]);
-  const _sfc_main$n = {
+  const PagesTaskSquareCreate = /* @__PURE__ */ _export_sfc(_sfc_main$q, [["render", _sfc_render$p], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/task-square/create.vue"]]);
+  const _sfc_main$p = {
     components: {
       SvgIcon
     },
@@ -14379,7 +15321,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$m(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$o(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_SvgIcon = vue.resolveComponent("SvgIcon");
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
@@ -14800,8 +15742,8 @@ if (uni.restoreGlobal) {
       ])) : vue.createCommentVNode("v-if", true)
     ]);
   }
-  const PagesTeamDetail = /* @__PURE__ */ _export_sfc(_sfc_main$n, [["render", _sfc_render$m], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/team/detail.vue"]]);
-  const _sfc_main$m = {
+  const PagesTeamDetail = /* @__PURE__ */ _export_sfc(_sfc_main$p, [["render", _sfc_render$o], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/team/detail.vue"]]);
+  const _sfc_main$o = {
     __name: "list",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -15044,7 +15986,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$l(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$n(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createVNode($setup["HeaderBar"], {
@@ -15138,8 +16080,8 @@ if (uni.restoreGlobal) {
       })
     ]);
   }
-  const PagesTeamList = /* @__PURE__ */ _export_sfc(_sfc_main$m, [["render", _sfc_render$l], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/team/list.vue"]]);
-  const _sfc_main$l = {
+  const PagesTeamList = /* @__PURE__ */ _export_sfc(_sfc_main$o, [["render", _sfc_render$n], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/team/list.vue"]]);
+  const _sfc_main$n = {
     __name: "create",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -15660,8 +16602,8 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$k(_ctx, _cache, $props, $setup, $data, $options) {
-    const _component_uni_popup = resolveEasycom(vue.resolveDynamicComponent("uni-popup"), uniPopup);
+  function _sfc_render$m(_ctx, _cache, $props, $setup, $data, $options) {
+    const _component_uni_popup = resolveEasycom(vue.resolveDynamicComponent("uni-popup"), __easycom_0$3);
     const _component_uni_datetime_picker = resolveEasycom(vue.resolveDynamicComponent("uni-datetime-picker"), __easycom_1);
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
@@ -16594,9 +17536,9 @@ if (uni.restoreGlobal) {
       )
     ]);
   }
-  const PagesTeamCreate = /* @__PURE__ */ _export_sfc(_sfc_main$l, [["render", _sfc_render$k], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/team/create.vue"]]);
-  const _imports_0$6 = "/static/images/empty-data.png";
-  const _sfc_main$k = {
+  const PagesTeamCreate = /* @__PURE__ */ _export_sfc(_sfc_main$n, [["render", _sfc_render$m], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/team/create.vue"]]);
+  const _imports_0$8 = "/static/images/empty-data.png";
+  const _sfc_main$m = {
     components: {
       HeaderBar,
       TeamCard,
@@ -16878,7 +17820,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$j(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$l(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_header_bar = vue.resolveComponent("header-bar");
     const _component_SvgIcon = vue.resolveComponent("SvgIcon");
     const _component_team_card = vue.resolveComponent("team-card");
@@ -16963,7 +17905,7 @@ if (uni.restoreGlobal) {
             }, [
               vue.createElementVNode("image", {
                 class: "empty-icon",
-                src: _imports_0$6,
+                src: _imports_0$8,
                 mode: "aspectFit"
               }),
               vue.createElementVNode("text", { class: "empty-text" }, "暂无推荐，请完善个人资料后再试"),
@@ -16979,8 +17921,8 @@ if (uni.restoreGlobal) {
       )
     ]);
   }
-  const PagesTeamRecommended = /* @__PURE__ */ _export_sfc(_sfc_main$k, [["render", _sfc_render$j], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/team/recommended.vue"]]);
-  const _sfc_main$j = {
+  const PagesTeamRecommended = /* @__PURE__ */ _export_sfc(_sfc_main$m, [["render", _sfc_render$l], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/team/recommended.vue"]]);
+  const _sfc_main$l = {
     components: {
       TabBar,
       HeaderBar,
@@ -17051,10 +17993,25 @@ if (uni.restoreGlobal) {
             isHot: true
           });
           if (res && res.code === 200 && res.data && Array.isArray(res.data.list)) {
-            this.hotCompetitions = res.data.list;
+            const hotCompetitionsData = res.data.list;
+            if (hotCompetitionsData.length > 0) {
+              await Promise.all(hotCompetitionsData.map(async (competition) => {
+                try {
+                  const teamCountRes = await api.competitions.getCompetitionTeamCount(competition.id);
+                  if (teamCountRes && teamCountRes.code === 200 && teamCountRes.data) {
+                    competition.teamCount = teamCountRes.data.teamCount;
+                  }
+                } catch (error) {
+                  formatAppLog("error", "at pages/competition/index.vue:245", `获取热门竞赛 ${competition.id} 的团队数量失败:`, error);
+                  competition.teamCount = 0;
+                }
+                return competition;
+              }));
+            }
+            this.hotCompetitions = hotCompetitionsData;
           }
         } catch (error) {
-          formatAppLog("error", "at pages/competition/index.vue:234", "获取热门竞赛失败:", error);
+          formatAppLog("error", "at pages/competition/index.vue:255", "获取热门竞赛失败:", error);
           uni.showToast({
             title: "获取热门竞赛失败",
             icon: "none"
@@ -17084,12 +18041,25 @@ if (uni.restoreGlobal) {
           }
           const res = await api.competitions.getCompetitionsList(params);
           if (res && res.code === 200 && res.data) {
+            let competitionData = Array.isArray(res.data.list) ? res.data.list : [];
+            if (competitionData.length > 0) {
+              await Promise.all(competitionData.map(async (competition) => {
+                try {
+                  const teamCountRes = await api.competitions.getCompetitionTeamCount(competition.id);
+                  if (teamCountRes && teamCountRes.code === 200 && teamCountRes.data) {
+                    competition.teamCount = teamCountRes.data.teamCount;
+                  }
+                } catch (error) {
+                  formatAppLog("error", "at pages/competition/index.vue:306", `获取竞赛 ${competition.id} 的团队数量失败:`, error);
+                  competition.teamCount = 0;
+                }
+                return competition;
+              }));
+            }
             if (reset) {
-              this.competitionList = Array.isArray(res.data.list) ? res.data.list : [];
+              this.competitionList = competitionData;
             } else {
-              if (Array.isArray(res.data.list)) {
-                this.competitionList = [...this.competitionList, ...res.data.list];
-              }
+              this.competitionList = [...this.competitionList, ...competitionData];
             }
             this.hasMore = res.data.hasNext || false;
             if (this.competitionList.length === 0) {
@@ -17100,7 +18070,7 @@ if (uni.restoreGlobal) {
             }
           }
         } catch (error) {
-          formatAppLog("error", "at pages/competition/index.vue:294", "获取竞赛列表失败:", error);
+          formatAppLog("error", "at pages/competition/index.vue:331", "获取竞赛列表失败:", error);
           uni.showToast({
             title: "获取竞赛列表失败",
             icon: "none"
@@ -17236,7 +18206,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$i(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$k(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_header_bar = vue.resolveComponent("header-bar");
     const _component_SvgIcon = vue.resolveComponent("SvgIcon");
     const _component_tab_bar = vue.resolveComponent("tab-bar");
@@ -17347,6 +18317,15 @@ if (uni.restoreGlobal) {
                                 1
                                 /* TEXT */
                               )
+                            ]),
+                            vue.createElementVNode("view", { class: "hot-info-item" }, [
+                              vue.createElementVNode(
+                                "text",
+                                { class: "hot-team-count" },
+                                vue.toDisplayString(item.teamCount || 0) + "队已报名",
+                                1
+                                /* TEXT */
+                              )
                             ])
                           ])
                         ])
@@ -17448,7 +18427,7 @@ if (uni.restoreGlobal) {
                               style: { "padding-bottom": "10rpx" }
                             }),
                             vue.createTextVNode(
-                              " " + vue.toDisplayString(item.participantCount || 0) + "人已报名 ",
+                              " " + vue.toDisplayString(item.teamCount || 0) + "队已报名 ",
                               1
                               /* TEXT */
                             )
@@ -17514,11 +18493,18 @@ if (uni.restoreGlobal) {
       /* NEED_PATCH */
     );
   }
-  const PagesCompetitionIndex = /* @__PURE__ */ _export_sfc(_sfc_main$j, [["render", _sfc_render$i], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/competition/index.vue"]]);
-  const _sfc_main$i = {
+  const PagesCompetitionIndex = /* @__PURE__ */ _export_sfc(_sfc_main$l, [["render", _sfc_render$k], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/competition/index.vue"]]);
+  const _imports_0$7 = "/static/image/empty-stage.png";
+  const _sfc_main$k = {
     __name: "create",
     setup(__props, { expose: __expose }) {
       __expose();
+      const steps = ["基本信息", "比赛阶段", "联系附件", "预览发布"];
+      const currentStep = vue.ref(1);
+      const stagePopup = vue.ref(null);
+      const isEditingStage = vue.ref(false);
+      const editingStageIndex = vue.ref(-1);
+      const isPopupOpen = vue.ref(false);
       const form = vue.reactive({
         title: "",
         categoryId: null,
@@ -17537,14 +18523,114 @@ if (uni.restoreGlobal) {
         contactEmail: "",
         coverUrl: "",
         coverFile: null,
-        attachments: []
+        attachments: [],
+        stages: []
+        // 比赛阶段数据
       });
+      const stageForm = vue.reactive({
+        stageName: "",
+        startDate: "",
+        startTime: "09:00",
+        endDate: "",
+        endTime: "18:00",
+        description: "",
+        location: ""
+      });
+      const stageStatusOptions = [
+        { label: "待开始", value: "pending" },
+        { label: "进行中", value: "active" },
+        { label: "已结束", value: "completed" }
+      ];
       const categoryOptions = vue.ref([]);
       const levelOptions = ["国家级", "省级", "市级", "校级"];
       vue.onMounted(async () => {
         await checkAdminRole();
         await loadCategories();
+        setInterval(() => {
+          if (form.stages.length > 0) {
+            form.stages = [...form.stages];
+          }
+        }, 6e4);
       });
+      function nextStep() {
+        if (currentStep.value < steps.length - 1) {
+          if (validateCurrentStep()) {
+            currentStep.value++;
+          }
+        }
+      }
+      function prevStep() {
+        if (currentStep.value > 0) {
+          currentStep.value--;
+        }
+      }
+      function goToStep(index) {
+        if (index <= currentStep.value + 1 && index >= 0 && index < steps.length) {
+          if (index > currentStep.value) {
+            if (validateCurrentStep()) {
+              currentStep.value = index;
+            }
+          } else {
+            currentStep.value = index;
+          }
+        }
+      }
+      function validateCurrentStep() {
+        switch (currentStep.value) {
+          case 0:
+            if (!form.title) {
+              showError("请输入竞赛标题");
+              return false;
+            }
+            if (!form.categoryId) {
+              showError("请选择竞赛分类");
+              return false;
+            }
+            if (!form.level) {
+              showError("请选择竞赛级别");
+              return false;
+            }
+            if (!form.shortDescription) {
+              showError("请填写竞赛简介");
+              return false;
+            }
+            if (!form.description) {
+              showError("请填写竞赛介绍");
+              return false;
+            }
+            if (!form.requirements) {
+              showError("请填写参赛要求");
+              return false;
+            }
+            if (!form.registrationStart || !form.registrationEnd) {
+              showError("请选择报名时间");
+              return false;
+            }
+            if (!form.teamMin || !form.teamMax) {
+              showError("请填写团队人数");
+              return false;
+            }
+            return true;
+          case 1:
+            if (form.stages.length === 0) {
+              showError("请至少添加一个比赛阶段");
+              return false;
+            }
+            return true;
+          case 2:
+            if (!form.name || !form.contactEmail) {
+              showError("请填写联系方式");
+              return false;
+            }
+            if (!form.coverUrl) {
+              showError("请上传竞赛封面");
+              return false;
+            }
+            return true;
+          default:
+            return true;
+        }
+      }
       async function loadCategories() {
         try {
           const res = await competitionsApi.getCompetitionCategories();
@@ -17556,11 +18642,11 @@ if (uni.restoreGlobal) {
               id: item.id
             }));
           } else {
-            formatAppLog("error", "at pages/competition/create.vue:351", "获取分类失败:", res);
+            formatAppLog("error", "at pages/competition/create.vue:756", "获取分类失败:", res);
             setDefaultCategories();
           }
         } catch (error) {
-          formatAppLog("error", "at pages/competition/create.vue:355", "获取分类出错:", error);
+          formatAppLog("error", "at pages/competition/create.vue:760", "获取分类出错:", error);
           setDefaultCategories();
         }
       }
@@ -17586,6 +18672,10 @@ if (uni.restoreGlobal) {
           { label: "其他", value: 6, icon: "iconfont icon-more", id: 6 }
         ];
       }
+      function getCategoryName() {
+        const category = categoryOptions.value.find((item) => item.id === form.categoryId);
+        return category ? category.label : "未设置分类";
+      }
       async function checkAdminRole() {
         try {
           const token = uni.getStorageSync("token");
@@ -17598,7 +18688,7 @@ if (uni.restoreGlobal) {
             redirectNoPermission();
           }
         } catch (error) {
-          formatAppLog("error", "at pages/competition/create.vue:401", "获取角色失败:", error);
+          formatAppLog("error", "at pages/competition/create.vue:812", "获取角色失败:", error);
           redirectNoPermission();
         }
       }
@@ -17612,7 +18702,205 @@ if (uni.restoreGlobal) {
         }, 1500);
       }
       function goBack() {
-        uni.navigateBack();
+        uni.showModal({
+          title: "提示",
+          content: "离开后当前编辑的内容将不会保存，确定要离开吗？",
+          success: (res) => {
+            if (res.confirm) {
+              uni.navigateBack();
+            }
+          }
+        });
+      }
+      function addStage() {
+        resetStageForm();
+        isEditingStage.value = false;
+        isPopupOpen.value = true;
+        stagePopup.value.open();
+      }
+      function editStage(index) {
+        const stage = form.stages[index];
+        const startDateTime = new Date(stage.startTime);
+        const endDateTime = new Date(stage.endTime);
+        stageForm.stageName = stage.stageName;
+        stageForm.startDate = formatDate(startDateTime);
+        stageForm.startTime = formatTimeOnly(startDateTime);
+        stageForm.endDate = formatDate(endDateTime);
+        stageForm.endTime = formatTimeOnly(endDateTime);
+        stageForm.description = stage.description;
+        if (stage.metadata) {
+          try {
+            const metadata = typeof stage.metadata === "string" ? JSON.parse(stage.metadata) : stage.metadata;
+            stageForm.location = metadata.location || "";
+          } catch (e) {
+            stageForm.location = "";
+          }
+        } else {
+          stageForm.location = "";
+        }
+        isEditingStage.value = true;
+        editingStageIndex.value = index;
+        isPopupOpen.value = true;
+        stagePopup.value.open();
+      }
+      function removeStage(index) {
+        uni.showModal({
+          title: "确认删除",
+          content: "确定要删除该阶段吗？",
+          success: (res) => {
+            if (res.confirm) {
+              form.stages.splice(index, 1);
+            }
+          }
+        });
+      }
+      function cancelStage() {
+        stagePopup.value.close();
+        setTimeout(() => {
+          isPopupOpen.value = false;
+        }, 300);
+      }
+      function confirmStage() {
+        if (!validateStageForm()) {
+          return;
+        }
+        const startDateTime = combineDateTime(stageForm.startDate, stageForm.startTime);
+        const endDateTime = combineDateTime(stageForm.endDate, stageForm.endTime);
+        const stage = {
+          stageName: stageForm.stageName,
+          startTime: startDateTime,
+          endTime: endDateTime,
+          description: stageForm.description,
+          // 自动计算最新状态
+          status: calculateStageStatus(startDateTime, endDateTime),
+          metadata: JSON.stringify({
+            location: stageForm.location
+          })
+        };
+        if (isEditingStage.value) {
+          form.stages[editingStageIndex.value] = stage;
+        } else {
+          form.stages.push(stage);
+        }
+        stagePopup.value.close();
+        setTimeout(() => {
+          isPopupOpen.value = false;
+        }, 300);
+        uni.showToast({
+          title: isEditingStage.value ? "阶段已更新" : "阶段已添加",
+          icon: "success"
+        });
+      }
+      function validateStageForm() {
+        if (!stageForm.stageName) {
+          showError("请输入阶段名称");
+          return false;
+        }
+        if (!stageForm.startDate) {
+          showError("请选择开始日期");
+          return false;
+        }
+        if (!stageForm.startTime) {
+          showError("请选择开始时间");
+          return false;
+        }
+        if (!stageForm.endDate) {
+          showError("请选择结束日期");
+          return false;
+        }
+        if (!stageForm.endTime) {
+          showError("请选择结束时间");
+          return false;
+        }
+        const startDateTime = new Date(combineDateTime(stageForm.startDate, stageForm.startTime));
+        const endDateTime = new Date(combineDateTime(stageForm.endDate, stageForm.endTime));
+        if (endDateTime <= startDateTime) {
+          showError("结束时间必须晚于开始时间");
+          return false;
+        }
+        if (!stageForm.description) {
+          showError("请输入阶段描述");
+          return false;
+        }
+        return true;
+      }
+      function resetStageForm() {
+        stageForm.stageName = "";
+        stageForm.startDate = "";
+        stageForm.startTime = "09:00";
+        stageForm.endDate = "";
+        stageForm.endTime = "18:00";
+        stageForm.description = "";
+        stageForm.location = "";
+      }
+      function combineDateTime(date, time) {
+        return `${date}T${time}:00`;
+      }
+      function formatDate(date) {
+        if (typeof date === "string") {
+          date = new Date(date);
+        }
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+      function formatTimeOnly(date) {
+        if (typeof date === "string") {
+          date = new Date(date);
+        }
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        return `${hours}:${minutes}`;
+      }
+      function formatDateTime(dateTime) {
+        if (!dateTime)
+          return "";
+        const date = new Date(dateTime);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        return `${year}-${month}-${day} ${hours}:${minutes}`;
+      }
+      function getStageStatusClass(status) {
+        const classes = {
+          "pending": "status-pending",
+          "active": "status-active",
+          "completed": "status-completed"
+        };
+        return classes[status] || "status-pending";
+      }
+      function getStageStatusText(status) {
+        const texts = {
+          "pending": "待开始",
+          "active": "进行中",
+          "completed": "已结束"
+        };
+        return texts[status] || "待开始";
+      }
+      function calculateStageStatus(startTime, endTime) {
+        const now = /* @__PURE__ */ new Date();
+        const startDate = new Date(startTime);
+        const endDate = new Date(endTime);
+        if (now < startDate) {
+          return "pending";
+        } else if (now > endDate) {
+          return "completed";
+        } else {
+          return "active";
+        }
+      }
+      function getStageLocation(stage) {
+        if (!stage.metadata)
+          return "未设置";
+        try {
+          const metadata = typeof stage.metadata === "string" ? JSON.parse(stage.metadata) : stage.metadata;
+          return metadata.location || "未设置";
+        } catch (e) {
+          return "未设置";
+        }
       }
       function saveDraft() {
         if (!form.title) {
@@ -17692,6 +18980,10 @@ if (uni.restoreGlobal) {
           showError("请填写团队人数");
           return false;
         }
+        if (form.stages.length === 0) {
+          showError("请至少添加一个比赛阶段");
+          return false;
+        }
         if (!form.name || !form.contactEmail) {
           showError("请填写联系方式");
           return false;
@@ -17730,6 +19022,7 @@ if (uni.restoreGlobal) {
             qq: form.contactQQ,
             name: form.name
           }
+          // 注意：阶段会在创建成功后通过单独的接口创建
         };
         uni.showLoading({
           title: status === 0 ? "保存中..." : "发布中..."
@@ -17748,7 +19041,7 @@ if (uni.restoreGlobal) {
           const token = uni.getStorageSync("token");
           const res = await new Promise((resolve, reject) => {
             uni.uploadFile({
-              url: "http://localhost:8080/competitions/with-files",
+              url: `${config.baseUrl}/competitions/with-files`,
               files: form.attachments.map((item) => ({
                 name: "attachmentFiles",
                 file: item.file
@@ -17776,6 +19069,42 @@ if (uni.restoreGlobal) {
             });
           });
           if (res.code === 200) {
+            const competitionId = res.data.id;
+            if (form.stages && form.stages.length > 0) {
+              try {
+                const formattedStages = form.stages.map((stage) => {
+                  let metadata = stage.metadata;
+                  if (typeof metadata !== "string") {
+                    metadata = JSON.stringify(metadata);
+                  }
+                  return {
+                    competitionId,
+                    // 会在API层再次添加
+                    stageName: stage.stageName,
+                    startTime: stage.startTime,
+                    endTime: stage.endTime,
+                    description: stage.description,
+                    // 自动计算最新状态
+                    status: calculateStageStatus(stage.startTime, stage.endTime),
+                    metadata
+                  };
+                });
+                formatAppLog("log", "at pages/competition/create.vue:1366", "格式化后的阶段数据:", formattedStages);
+                await competitionsApi.createCompetitionStages(formattedStages, competitionId);
+                formatAppLog("log", "at pages/competition/create.vue:1371", "比赛阶段创建成功");
+              } catch (stageError) {
+                formatAppLog("error", "at pages/competition/create.vue:1373", "比赛阶段创建失败:", stageError);
+                uni.showToast({
+                  title: "竞赛已创建，但阶段创建失败",
+                  icon: "none",
+                  duration: 3e3
+                });
+                setTimeout(() => {
+                  uni.navigateBack();
+                }, 3e3);
+                return;
+              }
+            }
             uni.showToast({
               title: status === 0 ? "保存成功" : "发布成功",
               icon: "success"
@@ -17790,7 +19119,7 @@ if (uni.restoreGlobal) {
             });
           }
         } catch (error) {
-          formatAppLog("error", "at pages/competition/create.vue:670", "操作失败:", error);
+          formatAppLog("error", "at pages/competition/create.vue:1404", "操作失败:", error);
           uni.showToast({
             title: "操作失败，请重试",
             icon: "none"
@@ -17799,19 +19128,22 @@ if (uni.restoreGlobal) {
           uni.hideLoading();
         }
       }
-      const __returned__ = { form, categoryOptions, levelOptions, loadCategories, getIconForCategory, setDefaultCategories, checkAdminRole, redirectNoPermission, goBack, saveDraft, uploadCover, uploadAttachment, removeFile, publishCompetition, validateForm, showError, saveCompetition, ref: vue.ref, reactive: vue.reactive, onMounted: vue.onMounted, get competitionsApi() {
+      const __returned__ = { steps, currentStep, stagePopup, isEditingStage, editingStageIndex, isPopupOpen, form, stageForm, stageStatusOptions, categoryOptions, levelOptions, nextStep, prevStep, goToStep, validateCurrentStep, loadCategories, getIconForCategory, setDefaultCategories, getCategoryName, checkAdminRole, redirectNoPermission, goBack, addStage, editStage, removeStage, cancelStage, confirmStage, validateStageForm, resetStageForm, combineDateTime, formatDate, formatTimeOnly, formatDateTime, getStageStatusClass, getStageStatusText, calculateStageStatus, getStageLocation, saveDraft, uploadCover, uploadAttachment, removeFile, publishCompetition, validateForm, showError, saveCompetition, ref: vue.ref, reactive: vue.reactive, onMounted: vue.onMounted, get competitionsApi() {
         return competitionsApi;
       }, get userApi() {
         return userApi;
       }, get icons() {
         return icons;
+      }, get config() {
+        return config;
       } };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
     }
   };
-  function _sfc_render$h(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$j(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_uni_easyinput = resolveEasycom(vue.resolveDynamicComponent("uni-easyinput"), __easycom_0);
+    const _component_uni_popup = resolveEasycom(vue.resolveDynamicComponent("uni-popup"), __easycom_0$3);
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createElementVNode("view", { class: "sticky-header" }, [
@@ -17830,6 +19162,37 @@ if (uni.restoreGlobal) {
             class: "draft-btn",
             onClick: $setup.saveDraft
           }, "草稿箱")
+        ]),
+        vue.createCommentVNode(" 步骤指示器 "),
+        vue.createElementVNode("view", { class: "steps-container" }, [
+          (vue.openBlock(), vue.createElementBlock(
+            vue.Fragment,
+            null,
+            vue.renderList($setup.steps, (step, index) => {
+              return vue.createElementVNode("view", {
+                key: index,
+                class: vue.normalizeClass(["step-item", { "active": $setup.currentStep >= index, "current": $setup.currentStep === index }]),
+                onClick: ($event) => $setup.goToStep(index)
+              }, [
+                vue.createElementVNode(
+                  "view",
+                  { class: "step-number" },
+                  vue.toDisplayString(index + 1),
+                  1
+                  /* TEXT */
+                ),
+                vue.createElementVNode(
+                  "text",
+                  { class: "step-text" },
+                  vue.toDisplayString(step),
+                  1
+                  /* TEXT */
+                )
+              ], 10, ["onClick"]);
+            }),
+            64
+            /* STABLE_FRAGMENT */
+          ))
         ])
       ]),
       vue.createCommentVNode(" 表单内容 "),
@@ -17837,433 +19200,927 @@ if (uni.restoreGlobal) {
         "scroll-y": "",
         class: "form-content"
       }, [
-        vue.createCommentVNode(" 竞赛基本信息 "),
-        vue.createElementVNode("view", { class: "form-section" }, [
-          vue.createElementVNode("text", { class: "section-title" }, "基本信息"),
-          vue.createCommentVNode(" 竞赛标题 "),
-          vue.createElementVNode("view", { class: "form-item" }, [
-            vue.createElementVNode("view", { class: "form-label" }, [
-              vue.createElementVNode("text", null, "竞赛标题"),
-              vue.createElementVNode("text", { class: "required" }, "*")
+        vue.createCommentVNode(" 第一步：竞赛基本信息 "),
+        $setup.currentStep === 0 ? (vue.openBlock(), vue.createElementBlock("view", { key: 0 }, [
+          vue.createElementVNode("view", { class: "form-section" }, [
+            vue.createElementVNode("text", { class: "section-title" }, "基本信息"),
+            vue.createCommentVNode(" 竞赛标题 "),
+            vue.createElementVNode("view", { class: "form-item" }, [
+              vue.createElementVNode("view", { class: "form-label" }, [
+                vue.createElementVNode("text", null, "竞赛标题"),
+                vue.createElementVNode("text", { class: "required" }, "*")
+              ]),
+              vue.createVNode(_component_uni_easyinput, {
+                type: "text",
+                modelValue: $setup.form.title,
+                "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => $setup.form.title = $event),
+                placeholder: "请输入竞赛名称（5-50字）",
+                clearable: false
+              }, null, 8, ["modelValue"])
             ]),
-            vue.createVNode(_component_uni_easyinput, {
-              type: "text",
-              modelValue: $setup.form.title,
-              "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => $setup.form.title = $event),
-              placeholder: "请输入竞赛名称（5-50字",
-              clearable: false
-            }, null, 8, ["modelValue"])
-          ]),
-          vue.createCommentVNode(" 竞赛分类 "),
-          vue.createElementVNode("view", { class: "form-item" }, [
-            vue.createElementVNode("view", { class: "form-label" }, [
-              vue.createElementVNode("text", null, "竞赛分类"),
-              vue.createElementVNode("text", { class: "required" }, "*")
-            ]),
-            vue.createElementVNode("view", { class: "category-grid" }, [
-              (vue.openBlock(true), vue.createElementBlock(
-                vue.Fragment,
-                null,
-                vue.renderList($setup.categoryOptions, (item, index) => {
-                  return vue.openBlock(), vue.createElementBlock("view", {
-                    key: index,
-                    class: vue.normalizeClass(["category-item", { "category-active": $setup.form.categoryId === item.id }]),
-                    onClick: ($event) => $setup.form.categoryId = item.id
-                  }, [
-                    vue.createElementVNode(
-                      "text",
-                      {
-                        class: vue.normalizeClass(["category-icon", item.icon])
-                      },
-                      null,
-                      2
-                      /* CLASS */
-                    ),
-                    vue.createElementVNode(
-                      "text",
-                      null,
-                      vue.toDisplayString(item.label),
-                      1
-                      /* TEXT */
-                    )
-                  ], 10, ["onClick"]);
-                }),
-                128
-                /* KEYED_FRAGMENT */
-              ))
-            ])
-          ]),
-          vue.createCommentVNode(" 竞赛级别 "),
-          vue.createElementVNode("view", null, [
-            vue.createElementVNode("view", { class: "form-label" }, [
-              vue.createElementVNode("text", null, "竞赛级别"),
-              vue.createElementVNode("text", { class: "required" }, "*")
-            ]),
-            vue.createElementVNode("scroll-view", {
-              class: "level-scroll",
-              "scroll-x": ""
-            }, [
-              vue.createElementVNode("view", { class: "level-list" }, [
-                (vue.openBlock(), vue.createElementBlock(
+            vue.createCommentVNode(" 竞赛分类 "),
+            vue.createElementVNode("view", { class: "form-item" }, [
+              vue.createElementVNode("view", { class: "form-label" }, [
+                vue.createElementVNode("text", null, "竞赛分类"),
+                vue.createElementVNode("text", { class: "required" }, "*")
+              ]),
+              vue.createElementVNode("view", { class: "category-grid" }, [
+                (vue.openBlock(true), vue.createElementBlock(
                   vue.Fragment,
                   null,
-                  vue.renderList($setup.levelOptions, (level, index) => {
-                    return vue.createElementVNode("view", {
+                  vue.renderList($setup.categoryOptions, (item, index) => {
+                    return vue.openBlock(), vue.createElementBlock("view", {
                       key: index,
-                      class: vue.normalizeClass(["level-item", { "level-active": $setup.form.level === level }]),
-                      onClick: ($event) => $setup.form.level = level
+                      class: vue.normalizeClass(["category-item", { "category-active": $setup.form.categoryId === item.id }]),
+                      onClick: ($event) => $setup.form.categoryId = item.id
                     }, [
                       vue.createElementVNode(
                         "text",
+                        {
+                          class: vue.normalizeClass(["category-icon", item.icon])
+                        },
                         null,
-                        vue.toDisplayString(level),
+                        2
+                        /* CLASS */
+                      ),
+                      vue.createElementVNode(
+                        "text",
+                        null,
+                        vue.toDisplayString(item.label),
                         1
                         /* TEXT */
                       )
                     ], 10, ["onClick"]);
                   }),
-                  64
-                  /* STABLE_FRAGMENT */
-                ))
-              ])
-            ])
-          ])
-        ]),
-        vue.createCommentVNode(" 竞赛详情 "),
-        vue.createElementVNode("view", { class: "form-section" }, [
-          vue.createElementVNode("text", { class: "section-title" }, "竞赛详情"),
-          vue.createCommentVNode(" 竞赛简介 "),
-          vue.createElementVNode("view", { class: "form-item" }, [
-            vue.createElementVNode("view", { class: "form-label" }, [
-              vue.createElementVNode("text", null, "竞赛简介"),
-              vue.createElementVNode("text", { class: "required" }, "*")
-            ]),
-            vue.withDirectives(vue.createElementVNode(
-              "textarea",
-              {
-                "onUpdate:modelValue": _cache[1] || (_cache[1] = ($event) => $setup.form.shortDescription = $event),
-                placeholder: "请填写竞赛简介（10-30个字）",
-                class: "form-textarea",
-                maxlength: "140"
-              },
-              null,
-              512
-              /* NEED_PATCH */
-            ), [
-              [vue.vModelText, $setup.form.shortDescription]
-            ])
-          ]),
-          vue.createCommentVNode(" 竞赛介绍 "),
-          vue.createElementVNode("view", { class: "form-item" }, [
-            vue.createElementVNode("view", { class: "form-label" }, [
-              vue.createElementVNode("text", null, "竞赛介绍"),
-              vue.createElementVNode("text", { class: "required" }, "*")
-            ]),
-            vue.withDirectives(vue.createElementVNode(
-              "textarea",
-              {
-                "onUpdate:modelValue": _cache[2] || (_cache[2] = ($event) => $setup.form.description = $event),
-                placeholder: "请详细描述竞赛背景、目的和意义（50-1000字）",
-                class: "form-textarea",
-                maxlength: "2000"
-              },
-              null,
-              512
-              /* NEED_PATCH */
-            ), [
-              [vue.vModelText, $setup.form.description]
-            ])
-          ]),
-          vue.createCommentVNode(" 参赛要求 "),
-          vue.createElementVNode("view", { class: "form-item" }, [
-            vue.createElementVNode("view", { class: "form-label" }, [
-              vue.createElementVNode("text", null, "参赛要求"),
-              vue.createElementVNode("text", { class: "required" }, "*")
-            ]),
-            vue.withDirectives(vue.createElementVNode(
-              "textarea",
-              {
-                "onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => $setup.form.requirements = $event),
-                placeholder: "请说明参赛资格、人数限制等要求（20-500字）",
-                class: "form-textarea form-textarea-medium",
-                maxlength: "1000"
-              },
-              null,
-              512
-              /* NEED_PATCH */
-            ), [
-              [vue.vModelText, $setup.form.requirements]
-            ])
-          ])
-        ]),
-        vue.createCommentVNode(" 竞赛时间和团队信息 "),
-        vue.createElementVNode("view", { class: "form-section" }, [
-          vue.createElementVNode("text", { class: "section-title" }, "时间与团队"),
-          vue.createCommentVNode(" 竞赛时间 "),
-          vue.createElementVNode("view", { class: "form-item" }, [
-            vue.createElementVNode("view", { class: "form-label" }, [
-              vue.createElementVNode("text", null, "竞赛时间"),
-              vue.createElementVNode("text", { class: "required" }, "*")
-            ]),
-            vue.createElementVNode("view", { class: "time-grid" }, [
-              vue.createElementVNode("view", { class: "time-column" }, [
-                vue.createElementVNode("text", { class: "time-label" }, "报名开始时间"),
-                vue.createElementVNode("picker", {
-                  mode: "date",
-                  value: $setup.form.registrationStart,
-                  onChange: _cache[4] || (_cache[4] = (e) => $setup.form.registrationStart = e.detail.value),
-                  class: "date-picker"
-                }, [
-                  vue.createElementVNode("view", { class: "picker-view" }, [
-                    $setup.form.registrationStart ? (vue.openBlock(), vue.createElementBlock(
-                      "text",
-                      { key: 0 },
-                      vue.toDisplayString($setup.form.registrationStart),
-                      1
-                      /* TEXT */
-                    )) : (vue.openBlock(), vue.createElementBlock("text", {
-                      key: 1,
-                      class: "placeholder-text"
-                    }, "选择日期"))
-                  ])
-                ], 40, ["value"])
-              ]),
-              vue.createElementVNode("view", { class: "time-column" }, [
-                vue.createElementVNode("text", { class: "time-label" }, "报名截止时间"),
-                vue.createElementVNode("picker", {
-                  mode: "date",
-                  value: $setup.form.registrationEnd,
-                  onChange: _cache[5] || (_cache[5] = (e) => $setup.form.registrationEnd = e.detail.value),
-                  class: "date-picker"
-                }, [
-                  vue.createElementVNode("view", { class: "picker-view" }, [
-                    $setup.form.registrationEnd ? (vue.openBlock(), vue.createElementBlock(
-                      "text",
-                      { key: 0 },
-                      vue.toDisplayString($setup.form.registrationEnd),
-                      1
-                      /* TEXT */
-                    )) : (vue.openBlock(), vue.createElementBlock("text", {
-                      key: 1,
-                      class: "placeholder-text"
-                    }, "选择日期"))
-                  ])
-                ], 40, ["value"])
-              ])
-            ])
-          ]),
-          vue.createCommentVNode(" 团队人数 "),
-          vue.createElementVNode("view", { class: "form-item" }, [
-            vue.createElementVNode("view", { class: "form-label" }, [
-              vue.createElementVNode("text", null, "团队人数"),
-              vue.createElementVNode("text", { class: "required" }, "*")
-            ]),
-            vue.createElementVNode("view", { class: "time-grid" }, [
-              vue.createElementVNode("view", { class: "time-column" }, [
-                vue.createElementVNode("text", { class: "time-label" }, "最少人数"),
-                vue.createVNode(_component_uni_easyinput, {
-                  type: "number",
-                  modelValue: $setup.form.teamMin,
-                  "onUpdate:modelValue": _cache[6] || (_cache[6] = ($event) => $setup.form.teamMin = $event),
-                  placeholder: "输入人数",
-                  clearable: false
-                }, null, 8, ["modelValue"])
-              ]),
-              vue.createElementVNode("view", { class: "time-column" }, [
-                vue.createElementVNode("text", { class: "time-label" }, "最多人数"),
-                vue.createVNode(_component_uni_easyinput, {
-                  type: "number",
-                  modelValue: $setup.form.teamMax,
-                  "onUpdate:modelValue": _cache[7] || (_cache[7] = ($event) => $setup.form.teamMax = $event),
-                  placeholder: "输入人数",
-                  clearable: false
-                }, null, 8, ["modelValue"])
-              ])
-            ])
-          ]),
-          vue.createCommentVNode(" 是否设为热门 "),
-          vue.createElementVNode("view", { class: "hot-toggle" }, [
-            vue.createElementVNode("view", { class: "hot-info" }, [
-              vue.createElementVNode("text", { class: "hot-title" }, "设为热门竞赛"),
-              vue.createElementVNode("text", { class: "hot-desc" }, "热门竞赛将在首页和竞赛列表优先展示")
-            ]),
-            vue.createElementVNode("switch", {
-              checked: $setup.form.isHot,
-              onChange: _cache[8] || (_cache[8] = (e) => $setup.form.isHot = e.detail.value),
-              color: "#00aaff"
-            }, null, 40, ["checked"])
-          ])
-        ]),
-        vue.createCommentVNode(" 联系方式与附件 "),
-        vue.createElementVNode("view", { class: "form-section" }, [
-          vue.createElementVNode("text", { class: "section-title" }, "联系方式与附件"),
-          vue.createCommentVNode(" 官方网站 "),
-          vue.createElementVNode("view", { class: "form-item" }, [
-            vue.createElementVNode("view", { class: "form-label" }, [
-              vue.createElementVNode("text", null, "官方网站（可选）")
-            ]),
-            vue.createVNode(_component_uni_easyinput, {
-              type: "text",
-              modelValue: $setup.form.websiteUrl,
-              "onUpdate:modelValue": _cache[9] || (_cache[9] = ($event) => $setup.form.websiteUrl = $event),
-              placeholder: "输入网站",
-              clearable: false
-            }, null, 8, ["modelValue"])
-          ]),
-          vue.createCommentVNode(" 联系方式 "),
-          vue.createElementVNode("view", { class: "form-item" }, [
-            vue.createElementVNode("view", { class: "form-label" }, [
-              vue.createElementVNode("text", null, "联系方式"),
-              vue.createElementVNode("text", { class: "required" }, "*")
-            ]),
-            vue.createElementVNode("view", { class: "contact-grid" }, [
-              vue.createElementVNode("view", { class: "contact-row" }, [
-                vue.createElementVNode("view", { class: "contact-input" }, [
-                  vue.createElementVNode("text", { class: "contact-icon iconfont icon-user" }),
-                  vue.withDirectives(vue.createElementVNode(
-                    "input",
-                    {
-                      type: "text",
-                      "onUpdate:modelValue": _cache[10] || (_cache[10] = ($event) => $setup.form.name = $event),
-                      placeholder: "联系人"
-                    },
-                    null,
-                    512
-                    /* NEED_PATCH */
-                  ), [
-                    [vue.vModelText, $setup.form.name]
-                  ])
-                ]),
-                vue.createElementVNode("view", { class: "contact-input" }, [
-                  vue.createElementVNode("text", { class: "contact-icon iconfont icon-qq" }),
-                  vue.withDirectives(vue.createElementVNode(
-                    "input",
-                    {
-                      type: "text",
-                      "onUpdate:modelValue": _cache[11] || (_cache[11] = ($event) => $setup.form.contactQQ = $event),
-                      placeholder: "QQ群"
-                    },
-                    null,
-                    512
-                    /* NEED_PATCH */
-                  ), [
-                    [vue.vModelText, $setup.form.contactQQ]
-                  ])
-                ])
-              ]),
-              vue.createElementVNode("view", { class: "contact-input contact-email" }, [
-                vue.createElementVNode("text", { class: "contact-icon iconfont icon-email" }),
-                vue.withDirectives(vue.createElementVNode(
-                  "input",
-                  {
-                    type: "text",
-                    "onUpdate:modelValue": _cache[12] || (_cache[12] = ($event) => $setup.form.contactEmail = $event),
-                    placeholder: "联系邮箱"
-                  },
-                  null,
-                  512
-                  /* NEED_PATCH */
-                ), [
-                  [vue.vModelText, $setup.form.contactEmail]
-                ])
-              ])
-            ])
-          ]),
-          vue.createCommentVNode(" 上传封面 "),
-          vue.createElementVNode("view", { class: "form-item" }, [
-            vue.createElementVNode("view", { class: "form-label" }, [
-              vue.createElementVNode("text", null, "竞赛封面"),
-              vue.createElementVNode("text", { class: "required" }, "*")
-            ]),
-            vue.createElementVNode("view", {
-              class: "upload-box",
-              onClick: $setup.uploadCover
-            }, [
-              !$setup.form.coverUrl ? (vue.openBlock(), vue.createElementBlock("view", {
-                key: 0,
-                class: "upload-placeholder"
-              }, [
-                vue.createElementVNode("text", { class: "upload-icon iconfont icon-image" }),
-                vue.createElementVNode("text", { class: "upload-text" }, "点击上传或拖拽图片至此处"),
-                vue.createElementVNode("text", { class: "upload-tip" }, "建议尺寸：800x400，文件大小不超过2MB")
-              ])) : (vue.openBlock(), vue.createElementBlock("image", {
-                key: 1,
-                src: $setup.form.coverUrl,
-                mode: "aspectFill",
-                class: "cover-image"
-              }, null, 8, ["src"]))
-            ])
-          ]),
-          vue.createCommentVNode(" 上传附件 "),
-          vue.createElementVNode("view", { class: "form-item" }, [
-            vue.createElementVNode("view", { class: "form-label" }, [
-              vue.createElementVNode("text", null, "竞赛附件（可选）")
-            ]),
-            vue.createElementVNode("view", {
-              class: "upload-box",
-              onClick: $setup.uploadAttachment
-            }, [
-              $setup.form.attachments.length === 0 ? (vue.openBlock(), vue.createElementBlock("view", {
-                key: 0,
-                class: "upload-placeholder"
-              }, [
-                vue.createElementVNode("text", { class: "upload-icon iconfont icon-file" }),
-                vue.createElementVNode("text", { class: "upload-text" }, "点击上传或拖拽文件至此处"),
-                vue.createElementVNode("text", { class: "upload-tip" }, "支持PDF、Word、PPT等格式，单个文件不超过10MB")
-              ])) : (vue.openBlock(), vue.createElementBlock("view", {
-                key: 1,
-                class: "file-list"
-              }, [
-                (vue.openBlock(true), vue.createElementBlock(
-                  vue.Fragment,
-                  null,
-                  vue.renderList($setup.form.attachments, (file, index) => {
-                    return vue.openBlock(), vue.createElementBlock("view", {
-                      key: index,
-                      class: "file-item"
-                    }, [
-                      vue.createElementVNode("text", { class: "file-icon iconfont icon-file" }),
-                      vue.createElementVNode(
-                        "text",
-                        { class: "file-name" },
-                        vue.toDisplayString(file.name),
-                        1
-                        /* TEXT */
-                      ),
-                      vue.createElementVNode("text", {
-                        class: "delete-icon iconfont icon-close",
-                        onClick: vue.withModifiers(($event) => $setup.removeFile(index), ["stop"])
-                      }, null, 8, ["onClick"])
-                    ]);
-                  }),
                   128
                   /* KEYED_FRAGMENT */
                 ))
-              ]))
+              ])
+            ]),
+            vue.createCommentVNode(" 竞赛级别 "),
+            vue.createElementVNode("view", { class: "form-item" }, [
+              vue.createElementVNode("view", { class: "form-label" }, [
+                vue.createElementVNode("text", null, "竞赛级别"),
+                vue.createElementVNode("text", { class: "required" }, "*")
+              ]),
+              vue.createElementVNode("scroll-view", {
+                class: "level-scroll",
+                "scroll-x": ""
+              }, [
+                vue.createElementVNode("view", { class: "level-list" }, [
+                  (vue.openBlock(), vue.createElementBlock(
+                    vue.Fragment,
+                    null,
+                    vue.renderList($setup.levelOptions, (level, index) => {
+                      return vue.createElementVNode("view", {
+                        key: index,
+                        class: vue.normalizeClass(["level-item", { "level-active": $setup.form.level === level }]),
+                        onClick: ($event) => $setup.form.level = level
+                      }, [
+                        vue.createElementVNode(
+                          "text",
+                          null,
+                          vue.toDisplayString(level),
+                          1
+                          /* TEXT */
+                        )
+                      ], 10, ["onClick"]);
+                    }),
+                    64
+                    /* STABLE_FRAGMENT */
+                  ))
+                ])
+              ])
+            ]),
+            vue.createCommentVNode(" 竞赛简介 "),
+            vue.createElementVNode("view", { class: "form-item" }, [
+              vue.createElementVNode("view", { class: "form-label" }, [
+                vue.createElementVNode("text", null, "竞赛简介"),
+                vue.createElementVNode("text", { class: "required" }, "*")
+              ]),
+              vue.withDirectives(vue.createElementVNode(
+                "textarea",
+                {
+                  "onUpdate:modelValue": _cache[1] || (_cache[1] = ($event) => $setup.form.shortDescription = $event),
+                  placeholder: "请填写竞赛简介（10-30个字）",
+                  class: "form-textarea",
+                  maxlength: "140"
+                },
+                null,
+                512
+                /* NEED_PATCH */
+              ), [
+                [vue.vModelText, $setup.form.shortDescription]
+              ])
+            ]),
+            vue.createCommentVNode(" 竞赛介绍 "),
+            vue.createElementVNode("view", { class: "form-item" }, [
+              vue.createElementVNode("view", { class: "form-label" }, [
+                vue.createElementVNode("text", null, "竞赛介绍"),
+                vue.createElementVNode("text", { class: "required" }, "*")
+              ]),
+              vue.withDirectives(vue.createElementVNode(
+                "textarea",
+                {
+                  "onUpdate:modelValue": _cache[2] || (_cache[2] = ($event) => $setup.form.description = $event),
+                  placeholder: "请详细描述竞赛背景、目的和意义（50-1000字）",
+                  class: "form-textarea",
+                  maxlength: "2000"
+                },
+                null,
+                512
+                /* NEED_PATCH */
+              ), [
+                [vue.vModelText, $setup.form.description]
+              ])
+            ]),
+            vue.createCommentVNode(" 参赛要求 "),
+            vue.createElementVNode("view", { class: "form-item" }, [
+              vue.createElementVNode("view", { class: "form-label" }, [
+                vue.createElementVNode("text", null, "参赛要求"),
+                vue.createElementVNode("text", { class: "required" }, "*")
+              ]),
+              vue.withDirectives(vue.createElementVNode(
+                "textarea",
+                {
+                  "onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => $setup.form.requirements = $event),
+                  placeholder: "请说明参赛资格、人数限制等要求（20-500字）",
+                  class: "form-textarea form-textarea-medium",
+                  maxlength: "1000"
+                },
+                null,
+                512
+                /* NEED_PATCH */
+              ), [
+                [vue.vModelText, $setup.form.requirements]
+              ])
+            ])
+          ]),
+          vue.createElementVNode("view", { class: "form-section" }, [
+            vue.createElementVNode("text", { class: "section-title" }, "时间与团队"),
+            vue.createCommentVNode(" 报名时间 "),
+            vue.createElementVNode("view", { class: "form-item" }, [
+              vue.createElementVNode("view", { class: "form-label" }, [
+                vue.createElementVNode("text", null, "报名时间"),
+                vue.createElementVNode("text", { class: "required" }, "*")
+              ]),
+              vue.createElementVNode("view", { class: "time-grid" }, [
+                vue.createElementVNode("view", { class: "time-column" }, [
+                  vue.createElementVNode("text", { class: "time-label" }, "报名开始时间"),
+                  vue.createElementVNode("picker", {
+                    mode: "date",
+                    value: $setup.form.registrationStart,
+                    onChange: _cache[4] || (_cache[4] = (e) => $setup.form.registrationStart = e.detail.value),
+                    class: "date-picker"
+                  }, [
+                    vue.createElementVNode("view", { class: "picker-view" }, [
+                      $setup.form.registrationStart ? (vue.openBlock(), vue.createElementBlock(
+                        "text",
+                        { key: 0 },
+                        vue.toDisplayString($setup.form.registrationStart),
+                        1
+                        /* TEXT */
+                      )) : (vue.openBlock(), vue.createElementBlock("text", {
+                        key: 1,
+                        class: "placeholder-text"
+                      }, "选择日期"))
+                    ])
+                  ], 40, ["value"])
+                ]),
+                vue.createElementVNode("view", { class: "time-column" }, [
+                  vue.createElementVNode("text", { class: "time-label" }, "报名截止时间"),
+                  vue.createElementVNode("picker", {
+                    mode: "date",
+                    value: $setup.form.registrationEnd,
+                    onChange: _cache[5] || (_cache[5] = (e) => $setup.form.registrationEnd = e.detail.value),
+                    class: "date-picker"
+                  }, [
+                    vue.createElementVNode("view", { class: "picker-view" }, [
+                      $setup.form.registrationEnd ? (vue.openBlock(), vue.createElementBlock(
+                        "text",
+                        { key: 0 },
+                        vue.toDisplayString($setup.form.registrationEnd),
+                        1
+                        /* TEXT */
+                      )) : (vue.openBlock(), vue.createElementBlock("text", {
+                        key: 1,
+                        class: "placeholder-text"
+                      }, "选择日期"))
+                    ])
+                  ], 40, ["value"])
+                ])
+              ])
+            ]),
+            vue.createCommentVNode(" 团队人数 "),
+            vue.createElementVNode("view", { class: "form-item" }, [
+              vue.createElementVNode("view", { class: "form-label" }, [
+                vue.createElementVNode("text", null, "团队人数"),
+                vue.createElementVNode("text", { class: "required" }, "*")
+              ]),
+              vue.createElementVNode("view", { class: "time-grid" }, [
+                vue.createElementVNode("view", { class: "time-column" }, [
+                  vue.createElementVNode("text", { class: "time-label" }, "最少人数"),
+                  vue.createVNode(_component_uni_easyinput, {
+                    type: "number",
+                    modelValue: $setup.form.teamMin,
+                    "onUpdate:modelValue": _cache[6] || (_cache[6] = ($event) => $setup.form.teamMin = $event),
+                    placeholder: "输入人数",
+                    clearable: false
+                  }, null, 8, ["modelValue"])
+                ]),
+                vue.createElementVNode("view", { class: "time-column" }, [
+                  vue.createElementVNode("text", { class: "time-label" }, "最多人数"),
+                  vue.createVNode(_component_uni_easyinput, {
+                    type: "number",
+                    modelValue: $setup.form.teamMax,
+                    "onUpdate:modelValue": _cache[7] || (_cache[7] = ($event) => $setup.form.teamMax = $event),
+                    placeholder: "输入人数",
+                    clearable: false
+                  }, null, 8, ["modelValue"])
+                ])
+              ])
+            ]),
+            vue.createCommentVNode(" 是否设为热门 "),
+            vue.createElementVNode("view", { class: "hot-toggle" }, [
+              vue.createElementVNode("view", { class: "hot-info" }, [
+                vue.createElementVNode("text", { class: "hot-title" }, "设为热门竞赛"),
+                vue.createElementVNode("text", { class: "hot-desc" }, "热门竞赛将在首页和竞赛列表优先展示")
+              ]),
+              vue.createElementVNode("switch", {
+                checked: $setup.form.isHot,
+                onChange: _cache[8] || (_cache[8] = (e) => $setup.form.isHot = e.detail.value),
+                color: "#00aaff"
+              }, null, 40, ["checked"])
             ])
           ])
-        ])
-      ]),
-      vue.createCommentVNode(" 底部操作按钮 "),
-      vue.createElementVNode("view", { class: "action-bar" }, [
-        vue.createElementVNode("view", { class: "action-grid" }, [
-          vue.createElementVNode("button", {
-            class: "draft-button",
-            onClick: $setup.saveDraft
-          }, "保存草稿"),
-          vue.createElementVNode("button", {
-            class: "publish-button",
-            onClick: $setup.publishCompetition
-          }, [
-            vue.createElementVNode("text", { class: "iconfont icon-send" }),
-            vue.createElementVNode("text", null, "发布竞赛")
+        ])) : vue.createCommentVNode("v-if", true),
+        vue.createCommentVNode(" 第二步：比赛阶段设置 "),
+        $setup.currentStep === 1 ? (vue.openBlock(), vue.createElementBlock("view", { key: 1 }, [
+          vue.createElementVNode("view", { class: "form-section" }, [
+            vue.createElementVNode("view", { class: "section-header" }, [
+              vue.createElementVNode("text", { class: "section-title" }, "比赛阶段设置"),
+              vue.createElementVNode("view", {
+                class: "add-stage-btn",
+                onClick: $setup.addStage
+              }, [
+                vue.createElementVNode("text", { class: "add-icon" }, "+"),
+                vue.createElementVNode("text", null, "添加阶段")
+              ])
+            ]),
+            vue.createElementVNode("view", { class: "stage-list" }, [
+              $setup.form.stages.length === 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+                key: 0,
+                class: "empty-stage"
+              }, [
+                vue.createElementVNode("image", {
+                  src: _imports_0$7,
+                  mode: "aspectFit",
+                  class: "empty-image"
+                }),
+                vue.createElementVNode("text", { class: "empty-text" }, "暂无比赛阶段，请添加阶段"),
+                vue.createElementVNode("view", {
+                  class: "add-stage-btn center-btn",
+                  onClick: $setup.addStage
+                }, [
+                  vue.createElementVNode("text", { class: "add-icon" }, "+"),
+                  vue.createElementVNode("text", null, "添加阶段")
+                ])
+              ])) : vue.createCommentVNode("v-if", true),
+              (vue.openBlock(true), vue.createElementBlock(
+                vue.Fragment,
+                null,
+                vue.renderList($setup.form.stages, (stage, index) => {
+                  return vue.openBlock(), vue.createElementBlock("view", {
+                    key: index,
+                    class: "stage-card"
+                  }, [
+                    vue.createElementVNode("view", { class: "stage-header" }, [
+                      vue.createElementVNode("view", { class: "stage-title-row" }, [
+                        vue.createElementVNode(
+                          "text",
+                          { class: "stage-name" },
+                          vue.toDisplayString(stage.stageName || "未命名阶段"),
+                          1
+                          /* TEXT */
+                        ),
+                        vue.createElementVNode(
+                          "view",
+                          {
+                            class: vue.normalizeClass(["stage-status", $setup.getStageStatusClass($setup.calculateStageStatus(stage.startTime, stage.endTime))])
+                          },
+                          [
+                            vue.createElementVNode(
+                              "text",
+                              null,
+                              vue.toDisplayString($setup.getStageStatusText($setup.calculateStageStatus(stage.startTime, stage.endTime))),
+                              1
+                              /* TEXT */
+                            )
+                          ],
+                          2
+                          /* CLASS */
+                        )
+                      ]),
+                      vue.createElementVNode("view", { class: "stage-actions" }, [
+                        vue.createElementVNode("view", {
+                          class: "stage-action-btn",
+                          onClick: ($event) => $setup.editStage(index)
+                        }, [
+                          vue.createElementVNode("text", { class: "iconfont icon-edit" }),
+                          vue.createElementVNode("text", null, "编辑")
+                        ], 8, ["onClick"]),
+                        vue.createElementVNode("view", {
+                          class: "stage-action-btn delete",
+                          onClick: ($event) => $setup.removeStage(index)
+                        }, [
+                          vue.createElementVNode("text", { class: "iconfont icon-delete" }),
+                          vue.createElementVNode("text", null, "删除")
+                        ], 8, ["onClick"])
+                      ])
+                    ]),
+                    vue.createElementVNode("view", { class: "stage-content" }, [
+                      vue.createElementVNode("view", { class: "stage-info-item" }, [
+                        vue.createElementVNode("text", { class: "stage-info-label" }, "开始时间:"),
+                        vue.createElementVNode(
+                          "text",
+                          { class: "stage-info-value" },
+                          vue.toDisplayString($setup.formatDateTime(stage.startTime)),
+                          1
+                          /* TEXT */
+                        )
+                      ]),
+                      vue.createElementVNode("view", { class: "stage-info-item" }, [
+                        vue.createElementVNode("text", { class: "stage-info-label" }, "结束时间:"),
+                        vue.createElementVNode(
+                          "text",
+                          { class: "stage-info-value" },
+                          vue.toDisplayString($setup.formatDateTime(stage.endTime)),
+                          1
+                          /* TEXT */
+                        )
+                      ]),
+                      vue.createElementVNode("view", { class: "stage-info-item" }, [
+                        vue.createElementVNode("text", { class: "stage-info-label" }, "阶段描述:"),
+                        vue.createElementVNode(
+                          "text",
+                          { class: "stage-info-value description" },
+                          vue.toDisplayString(stage.description || "暂无描述"),
+                          1
+                          /* TEXT */
+                        )
+                      ]),
+                      stage.metadata ? (vue.openBlock(), vue.createElementBlock("view", {
+                        key: 0,
+                        class: "stage-info-item"
+                      }, [
+                        vue.createElementVNode("text", { class: "stage-info-label" }, "地点:"),
+                        vue.createElementVNode(
+                          "text",
+                          { class: "stage-info-value" },
+                          vue.toDisplayString($setup.getStageLocation(stage)),
+                          1
+                          /* TEXT */
+                        )
+                      ])) : vue.createCommentVNode("v-if", true)
+                    ])
+                  ]);
+                }),
+                128
+                /* KEYED_FRAGMENT */
+              ))
+            ])
           ])
-        ])
+        ])) : vue.createCommentVNode("v-if", true),
+        vue.createCommentVNode(" 第三步：联系方式与附件 "),
+        $setup.currentStep === 2 ? (vue.openBlock(), vue.createElementBlock("view", { key: 2 }, [
+          vue.createElementVNode("view", { class: "form-section" }, [
+            vue.createElementVNode("text", { class: "section-title" }, "联系方式与附件"),
+            vue.createCommentVNode(" 官方网站 "),
+            vue.createElementVNode("view", { class: "form-item" }, [
+              vue.createElementVNode("view", { class: "form-label" }, [
+                vue.createElementVNode("text", null, "官方网站（可选）")
+              ]),
+              vue.createVNode(_component_uni_easyinput, {
+                type: "text",
+                modelValue: $setup.form.websiteUrl,
+                "onUpdate:modelValue": _cache[9] || (_cache[9] = ($event) => $setup.form.websiteUrl = $event),
+                placeholder: "输入网站",
+                clearable: false
+              }, null, 8, ["modelValue"])
+            ]),
+            vue.createCommentVNode(" 联系方式 "),
+            vue.createElementVNode("view", { class: "form-item" }, [
+              vue.createElementVNode("view", { class: "form-label" }, [
+                vue.createElementVNode("text", null, "联系方式"),
+                vue.createElementVNode("text", { class: "required" }, "*")
+              ]),
+              vue.createElementVNode("view", { class: "contact-grid" }, [
+                vue.createElementVNode("view", { class: "contact-row" }, [
+                  vue.createElementVNode("view", { class: "contact-input" }, [
+                    vue.createElementVNode("text", { class: "contact-icon iconfont icon-user" }),
+                    vue.withDirectives(vue.createElementVNode(
+                      "input",
+                      {
+                        type: "text",
+                        "onUpdate:modelValue": _cache[10] || (_cache[10] = ($event) => $setup.form.name = $event),
+                        placeholder: "联系人"
+                      },
+                      null,
+                      512
+                      /* NEED_PATCH */
+                    ), [
+                      [vue.vModelText, $setup.form.name]
+                    ])
+                  ]),
+                  vue.createElementVNode("view", { class: "contact-input" }, [
+                    vue.createElementVNode("text", { class: "contact-icon iconfont icon-qq" }),
+                    vue.withDirectives(vue.createElementVNode(
+                      "input",
+                      {
+                        type: "text",
+                        "onUpdate:modelValue": _cache[11] || (_cache[11] = ($event) => $setup.form.contactQQ = $event),
+                        placeholder: "QQ群"
+                      },
+                      null,
+                      512
+                      /* NEED_PATCH */
+                    ), [
+                      [vue.vModelText, $setup.form.contactQQ]
+                    ])
+                  ])
+                ]),
+                vue.createElementVNode("view", { class: "contact-input contact-email" }, [
+                  vue.createElementVNode("text", { class: "contact-icon iconfont icon-email" }),
+                  vue.withDirectives(vue.createElementVNode(
+                    "input",
+                    {
+                      type: "text",
+                      "onUpdate:modelValue": _cache[12] || (_cache[12] = ($event) => $setup.form.contactEmail = $event),
+                      placeholder: "联系邮箱"
+                    },
+                    null,
+                    512
+                    /* NEED_PATCH */
+                  ), [
+                    [vue.vModelText, $setup.form.contactEmail]
+                  ])
+                ])
+              ])
+            ]),
+            vue.createCommentVNode(" 上传封面 "),
+            vue.createElementVNode("view", { class: "form-item" }, [
+              vue.createElementVNode("view", { class: "form-label" }, [
+                vue.createElementVNode("text", null, "竞赛封面"),
+                vue.createElementVNode("text", { class: "required" }, "*")
+              ]),
+              vue.createElementVNode("view", {
+                class: "upload-box",
+                onClick: $setup.uploadCover
+              }, [
+                !$setup.form.coverUrl ? (vue.openBlock(), vue.createElementBlock("view", {
+                  key: 0,
+                  class: "upload-placeholder"
+                }, [
+                  vue.createElementVNode("text", { class: "upload-icon iconfont icon-image" }),
+                  vue.createElementVNode("text", { class: "upload-text" }, "点击上传或拖拽图片至此处"),
+                  vue.createElementVNode("text", { class: "upload-tip" }, "建议尺寸：800x400，文件大小不超过2MB")
+                ])) : (vue.openBlock(), vue.createElementBlock("image", {
+                  key: 1,
+                  src: $setup.form.coverUrl,
+                  mode: "aspectFill",
+                  class: "cover-image"
+                }, null, 8, ["src"]))
+              ])
+            ]),
+            vue.createCommentVNode(" 上传附件 "),
+            vue.createElementVNode("view", { class: "form-item" }, [
+              vue.createElementVNode("view", { class: "form-label" }, [
+                vue.createElementVNode("text", null, "竞赛附件（可选）")
+              ]),
+              vue.createElementVNode("view", {
+                class: "upload-box",
+                onClick: $setup.uploadAttachment
+              }, [
+                $setup.form.attachments.length === 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+                  key: 0,
+                  class: "upload-placeholder"
+                }, [
+                  vue.createElementVNode("text", { class: "upload-icon iconfont icon-file" }),
+                  vue.createElementVNode("text", { class: "upload-text" }, "点击上传或拖拽文件至此处"),
+                  vue.createElementVNode("text", { class: "upload-tip" }, "支持PDF、Word、PPT等格式，单个文件不超过10MB")
+                ])) : (vue.openBlock(), vue.createElementBlock("view", {
+                  key: 1,
+                  class: "file-list"
+                }, [
+                  (vue.openBlock(true), vue.createElementBlock(
+                    vue.Fragment,
+                    null,
+                    vue.renderList($setup.form.attachments, (file, index) => {
+                      return vue.openBlock(), vue.createElementBlock("view", {
+                        key: index,
+                        class: "file-item"
+                      }, [
+                        vue.createElementVNode("text", { class: "file-icon iconfont icon-file" }),
+                        vue.createElementVNode(
+                          "text",
+                          { class: "file-name" },
+                          vue.toDisplayString(file.name),
+                          1
+                          /* TEXT */
+                        ),
+                        vue.createElementVNode("text", {
+                          class: "delete-icon iconfont icon-close",
+                          onClick: vue.withModifiers(($event) => $setup.removeFile(index), ["stop"])
+                        }, null, 8, ["onClick"])
+                      ]);
+                    }),
+                    128
+                    /* KEYED_FRAGMENT */
+                  ))
+                ]))
+              ])
+            ])
+          ])
+        ])) : vue.createCommentVNode("v-if", true),
+        vue.createCommentVNode(" 第四步：预览 "),
+        $setup.currentStep === 3 ? (vue.openBlock(), vue.createElementBlock("view", { key: 3 }, [
+          vue.createElementVNode("view", { class: "form-section" }, [
+            vue.createElementVNode("text", { class: "section-title" }, "竞赛预览"),
+            vue.createElementVNode("view", { class: "preview-card" }, [
+              $setup.form.coverUrl ? (vue.openBlock(), vue.createElementBlock("image", {
+                key: 0,
+                src: $setup.form.coverUrl,
+                mode: "aspectFill",
+                class: "preview-cover"
+              }, null, 8, ["src"])) : (vue.openBlock(), vue.createElementBlock("view", {
+                key: 1,
+                class: "preview-placeholder"
+              }, [
+                vue.createElementVNode("text", { class: "iconfont icon-image" }),
+                vue.createElementVNode("text", null, "无封面图片")
+              ])),
+              vue.createElementVNode("view", { class: "preview-content" }, [
+                vue.createElementVNode(
+                  "text",
+                  { class: "preview-title" },
+                  vue.toDisplayString($setup.form.title || "未设置竞赛标题"),
+                  1
+                  /* TEXT */
+                ),
+                vue.createElementVNode("view", { class: "preview-badges" }, [
+                  vue.createElementVNode(
+                    "view",
+                    { class: "preview-badge level" },
+                    vue.toDisplayString($setup.form.level || "未设置级别"),
+                    1
+                    /* TEXT */
+                  ),
+                  vue.createElementVNode(
+                    "view",
+                    { class: "preview-badge category" },
+                    vue.toDisplayString($setup.getCategoryName()),
+                    1
+                    /* TEXT */
+                  )
+                ]),
+                vue.createElementVNode("view", { class: "preview-info-item" }, [
+                  vue.createElementVNode("text", { class: "preview-label" }, "报名时间:"),
+                  vue.createElementVNode(
+                    "text",
+                    { class: "preview-value" },
+                    vue.toDisplayString($setup.form.registrationStart || "未设置") + " 至 " + vue.toDisplayString($setup.form.registrationEnd || "未设置"),
+                    1
+                    /* TEXT */
+                  )
+                ]),
+                vue.createElementVNode("view", { class: "preview-info-item" }, [
+                  vue.createElementVNode("text", { class: "preview-label" }, "团队人数:"),
+                  vue.createElementVNode(
+                    "text",
+                    { class: "preview-value" },
+                    vue.toDisplayString($setup.form.teamMin || "?") + " - " + vue.toDisplayString($setup.form.teamMax || "?") + " 人",
+                    1
+                    /* TEXT */
+                  )
+                ]),
+                vue.createElementVNode("view", { class: "preview-desc" }, [
+                  vue.createElementVNode("text", { class: "preview-desc-title" }, "竞赛简介"),
+                  vue.createElementVNode(
+                    "text",
+                    { class: "preview-desc-content" },
+                    vue.toDisplayString($setup.form.shortDescription || "未设置竞赛简介"),
+                    1
+                    /* TEXT */
+                  )
+                ]),
+                vue.createElementVNode("view", { class: "preview-stages" }, [
+                  vue.createElementVNode("text", { class: "preview-stages-title" }, "比赛阶段"),
+                  $setup.form.stages.length === 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+                    key: 0,
+                    class: "preview-empty-stages"
+                  }, [
+                    vue.createElementVNode("text", null, "未设置比赛阶段")
+                  ])) : (vue.openBlock(), vue.createElementBlock("view", {
+                    key: 1,
+                    class: "preview-stage-timeline"
+                  }, [
+                    (vue.openBlock(true), vue.createElementBlock(
+                      vue.Fragment,
+                      null,
+                      vue.renderList($setup.form.stages, (stage, index) => {
+                        return vue.openBlock(), vue.createElementBlock("view", {
+                          key: index,
+                          class: "preview-stage-item"
+                        }, [
+                          vue.createElementVNode(
+                            "view",
+                            {
+                              class: vue.normalizeClass(["timeline-dot", $setup.getStageStatusClass($setup.calculateStageStatus(stage.startTime, stage.endTime))])
+                            },
+                            null,
+                            2
+                            /* CLASS */
+                          ),
+                          vue.createElementVNode("view", { class: "timeline-content" }, [
+                            vue.createElementVNode(
+                              "text",
+                              { class: "timeline-title" },
+                              vue.toDisplayString(stage.stageName),
+                              1
+                              /* TEXT */
+                            ),
+                            vue.createElementVNode("view", { class: "timeline-status-row" }, [
+                              vue.createElementVNode(
+                                "text",
+                                { class: "timeline-time" },
+                                vue.toDisplayString($setup.formatDateTime(stage.startTime)) + " - " + vue.toDisplayString($setup.formatDateTime(stage.endTime)),
+                                1
+                                /* TEXT */
+                              ),
+                              vue.createElementVNode(
+                                "view",
+                                {
+                                  class: vue.normalizeClass(["timeline-status", $setup.getStageStatusClass($setup.calculateStageStatus(stage.startTime, stage.endTime))])
+                                },
+                                [
+                                  vue.createElementVNode(
+                                    "text",
+                                    null,
+                                    vue.toDisplayString($setup.getStageStatusText($setup.calculateStageStatus(stage.startTime, stage.endTime))),
+                                    1
+                                    /* TEXT */
+                                  )
+                                ],
+                                2
+                                /* CLASS */
+                              )
+                            ]),
+                            vue.createElementVNode(
+                              "text",
+                              { class: "timeline-desc" },
+                              vue.toDisplayString(stage.description),
+                              1
+                              /* TEXT */
+                            )
+                          ])
+                        ]);
+                      }),
+                      128
+                      /* KEYED_FRAGMENT */
+                    ))
+                  ]))
+                ])
+              ])
+            ])
+          ])
+        ])) : vue.createCommentVNode("v-if", true)
+      ]),
+      vue.createCommentVNode(" 比赛阶段弹窗 "),
+      vue.createVNode(
+        _component_uni_popup,
+        {
+          ref: "stagePopup",
+          type: "bottom"
+        },
+        {
+          default: vue.withCtx(() => [
+            vue.createElementVNode("view", { class: "popup-content" }, [
+              vue.createElementVNode("view", { class: "popup-header" }, [
+                vue.createElementVNode("button", {
+                  class: "btn cancel-btn",
+                  onClick: $setup.cancelStage
+                }, "取消"),
+                vue.createElementVNode(
+                  "text",
+                  { class: "popup-title" },
+                  vue.toDisplayString($setup.isEditingStage ? "编辑阶段" : "添加阶段"),
+                  1
+                  /* TEXT */
+                ),
+                vue.createElementVNode("button", {
+                  class: "btn confirm-btn",
+                  onClick: $setup.confirmStage
+                }, "保存")
+              ]),
+              vue.createElementVNode("view", { class: "form-content popup-form" }, [
+                vue.createElementVNode("view", { class: "form-item" }, [
+                  vue.createElementVNode("view", { class: "form-label" }, [
+                    vue.createElementVNode("text", null, "阶段名称"),
+                    vue.createElementVNode("text", { class: "required" }, "*")
+                  ]),
+                  vue.createVNode(_component_uni_easyinput, {
+                    type: "text",
+                    modelValue: $setup.stageForm.stageName,
+                    "onUpdate:modelValue": _cache[13] || (_cache[13] = ($event) => $setup.stageForm.stageName = $event),
+                    placeholder: "如：初赛、复赛、决赛等",
+                    clearable: false
+                  }, null, 8, ["modelValue"])
+                ]),
+                vue.createElementVNode("view", { class: "form-item" }, [
+                  vue.createElementVNode("view", { class: "form-label" }, [
+                    vue.createElementVNode("text", null, "开始时间"),
+                    vue.createElementVNode("text", { class: "required" }, "*")
+                  ]),
+                  vue.createElementVNode("view", { class: "time-grid" }, [
+                    vue.createElementVNode("view", { class: "time-column" }, [
+                      vue.createElementVNode("text", { class: "time-label" }, "日期"),
+                      vue.createElementVNode("picker", {
+                        mode: "date",
+                        value: $setup.stageForm.startDate,
+                        onChange: _cache[14] || (_cache[14] = (e) => $setup.stageForm.startDate = e.detail.value),
+                        class: "date-picker"
+                      }, [
+                        vue.createElementVNode("view", { class: "picker-view" }, [
+                          $setup.stageForm.startDate ? (vue.openBlock(), vue.createElementBlock(
+                            "text",
+                            { key: 0 },
+                            vue.toDisplayString($setup.stageForm.startDate),
+                            1
+                            /* TEXT */
+                          )) : (vue.openBlock(), vue.createElementBlock("text", {
+                            key: 1,
+                            class: "placeholder-text"
+                          }, "选择日期"))
+                        ])
+                      ], 40, ["value"])
+                    ]),
+                    vue.createElementVNode("view", { class: "time-column" }, [
+                      vue.createElementVNode("text", { class: "time-label" }, "时间"),
+                      vue.createElementVNode("picker", {
+                        mode: "time",
+                        value: $setup.stageForm.startTime,
+                        onChange: _cache[15] || (_cache[15] = (e) => $setup.stageForm.startTime = e.detail.value),
+                        class: "date-picker"
+                      }, [
+                        vue.createElementVNode("view", { class: "picker-view" }, [
+                          $setup.stageForm.startTime ? (vue.openBlock(), vue.createElementBlock(
+                            "text",
+                            { key: 0 },
+                            vue.toDisplayString($setup.stageForm.startTime),
+                            1
+                            /* TEXT */
+                          )) : (vue.openBlock(), vue.createElementBlock("text", {
+                            key: 1,
+                            class: "placeholder-text"
+                          }, "选择时间"))
+                        ])
+                      ], 40, ["value"])
+                    ])
+                  ])
+                ]),
+                vue.createElementVNode("view", { class: "form-item" }, [
+                  vue.createElementVNode("view", { class: "form-label" }, [
+                    vue.createElementVNode("text", null, "结束时间"),
+                    vue.createElementVNode("text", { class: "required" }, "*")
+                  ]),
+                  vue.createElementVNode("view", { class: "time-grid" }, [
+                    vue.createElementVNode("view", { class: "time-column" }, [
+                      vue.createElementVNode("text", { class: "time-label" }, "日期"),
+                      vue.createElementVNode("picker", {
+                        mode: "date",
+                        value: $setup.stageForm.endDate,
+                        onChange: _cache[16] || (_cache[16] = (e) => $setup.stageForm.endDate = e.detail.value),
+                        class: "date-picker"
+                      }, [
+                        vue.createElementVNode("view", { class: "picker-view" }, [
+                          $setup.stageForm.endDate ? (vue.openBlock(), vue.createElementBlock(
+                            "text",
+                            { key: 0 },
+                            vue.toDisplayString($setup.stageForm.endDate),
+                            1
+                            /* TEXT */
+                          )) : (vue.openBlock(), vue.createElementBlock("text", {
+                            key: 1,
+                            class: "placeholder-text"
+                          }, "选择日期"))
+                        ])
+                      ], 40, ["value"])
+                    ]),
+                    vue.createElementVNode("view", { class: "time-column" }, [
+                      vue.createElementVNode("text", { class: "time-label" }, "时间"),
+                      vue.createElementVNode("picker", {
+                        mode: "time",
+                        value: $setup.stageForm.endTime,
+                        onChange: _cache[17] || (_cache[17] = (e) => $setup.stageForm.endTime = e.detail.value),
+                        class: "date-picker"
+                      }, [
+                        vue.createElementVNode("view", { class: "picker-view" }, [
+                          $setup.stageForm.endTime ? (vue.openBlock(), vue.createElementBlock(
+                            "text",
+                            { key: 0 },
+                            vue.toDisplayString($setup.stageForm.endTime),
+                            1
+                            /* TEXT */
+                          )) : (vue.openBlock(), vue.createElementBlock("text", {
+                            key: 1,
+                            class: "placeholder-text"
+                          }, "选择时间"))
+                        ])
+                      ], 40, ["value"])
+                    ])
+                  ])
+                ]),
+                vue.createElementVNode("view", { class: "form-item" }, [
+                  vue.createElementVNode("view", { class: "form-label" }, [
+                    vue.createElementVNode("text", null, "阶段描述"),
+                    vue.createElementVNode("text", { class: "required" }, "*")
+                  ]),
+                  vue.withDirectives(vue.createElementVNode(
+                    "textarea",
+                    {
+                      "onUpdate:modelValue": _cache[18] || (_cache[18] = ($event) => $setup.stageForm.description = $event),
+                      placeholder: "请简要描述该阶段的任务、要求等",
+                      class: "form-textarea",
+                      maxlength: "500"
+                    },
+                    null,
+                    512
+                    /* NEED_PATCH */
+                  ), [
+                    [vue.vModelText, $setup.stageForm.description]
+                  ])
+                ]),
+                vue.createElementVNode("view", { class: "form-item" }, [
+                  vue.createElementVNode("view", { class: "form-label" }, [
+                    vue.createElementVNode("text", null, "比赛地点")
+                  ]),
+                  vue.createVNode(_component_uni_easyinput, {
+                    type: "text",
+                    modelValue: $setup.stageForm.location,
+                    "onUpdate:modelValue": _cache[19] || (_cache[19] = ($event) => $setup.stageForm.location = $event),
+                    placeholder: "如：线上、学校大礼堂等",
+                    clearable: false
+                  }, null, 8, ["modelValue"])
+                ])
+              ])
+            ])
+          ]),
+          _: 1
+          /* STABLE */
+        },
+        512
+        /* NEED_PATCH */
+      ),
+      vue.createCommentVNode(" 底部操作按钮 "),
+      vue.withDirectives(vue.createElementVNode(
+        "view",
+        { class: "action-bar" },
+        [
+          vue.createElementVNode("view", { class: "action-grid" }, [
+            $setup.currentStep > 0 ? (vue.openBlock(), vue.createElementBlock("button", {
+              key: 0,
+              class: "prev-button",
+              onClick: $setup.prevStep
+            }, "上一步")) : vue.createCommentVNode("v-if", true),
+            $setup.currentStep === 3 ? (vue.openBlock(), vue.createElementBlock("button", {
+              key: 1,
+              class: "draft-button",
+              onClick: $setup.saveDraft
+            }, "保存草稿")) : vue.createCommentVNode("v-if", true),
+            $setup.currentStep < 3 ? (vue.openBlock(), vue.createElementBlock("button", {
+              key: 2,
+              class: "next-button",
+              onClick: $setup.nextStep
+            }, "下一步")) : vue.createCommentVNode("v-if", true),
+            $setup.currentStep === 3 ? (vue.openBlock(), vue.createElementBlock("button", {
+              key: 3,
+              class: "publish-button",
+              onClick: $setup.publishCompetition
+            }, [
+              vue.createElementVNode("text", { class: "iconfont icon-send" }),
+              vue.createElementVNode("text", null, "发布竞赛")
+            ])) : vue.createCommentVNode("v-if", true)
+          ])
+        ],
+        512
+        /* NEED_PATCH */
+      ), [
+        [vue.vShow, !$setup.isPopupOpen]
       ])
     ]);
   }
-  const PagesCompetitionCreate = /* @__PURE__ */ _export_sfc(_sfc_main$i, [["render", _sfc_render$h], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/competition/create.vue"]]);
-  const _sfc_main$h = {
+  const PagesCompetitionCreate = /* @__PURE__ */ _export_sfc(_sfc_main$k, [["render", _sfc_render$j], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/competition/create.vue"]]);
+  const _sfc_main$j = {
     __name: "detail",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -18306,36 +20163,7 @@ if (uni.restoreGlobal) {
         categoryNames: [],
         coverImageUrl: ""
       });
-      const competitionStages = vue.ref([
-        {
-          title: "报名阶段",
-          period: "",
-          description: "在此阶段，参赛团队需完成在线报名，提交团队基本信息和项目概述。报名成功后，团队可以开始准备初赛材料。",
-          status: "进行中",
-          active: true
-        },
-        {
-          title: "初赛阶段",
-          period: "",
-          description: "各参赛团队需提交商业计划书和项目PPT。评审委员会将对所有参赛项目进行评审，选拔优秀项目进入复赛。",
-          status: "未开始",
-          active: false
-        },
-        {
-          title: "复赛阶段",
-          period: "",
-          description: "入围复赛的团队将进行现场路演和答辩。评委将从项目创新性、商业模式、团队能力等多方面进行评估。",
-          status: "未开始",
-          active: false
-        },
-        {
-          title: "总决赛",
-          period: "",
-          description: "决赛将在北京举行，入围团队将进行最终路演和展示。评审团将评选出金、银、铜奖项目，并举行颁奖典礼。",
-          status: "未开始",
-          active: false
-        }
-      ]);
+      const competitionStages = vue.ref([]);
       const relatedCompetitions = vue.ref([
         {
           title: "挑战杯创业计划大赛",
@@ -18355,6 +20183,14 @@ if (uni.restoreGlobal) {
       const teamsHasMore = vue.ref(true);
       const searchText = vue.ref("");
       const isFavorite = vue.ref(false);
+      const selectedStageId = vue.ref("all");
+      const competitionResults = vue.ref([]);
+      const filteredResults = vue.computed(() => {
+        if (selectedStageId.value === "all") {
+          return competitionResults.value;
+        }
+        return competitionResults.value.filter((result) => result.stageId == selectedStageId.value);
+      });
       async function getCompetitionDetail(id) {
         loading.value = true;
         try {
@@ -18394,8 +20230,9 @@ if (uni.restoreGlobal) {
               categoryNames: data.categoryNames || [],
               coverImageUrl: data.coverImageUrl || ""
             };
-            updateCompetitionStages(data);
-            formatAppLog("log", "at pages/competition/detail.vue:416", "竞赛详情数据:", competition.value);
+            getCompetitionStages(data.id);
+            getCompetitionResults(data.id);
+            formatAppLog("log", "at pages/competition/detail.vue:516", "竞赛详情数据:", competition.value);
           } else {
             uni.showToast({
               title: "获取竞赛详情失败",
@@ -18403,13 +20240,72 @@ if (uni.restoreGlobal) {
             });
           }
         } catch (error) {
-          formatAppLog("error", "at pages/competition/detail.vue:424", "获取竞赛详情错误:", error);
+          formatAppLog("error", "at pages/competition/detail.vue:524", "获取竞赛详情错误:", error);
           uni.showToast({
             title: "获取竞赛详情失败",
             icon: "none"
           });
         } finally {
           loading.value = false;
+        }
+      }
+      async function getCompetitionStages(competitionId2) {
+        try {
+          const res = await api.competitions.getCompetitionStages(competitionId2);
+          if (res && res.code === 200 && res.data) {
+            const stagesData = res.data.map((stage) => {
+              let location = "";
+              if (stage.metadata) {
+                try {
+                  const metadata = JSON.parse(stage.metadata);
+                  location = metadata.location || "";
+                } catch (e) {
+                  formatAppLog("error", "at pages/competition/detail.vue:548", "解析元数据失败:", e);
+                }
+              }
+              let active = false;
+              let statusText = "";
+              switch (stage.status) {
+                case "pending":
+                  statusText = "未开始";
+                  active = false;
+                  break;
+                case "ongoing":
+                case "active":
+                  statusText = "进行中";
+                  active = true;
+                  break;
+                case "completed":
+                  statusText = "已结束";
+                  active = false;
+                  break;
+                default:
+                  statusText = "未知状态";
+                  active = false;
+              }
+              return {
+                id: stage.id,
+                title: stage.stageName,
+                period: formatDatePeriod(stage.startTime, stage.endTime),
+                description: stage.description,
+                status: statusText,
+                active,
+                location,
+                rawData: stage
+              };
+            });
+            stagesData.sort((a, b) => {
+              const aTime = new Date(a.rawData.startTime).getTime();
+              const bTime = new Date(b.rawData.startTime).getTime();
+              return aTime - bTime;
+            });
+            competitionStages.value = stagesData;
+            formatAppLog("log", "at pages/competition/detail.vue:595", "竞赛阶段数据:", competitionStages.value);
+          } else {
+            formatAppLog("warn", "at pages/competition/detail.vue:597", "获取竞赛阶段失败或无数据:", res);
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/competition/detail.vue:600", "获取竞赛阶段错误:", error);
         }
       }
       function getStatusText(status) {
@@ -18429,39 +20325,11 @@ if (uni.restoreGlobal) {
       function formatDatePeriod(startDate, endDate) {
         if (!startDate || !endDate)
           return "";
-        const formatDate = (dateString) => {
+        const formatDate2 = (dateString) => {
           const date = new Date(dateString);
           return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
         };
-        return `${formatDate(startDate)} - ${formatDate(endDate)}`;
-      }
-      function updateCompetitionStages(data) {
-        if (data.registrationStart && data.registrationDeadline) {
-          competitionStages.value[0].period = formatDatePeriod(data.registrationStart, data.registrationDeadline);
-          const now = /* @__PURE__ */ new Date();
-          const regStartDate = new Date(data.registrationStart);
-          const regEndDate = new Date(data.registrationDeadline);
-          if (now < regStartDate) {
-            competitionStages.value[0].status = "未开始";
-            competitionStages.value[0].active = false;
-          } else if (now >= regStartDate && now <= regEndDate) {
-            competitionStages.value[0].status = "进行中";
-            competitionStages.value[0].active = true;
-          } else {
-            competitionStages.value[0].status = "已结束";
-            competitionStages.value[0].active = false;
-          }
-          if (data.status === "2") {
-            competitionStages.value[1].active = true;
-            competitionStages.value[1].status = "进行中";
-            competitionStages.value[0].status = "已结束";
-          } else if (data.status === "3") {
-            competitionStages.value[0].status = "已结束";
-            competitionStages.value[1].status = "已结束";
-            competitionStages.value[2].status = "已结束";
-            competitionStages.value[3].status = "已结束";
-          }
-        }
+        return `${formatDate2(startDate)} - ${formatDate2(endDate)}`;
       }
       async function getCompetitionTeams(refresh = true) {
         if (refresh) {
@@ -18487,6 +20355,8 @@ if (uni.restoreGlobal) {
                 } else if (Array.isArray(team.teamMemberAvatars)) {
                   avatars = team.teamMemberAvatars.filter((avatar) => avatar);
                 }
+              } else if (team.teamMembers && Array.isArray(team.teamMembers)) {
+                avatars = team.teamMembers.slice(0, 3);
               }
               let statusColor = "#6B7280";
               if (team.status === "0" || team.statusText === "招募中") {
@@ -18546,7 +20416,7 @@ if (uni.restoreGlobal) {
             }
           }
         } catch (error) {
-          formatAppLog("error", "at pages/competition/detail.vue:597", "获取竞赛队伍列表失败:", error);
+          formatAppLog("error", "at pages/competition/detail.vue:732", "获取竞赛队伍列表失败:", error);
           uni.showToast({
             title: "获取队伍列表失败",
             icon: "none"
@@ -18590,6 +20460,9 @@ if (uni.restoreGlobal) {
         currentTab.value = tab;
         if (tab === "teams" && teams.value.length === 0) {
           getCompetitionTeams();
+        }
+        if (tab === "results" && competitionResults.value.length === 0) {
+          getCompetitionResults(competitionId.value);
         }
       }
       function viewTeamDetail(teamId) {
@@ -18679,7 +20552,7 @@ if (uni.restoreGlobal) {
         searchText.value = "";
       }
       function toggleFilter() {
-        formatAppLog("log", "at pages/competition/detail.vue:759", "打开筛选选项");
+        formatAppLog("log", "at pages/competition/detail.vue:899", "打开筛选选项");
       }
       function createTeam() {
         uni.navigateTo({
@@ -18742,7 +20615,208 @@ if (uni.restoreGlobal) {
           duration: 2e3
         });
       }
-      const __returned__ = { competitionId, loading, currentTab, competition, competitionStages, relatedCompetitions, teams, teamsLoading, teamsCurrentPage, teamsPageSize, teamsHasMore, searchText, isFavorite, getCompetitionDetail, getStatusText, formatDatePeriod, updateCompetitionStages, getCompetitionTeams, getRandomColor, loadMoreTeams, switchTab, viewTeamDetail, getTagClass, getStatusBadgeClass, getActionButtonText, getRegistrationDeadline, goBack, clearSearch, toggleFilter, createTeam, handleActionButton, toggleFavorite, shareCompetition, ref: vue.ref, onMounted: vue.onMounted, computed: vue.computed, get api() {
+      async function getCompetitionResults(competitionId2) {
+        try {
+          formatAppLog("log", "at pages/competition/detail.vue:978", "开始获取比赛结果数据，竞赛ID:", competitionId2);
+          const res = await api.competitionResults.getCompetitionResults(competitionId2);
+          formatAppLog("log", "at pages/competition/detail.vue:980", "获取到比赛结果响应:", res);
+          if (res && res.code === 200 && res.data) {
+            const resultsData = Array.isArray(res.data) ? res.data : [res.data];
+            formatAppLog("log", "at pages/competition/detail.vue:985", "处理比赛结果数据:", resultsData);
+            const processedResults = await Promise.all(resultsData.map(async (result) => {
+              let awardDetails = {};
+              let metadata = {};
+              try {
+                if (result.awardDetails) {
+                  awardDetails = typeof result.awardDetails === "string" ? JSON.parse(result.awardDetails) : result.awardDetails;
+                }
+                if (result.metadata) {
+                  metadata = typeof result.metadata === "string" ? JSON.parse(result.metadata) : result.metadata;
+                }
+              } catch (e) {
+                formatAppLog("error", "at pages/competition/detail.vue:1006", "解析JSON数据失败:", e);
+              }
+              let teamName = "未知队伍";
+              let teamLogo = "";
+              let teamMembers = 0;
+              let memberAvatars = [];
+              try {
+                formatAppLog("log", "at pages/competition/detail.vue:1017", "开始获取队伍信息，队伍ID:", result.teamId);
+                const teamRes = await api.competitionResults.getTeamDetail(result.teamId);
+                formatAppLog("log", "at pages/competition/detail.vue:1019", "获取到队伍响应:", teamRes);
+                if (teamRes && teamRes.code === 200 && teamRes.data) {
+                  teamName = teamRes.data.name || "未知队伍";
+                  teamLogo = teamRes.data.logo || "";
+                  if (teamRes.data.roles && Array.isArray(teamRes.data.roles)) {
+                    teamMembers = teamRes.data.roles.reduce((total, role) => {
+                      return total + (role.currentCount || 0);
+                    }, 0);
+                    teamMembers += 1;
+                    formatAppLog("log", "at pages/competition/detail.vue:1036", "从roles计算的团队成员数量(包含队长):", teamMembers);
+                  } else if (teamRes.data.memberCount !== void 0 && teamRes.data.memberCount !== null) {
+                    teamMembers = teamRes.data.memberCount;
+                    if (teamRes.data.leaderId && !teamRes.data.isLeaderCountedInMemberCount) {
+                      teamMembers += 1;
+                    }
+                  } else if (teamRes.data.currentMemberCount !== void 0 && teamRes.data.currentMemberCount !== null) {
+                    teamMembers = teamRes.data.currentMemberCount;
+                    if (teamRes.data.leaderId && !teamRes.data.isLeaderCountedInCurrentMemberCount) {
+                      teamMembers += 1;
+                    }
+                  } else if (teamRes.data.teamMembers && Array.isArray(teamRes.data.teamMembers)) {
+                    teamMembers = teamRes.data.teamMembers.length;
+                  } else if (teamRes.data.members && Array.isArray(teamRes.data.members)) {
+                    teamMembers = teamRes.data.members.length;
+                  } else {
+                    teamMembers = 1;
+                  }
+                  try {
+                    const membersRes = await api.competitionResults.getTeamMembers(result.teamId);
+                    formatAppLog("log", "at pages/competition/detail.vue:1061", "获取团队成员响应:", membersRes);
+                    if (membersRes && membersRes.code === 200 && membersRes.data) {
+                      const members = membersRes.data;
+                      if (Array.isArray(members)) {
+                        teamMembers = members.length;
+                        members.forEach((member) => {
+                          if (member.userAvatarUrl) {
+                            memberAvatars.push(member.userAvatarUrl);
+                          } else if (member.avatarUrl) {
+                            memberAvatars.push(member.avatarUrl);
+                          }
+                        });
+                        const leaderMember = members.find((m) => m.isLeader === true);
+                        if (leaderMember && leaderMember.userAvatarUrl) {
+                          memberAvatars = memberAvatars.filter((avatar) => avatar !== leaderMember.userAvatarUrl);
+                          memberAvatars.unshift(leaderMember.userAvatarUrl);
+                        }
+                        formatAppLog("log", "at pages/competition/detail.vue:1089", "从团队成员接口获取的头像:", memberAvatars);
+                      }
+                    }
+                  } catch (memberError) {
+                    formatAppLog("error", "at pages/competition/detail.vue:1093", "获取团队成员失败:", memberError);
+                  }
+                  if (memberAvatars.length === 0) {
+                    formatAppLog("log", "at pages/competition/detail.vue:1098", "检查队伍详情数据结构:", teamRes.data);
+                    if (teamRes.data.data && Array.isArray(teamRes.data.data)) {
+                      const memberData = teamRes.data.data;
+                      formatAppLog("log", "at pages/competition/detail.vue:1103", "发现队员data数组:", memberData);
+                      memberData.forEach((member) => {
+                        if (member.avatar) {
+                          memberAvatars.push(member.avatar);
+                        } else if (member.avatarUrl) {
+                          memberAvatars.push(member.avatarUrl);
+                        } else if (member.userAvatar) {
+                          memberAvatars.push(member.userAvatar);
+                        }
+                      });
+                      formatAppLog("log", "at pages/competition/detail.vue:1116", "从data数组提取的队员头像:", memberAvatars);
+                    }
+                    if (teamRes.data.memberAvatars) {
+                      if (typeof teamRes.data.memberAvatars === "string") {
+                        const avatarsFromString = teamRes.data.memberAvatars.split(",").filter((url) => url && url.trim());
+                        memberAvatars = [...memberAvatars, ...avatarsFromString];
+                      } else if (Array.isArray(teamRes.data.memberAvatars)) {
+                        memberAvatars = [...memberAvatars, ...teamRes.data.memberAvatars.filter((url) => url)];
+                      }
+                    } else if (teamRes.data.teamMemberAvatars) {
+                      if (typeof teamRes.data.teamMemberAvatars === "string") {
+                        const avatarsFromString = teamRes.data.teamMemberAvatars.split(",").filter((url) => url && url.trim());
+                        memberAvatars = [...memberAvatars, ...avatarsFromString];
+                      } else if (Array.isArray(teamRes.data.teamMemberAvatars)) {
+                        memberAvatars = [...memberAvatars, ...teamRes.data.teamMemberAvatars.filter((url) => url)];
+                      }
+                    } else if (teamRes.data.members && Array.isArray(teamRes.data.members)) {
+                      const avatarsFromMembers = teamRes.data.members.filter((member) => member && member.avatarUrl).map((member) => member.avatarUrl);
+                      memberAvatars = [...memberAvatars, ...avatarsFromMembers];
+                    }
+                    if (teamRes.data.leaderAvatarUrl) {
+                      memberAvatars = memberAvatars.filter((avatar) => avatar !== teamRes.data.leaderAvatarUrl);
+                      memberAvatars.unshift(teamRes.data.leaderAvatarUrl);
+                    }
+                  }
+                  memberAvatars = [...new Set(memberAvatars)].filter(Boolean);
+                  formatAppLog("log", "at pages/competition/detail.vue:1155", "最终处理后的成员头像列表:", memberAvatars);
+                }
+              } catch (e) {
+                formatAppLog("error", "at pages/competition/detail.vue:1158", "获取队伍信息失败:", e);
+              }
+              return {
+                ...result,
+                awardDetails,
+                metadata,
+                teamName,
+                teamLogo,
+                teamMembers,
+                memberAvatars,
+                memberCount: teamMembers,
+                // 添加memberCount字段用于显示
+                formattedDate: formatDate(result.announcedAt)
+              };
+            }));
+            competitionResults.value = processedResults;
+            formatAppLog("log", "at pages/competition/detail.vue:1175", "最终处理的比赛结果数据:", competitionResults.value);
+            if (competitionResults.value.length === 0) {
+              uni.showToast({
+                title: "暂无比赛结果数据",
+                icon: "none"
+              });
+            }
+          } else {
+            formatAppLog("warn", "at pages/competition/detail.vue:1185", "获取比赛结果失败或无数据:", res);
+            uni.showToast({
+              title: "暂无比赛结果",
+              icon: "none"
+            });
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/competition/detail.vue:1192", "获取比赛结果错误:", error);
+          uni.showToast({
+            title: "获取比赛结果失败",
+            icon: "none"
+          });
+        }
+      }
+      function formatDate(dateString) {
+        if (!dateString)
+          return "未知时间";
+        try {
+          const date = new Date(dateString);
+          return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+        } catch (e) {
+          formatAppLog("error", "at pages/competition/detail.vue:1208", "日期格式化失败:", e);
+          return "日期格式有误";
+        }
+      }
+      function getStageNameById(stageId) {
+        const stage = competitionStages.value.find((s) => s.id == stageId);
+        return stage ? stage.title : "未知阶段";
+      }
+      function getAwardClass(awardType) {
+        switch (awardType) {
+          case "金奖":
+            return "gold-award";
+          case "银奖":
+            return "silver-award";
+          case "铜奖":
+            return "bronze-award";
+          case "特等奖":
+            return "special-award";
+          case "一等奖":
+            return "first-award";
+          case "二等奖":
+            return "second-award";
+          case "三等奖":
+            return "third-award";
+          case "优秀奖":
+            return "excellent-award";
+          default:
+            return "";
+        }
+      }
+      function filterResultsByStage(stageId) {
+        selectedStageId.value = stageId;
+      }
+      const __returned__ = { competitionId, loading, currentTab, competition, competitionStages, relatedCompetitions, teams, teamsLoading, teamsCurrentPage, teamsPageSize, teamsHasMore, searchText, isFavorite, selectedStageId, competitionResults, filteredResults, getCompetitionDetail, getCompetitionStages, getStatusText, formatDatePeriod, getCompetitionTeams, getRandomColor, loadMoreTeams, switchTab, viewTeamDetail, getTagClass, getStatusBadgeClass, getActionButtonText, getRegistrationDeadline, goBack, clearSearch, toggleFilter, createTeam, handleActionButton, toggleFavorite, shareCompetition, getCompetitionResults, formatDate, getStageNameById, getAwardClass, filterResultsByStage, ref: vue.ref, onMounted: vue.onMounted, computed: vue.computed, get api() {
         return api;
       }, get icons() {
         return icons;
@@ -18751,7 +20825,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$g(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$i(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 加载中状态 "),
       $setup.loading ? (vue.openBlock(), vue.createElementBlock("view", {
@@ -18935,8 +21009,18 @@ if (uni.restoreGlobal) {
               vue.createElementVNode(
                 "view",
                 {
+                  class: vue.normalizeClass(["flex-1 py-3 text-center text-sm font-medium", $setup.currentTab === "results" ? "tab-active" : "text-gray-500"]),
+                  onClick: _cache[2] || (_cache[2] = ($event) => $setup.switchTab("results"))
+                },
+                "比赛结果",
+                2
+                /* CLASS */
+              ),
+              vue.createElementVNode(
+                "view",
+                {
                   class: vue.normalizeClass(["flex-1 py-3 text-center text-sm font-medium", $setup.currentTab === "teams" ? "tab-active" : "text-gray-500"]),
-                  onClick: _cache[2] || (_cache[2] = ($event) => $setup.switchTab("teams"))
+                  onClick: _cache[3] || (_cache[3] = ($event) => $setup.switchTab("teams"))
                 },
                 "参赛队伍",
                 2
@@ -19102,87 +21186,332 @@ if (uni.restoreGlobal) {
               vue.createCommentVNode(" 时间轴 "),
               vue.createElementVNode("view", { class: "timeline-line" }),
               vue.createCommentVNode(" 阶段列表 "),
-              (vue.openBlock(true), vue.createElementBlock(
-                vue.Fragment,
-                null,
-                vue.renderList($setup.competitionStages, (stage, index) => {
-                  return vue.openBlock(), vue.createElementBlock("view", {
-                    key: index,
-                    class: "timeline-item"
-                  }, [
-                    vue.createElementVNode("view", { class: "timeline-dot-container" }, [
+              $setup.competitionStages.length === 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+                key: 0,
+                class: "empty-state"
+              }, [
+                vue.createElementVNode("text", { class: "text-gray-500" }, "暂无赛程安排")
+              ])) : (vue.openBlock(), vue.createElementBlock("view", { key: 1 }, [
+                (vue.openBlock(true), vue.createElementBlock(
+                  vue.Fragment,
+                  null,
+                  vue.renderList($setup.competitionStages, (stage, index) => {
+                    return vue.openBlock(), vue.createElementBlock("view", {
+                      key: stage.id,
+                      class: "timeline-item"
+                    }, [
+                      vue.createElementVNode("view", { class: "timeline-dot-container" }, [
+                        vue.createElementVNode(
+                          "view",
+                          {
+                            class: vue.normalizeClass(["timeline-dot", stage.active ? "active-dot" : ""])
+                          },
+                          [
+                            vue.createElementVNode(
+                              "text",
+                              { class: "timeline-dot-text" },
+                              vue.toDisplayString(index + 1),
+                              1
+                              /* TEXT */
+                            )
+                          ],
+                          2
+                          /* CLASS */
+                        )
+                      ]),
                       vue.createElementVNode(
                         "view",
                         {
-                          class: vue.normalizeClass(["timeline-dot", stage.active ? "active-dot" : ""])
+                          class: vue.normalizeClass(["timeline-content", stage.active ? "active-content" : ""])
                         },
                         [
-                          vue.createElementVNode(
-                            "text",
-                            { class: "timeline-dot-text" },
-                            vue.toDisplayString(index + 1),
-                            1
-                            /* TEXT */
-                          )
+                          vue.createElementVNode("view", { class: "flex-row justify-between items-center mb-2" }, [
+                            vue.createElementVNode(
+                              "text",
+                              {
+                                class: vue.normalizeClass(["stage-title", stage.active ? "text-blue-800" : "text-gray-700"])
+                              },
+                              vue.toDisplayString(stage.title),
+                              3
+                              /* TEXT, CLASS */
+                            ),
+                            vue.createElementVNode(
+                              "text",
+                              {
+                                class: vue.normalizeClass(["status-text", stage.active ? "active-status" : "inactive-status"])
+                              },
+                              vue.toDisplayString(stage.status),
+                              3
+                              /* TEXT, CLASS */
+                            )
+                          ]),
+                          vue.createElementVNode("view", { class: "stage-period-container" }, [
+                            vue.createVNode($setup["SvgIcon"], {
+                              name: "shijian",
+                              class: "stage-icon"
+                            }),
+                            vue.createElementVNode(
+                              "text",
+                              { class: "stage-period" },
+                              vue.toDisplayString(stage.period),
+                              1
+                              /* TEXT */
+                            )
+                          ]),
+                          vue.createElementVNode("view", { class: "stage-desc-container" }, [
+                            vue.createElementVNode(
+                              "text",
+                              { class: "stage-desc" },
+                              vue.toDisplayString(stage.description),
+                              1
+                              /* TEXT */
+                            )
+                          ]),
+                          stage.location ? (vue.openBlock(), vue.createElementBlock("view", {
+                            key: 0,
+                            class: "stage-location-container"
+                          }, [
+                            vue.createVNode($setup["SvgIcon"], {
+                              name: "didian",
+                              class: "stage-icon"
+                            }),
+                            vue.createElementVNode(
+                              "text",
+                              { class: "stage-location" },
+                              vue.toDisplayString(stage.location),
+                              1
+                              /* TEXT */
+                            )
+                          ])) : vue.createCommentVNode("v-if", true)
                         ],
                         2
                         /* CLASS */
                       )
-                    ]),
-                    vue.createElementVNode(
-                      "view",
-                      {
-                        class: vue.normalizeClass(["timeline-content", stage.active ? "active-content" : ""])
-                      },
-                      [
-                        vue.createElementVNode("view", { class: "flex-row justify-between items-center mb-2" }, [
+                    ]);
+                  }),
+                  128
+                  /* KEYED_FRAGMENT */
+                ))
+              ]))
+            ])
+          ])) : vue.createCommentVNode("v-if", true),
+          vue.createCommentVNode(" 比赛结果内容 "),
+          $setup.currentTab === "results" ? (vue.openBlock(), vue.createElementBlock("view", {
+            key: 2,
+            class: "bg-white p-4 mt-2 shadow-sm"
+          }, [
+            vue.createCommentVNode(" 阶段选择筛选器 "),
+            vue.createElementVNode("view", { class: "mb-4" }, [
+              vue.createElementVNode("view", { class: "text-gray-600 text-sm mb-2" }, "比赛阶段"),
+              vue.createElementVNode("scroll-view", {
+                "scroll-x": "",
+                class: "filter-scroll",
+                "show-scrollbar": "false"
+              }, [
+                vue.createElementVNode("view", { class: "stage-filter-container" }, [
+                  vue.createElementVNode(
+                    "view",
+                    {
+                      class: vue.normalizeClass(["stage-filter-item", { "active": $setup.selectedStageId === "all" }]),
+                      onClick: _cache[4] || (_cache[4] = ($event) => $setup.filterResultsByStage("all"))
+                    },
+                    " 全部 ",
+                    2
+                    /* CLASS */
+                  ),
+                  (vue.openBlock(true), vue.createElementBlock(
+                    vue.Fragment,
+                    null,
+                    vue.renderList($setup.competitionStages, (stage) => {
+                      return vue.openBlock(), vue.createElementBlock("view", {
+                        key: stage.id,
+                        class: vue.normalizeClass(["stage-filter-item", { "active": $setup.selectedStageId === stage.id }]),
+                        onClick: ($event) => $setup.filterResultsByStage(stage.id)
+                      }, vue.toDisplayString(stage.title), 11, ["onClick"]);
+                    }),
+                    128
+                    /* KEYED_FRAGMENT */
+                  ))
+                ])
+              ])
+            ]),
+            vue.createCommentVNode(" 结果列表 "),
+            $setup.competitionResults.length > 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+              key: 0,
+              class: "results-list"
+            }, [
+              (vue.openBlock(true), vue.createElementBlock(
+                vue.Fragment,
+                null,
+                vue.renderList($setup.filteredResults, (result) => {
+                  return vue.openBlock(), vue.createElementBlock("view", {
+                    key: result.id,
+                    class: "result-card"
+                  }, [
+                    vue.createElementVNode("view", { class: "result-header" }, [
+                      vue.createElementVNode("view", { class: "flex-row items-center" }, [
+                        vue.createElementVNode("image", {
+                          src: result.teamLogo || "/static/image/default-logo.png",
+                          class: "team-logo"
+                        }, null, 8, ["src"]),
+                        vue.createElementVNode("view", { class: "ml-3" }, [
                           vue.createElementVNode(
                             "text",
-                            {
-                              class: vue.normalizeClass(["font-bold", stage.active ? "text-blue-800" : "text-gray-700"])
-                            },
-                            vue.toDisplayString(stage.title),
-                            3
-                            /* TEXT, CLASS */
+                            { class: "font-bold text-gray-800" },
+                            vue.toDisplayString(result.teamName),
+                            1
+                            /* TEXT */
                           ),
-                          vue.createElementVNode(
-                            "text",
-                            {
-                              class: vue.normalizeClass(["status-text", stage.active ? "active-status" : "inactive-status"])
-                            },
-                            vue.toDisplayString(stage.status),
-                            3
-                            /* TEXT, CLASS */
-                          )
-                        ]),
+                          vue.createElementVNode("view", { class: "flex-row items-center mt-1" }, [
+                            vue.createElementVNode(
+                              "text",
+                              { class: "text-xs text-gray-600" },
+                              vue.toDisplayString(result.teamMembers || 0) + "人团队",
+                              1
+                              /* TEXT */
+                            )
+                          ])
+                        ])
+                      ]),
+                      vue.createElementVNode(
+                        "view",
+                        {
+                          class: vue.normalizeClass(["award-badge", $setup.getAwardClass(result.awardType)])
+                        },
+                        vue.toDisplayString(result.awardType),
+                        3
+                        /* TEXT, CLASS */
+                      )
+                    ]),
+                    vue.createCommentVNode(" 添加队员头像行 "),
+                    result.memberAvatars && result.memberAvatars.length > 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+                      key: 0,
+                      class: "member-avatars-row"
+                    }, [
+                      (vue.openBlock(true), vue.createElementBlock(
+                        vue.Fragment,
+                        null,
+                        vue.renderList(result.memberAvatars, (avatar, index) => {
+                          return vue.openBlock(), vue.createElementBlock("image", {
+                            key: index,
+                            src: avatar || "/static/images/default-avatar.png",
+                            class: "member-avatar"
+                          }, null, 8, ["src"]);
+                        }),
+                        128
+                        /* KEYED_FRAGMENT */
+                      )),
+                      result.memberCount > result.memberAvatars.length ? (vue.openBlock(), vue.createElementBlock(
+                        "view",
+                        {
+                          key: 0,
+                          class: "more-members"
+                        },
+                        " +" + vue.toDisplayString(result.memberCount - result.memberAvatars.length),
+                        1
+                        /* TEXT */
+                      )) : vue.createCommentVNode("v-if", true)
+                    ])) : vue.createCommentVNode("v-if", true),
+                    vue.createElementVNode("view", { class: "result-content" }, [
+                      vue.createElementVNode("view", { class: "result-detail-item" }, [
+                        vue.createElementVNode("text", { class: "result-label" }, "比赛阶段:"),
                         vue.createElementVNode(
                           "text",
-                          { class: "text-sm text-gray-700 mb-2" },
-                          vue.toDisplayString(stage.period),
-                          1
-                          /* TEXT */
-                        ),
-                        vue.createElementVNode(
-                          "text",
-                          { class: "text-xs text-gray-600" },
-                          vue.toDisplayString(stage.description),
+                          { class: "result-value" },
+                          vue.toDisplayString($setup.getStageNameById(result.stageId)),
                           1
                           /* TEXT */
                         )
-                      ],
-                      2
-                      /* CLASS */
-                    )
+                      ]),
+                      result.announcedAt ? (vue.openBlock(), vue.createElementBlock("view", {
+                        key: 0,
+                        class: "result-detail-item"
+                      }, [
+                        vue.createElementVNode("text", { class: "result-label" }, "公布时间:"),
+                        vue.createElementVNode(
+                          "text",
+                          { class: "result-value" },
+                          vue.toDisplayString(result.formattedDate),
+                          1
+                          /* TEXT */
+                        )
+                      ])) : vue.createCommentVNode("v-if", true),
+                      result.awardDetails && result.awardDetails.bonus ? (vue.openBlock(), vue.createElementBlock("view", {
+                        key: 1,
+                        class: "result-detail-item"
+                      }, [
+                        vue.createElementVNode("text", { class: "result-label" }, "奖金:"),
+                        vue.createElementVNode(
+                          "text",
+                          { class: "result-value" },
+                          vue.toDisplayString(result.awardDetails.bonus) + "元",
+                          1
+                          /* TEXT */
+                        )
+                      ])) : vue.createCommentVNode("v-if", true),
+                      result.awardDetails && result.awardDetails.certificate ? (vue.openBlock(), vue.createElementBlock("view", {
+                        key: 2,
+                        class: "result-detail-item"
+                      }, [
+                        vue.createElementVNode("text", { class: "result-label" }, "证书编号:"),
+                        vue.createElementVNode(
+                          "text",
+                          { class: "result-value" },
+                          vue.toDisplayString(result.awardDetails.certificate),
+                          1
+                          /* TEXT */
+                        )
+                      ])) : vue.createCommentVNode("v-if", true),
+                      result.metadata && result.metadata.sponsor ? (vue.openBlock(), vue.createElementBlock("view", {
+                        key: 3,
+                        class: "result-detail-item"
+                      }, [
+                        vue.createElementVNode("text", { class: "result-label" }, "赞助方:"),
+                        vue.createElementVNode(
+                          "text",
+                          { class: "result-value" },
+                          vue.toDisplayString(result.metadata.sponsor),
+                          1
+                          /* TEXT */
+                        )
+                      ])) : vue.createCommentVNode("v-if", true)
+                    ]),
+                    vue.createElementVNode("view", { class: "result-footer" }, [
+                      vue.createElementVNode(
+                        "text",
+                        {
+                          class: vue.normalizeClass(["status-text", { "text-green-600": result.resultStatus === "announced" }])
+                        },
+                        vue.toDisplayString(result.resultStatus === "announced" ? "已公布" : "待公布"),
+                        3
+                        /* TEXT, CLASS */
+                      ),
+                      vue.createElementVNode("button", {
+                        class: "view-team-btn",
+                        onClick: vue.withModifiers(($event) => $setup.viewTeamDetail(result.teamId), ["stop"])
+                      }, "查看队伍", 8, ["onClick"])
+                    ])
                   ]);
                 }),
                 128
                 /* KEYED_FRAGMENT */
               ))
-            ])
+            ])) : (vue.openBlock(), vue.createElementBlock(
+              vue.Fragment,
+              { key: 1 },
+              [
+                vue.createCommentVNode(" 空状态 "),
+                vue.createElementVNode("view", { class: "empty-state" }, [
+                  vue.createElementVNode("text", { class: "text-gray-500" }, "暂无比赛结果")
+                ])
+              ],
+              2112
+              /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */
+            ))
           ])) : vue.createCommentVNode("v-if", true),
           vue.createCommentVNode(" 参赛队伍内容 "),
           $setup.currentTab === "teams" ? (vue.openBlock(), vue.createElementBlock("view", {
-            key: 2,
+            key: 3,
             class: "bg-white p-4 mt-2 shadow-sm"
           }, [
             vue.createCommentVNode(" 搜索和筛选 "),
@@ -19195,7 +21524,7 @@ if (uni.restoreGlobal) {
                     type: "text",
                     placeholder: "搜索队伍",
                     class: "search-input",
-                    "onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => $setup.searchText = $event)
+                    "onUpdate:modelValue": _cache[5] || (_cache[5] = ($event) => $setup.searchText = $event)
                   },
                   null,
                   512
@@ -19424,8 +21753,8 @@ if (uni.restoreGlobal) {
       ))
     ]);
   }
-  const PagesCompetitionDetail = /* @__PURE__ */ _export_sfc(_sfc_main$h, [["render", _sfc_render$g], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/competition/detail.vue"]]);
-  const _sfc_main$g = {
+  const PagesCompetitionDetail = /* @__PURE__ */ _export_sfc(_sfc_main$j, [["render", _sfc_render$i], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/competition/detail.vue"]]);
+  const _sfc_main$i = {
     __name: "index",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -19490,6 +21819,16 @@ if (uni.restoreGlobal) {
         } else if (page === "myTeams") {
           uni.navigateTo({
             url: "/pages/myTeam/myTeam"
+          });
+          return;
+        } else if (page == "myTask") {
+          uni.navigateTo({
+            url: "/pages/mytasks/index"
+          });
+          return;
+        } else if (page === "myAwards") {
+          uni.navigateTo({
+            url: "/pages/profile/my-awards"
           });
           return;
         }
@@ -19561,7 +21900,7 @@ if (uni.restoreGlobal) {
       vue.onMounted(() => {
         getUserProfile();
         uni.$on("profileUpdated", () => {
-          formatAppLog("log", "at pages/profile/index.vue:274", "收到profileUpdated事件，刷新用户信息");
+          formatAppLog("log", "at pages/profile/index.vue:285", "收到profileUpdated事件，刷新用户信息");
           refreshUserInfo();
         });
       });
@@ -19583,7 +21922,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$f(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$h(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部用户信息区 "),
       vue.createElementVNode("view", { class: "user-info-section" }, [
@@ -19668,7 +22007,7 @@ if (uni.restoreGlobal) {
             ]),
             vue.createElementVNode("view", {
               class: "stat-item",
-              onClick: _cache[2] || (_cache[2] = ($event) => $setup.navigateTo("myAwards"))
+              onClick: _cache[2] || (_cache[2] = ($event) => $setup.navigateTo("myTask"))
             }, [
               vue.createElementVNode(
                 "text",
@@ -19681,7 +22020,7 @@ if (uni.restoreGlobal) {
             ]),
             vue.createElementVNode("view", {
               class: "stat-item",
-              onClick: _cache[3] || (_cache[3] = ($event) => $setup.navigateTo("settings"))
+              onClick: _cache[3] || (_cache[3] = ($event) => $setup.navigateTo("myAwards"))
             }, [
               vue.createElementVNode(
                 "text",
@@ -19708,18 +22047,15 @@ if (uni.restoreGlobal) {
           ]),
           vue.createElementVNode("view", {
             class: "menu-item",
-            onClick: _cache[6] || (_cache[6] = ($event) => $setup.navigateTo("myAwards"))
+            onClick: _cache[5] || (_cache[5] = ($event) => $setup.navigateTo("apply-badge"))
           }, [
             vue.createElementVNode("text", { class: "iconfont icon-star menu-icon" }),
-            vue.createElementVNode("text", {
-              class: "menu-text",
-              onClick: _cache[5] || (_cache[5] = ($event) => $setup.navigateTo("apply-badge"))
-            }, "勋章申请"),
+            vue.createElementVNode("text", { class: "menu-text" }, "勋章申请"),
             vue.createElementVNode("text", { class: "iconfont icon-arrow-left menu-arrow" })
           ]),
           vue.createElementVNode("view", {
             class: "menu-item",
-            onClick: _cache[7] || (_cache[7] = ($event) => $setup.navigateTo("applications"))
+            onClick: _cache[6] || (_cache[6] = ($event) => $setup.navigateTo("applications"))
           }, [
             vue.createElementVNode("text", { class: "iconfont icon-paper-plane menu-icon" }),
             vue.createElementVNode("text", { class: "menu-text" }, "申请管理"),
@@ -19729,7 +22065,7 @@ if (uni.restoreGlobal) {
         vue.createElementVNode("view", { class: "menu-group" }, [
           vue.createElementVNode("view", {
             class: "menu-item",
-            onClick: _cache[8] || (_cache[8] = ($event) => $setup.navigateTo("settings"))
+            onClick: _cache[7] || (_cache[7] = ($event) => $setup.navigateTo("settings"))
           }, [
             vue.createElementVNode("text", { class: "iconfont icon-settings menu-icon" }),
             vue.createElementVNode("text", { class: "menu-text" }, "账号设置"),
@@ -19737,7 +22073,7 @@ if (uni.restoreGlobal) {
           ]),
           vue.createElementVNode("view", {
             class: "menu-item",
-            onClick: _cache[9] || (_cache[9] = ($event) => $setup.navigateTo("feedback"))
+            onClick: _cache[8] || (_cache[8] = ($event) => $setup.navigateTo("feedback"))
           }, [
             vue.createElementVNode("text", { class: "iconfont icon-feedback menu-icon" }),
             vue.createElementVNode("text", { class: "menu-text" }, "意见反馈"),
@@ -19745,7 +22081,7 @@ if (uni.restoreGlobal) {
           ]),
           vue.createElementVNode("view", {
             class: "menu-item",
-            onClick: _cache[10] || (_cache[10] = ($event) => $setup.navigateTo("about"))
+            onClick: _cache[9] || (_cache[9] = ($event) => $setup.navigateTo("about"))
           }, [
             vue.createElementVNode("text", { class: "iconfont icon-info-circle menu-icon" }),
             vue.createElementVNode("text", { class: "menu-text" }, "关于我们"),
@@ -19768,9 +22104,9 @@ if (uni.restoreGlobal) {
       })
     ]);
   }
-  const PagesProfileIndex = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["render", _sfc_render$f], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/index.vue"]]);
-  const _imports_0$5 = "/static/image/empty-medal.png";
-  const _sfc_main$f = {
+  const PagesProfileIndex = /* @__PURE__ */ _export_sfc(_sfc_main$i, [["render", _sfc_render$h], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/index.vue"]]);
+  const _imports_0$6 = "/static/image/empty-medal.png";
+  const _sfc_main$h = {
     __name: "user-info",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -20113,19 +22449,19 @@ if (uni.restoreGlobal) {
       function closePreview() {
         showPreview.value = false;
       }
-      function handleTouchStart(event) {
-        if (event.touches.length === 2) {
-          const touch1 = event.touches[0];
-          const touch2 = event.touches[1];
+      function handleTouchStart(event2) {
+        if (event2.touches.length === 2) {
+          const touch1 = event2.touches[0];
+          const touch2 = event2.touches[1];
           touchStartDistance.value = Math.sqrt(
             Math.pow(touch2.pageX - touch1.pageX, 2) + Math.pow(touch2.pageY - touch1.pageY, 2)
           );
         }
       }
-      function handleTouchMove(event) {
-        if (event.touches.length === 2 && touchStartDistance.value > 0) {
-          const touch1 = event.touches[0];
-          const touch2 = event.touches[1];
+      function handleTouchMove(event2) {
+        if (event2.touches.length === 2 && touchStartDistance.value > 0) {
+          const touch1 = event2.touches[0];
+          const touch2 = event2.touches[1];
           const currentDistance = Math.sqrt(
             Math.pow(touch2.pageX - touch1.pageX, 2) + Math.pow(touch2.pageY - touch1.pageY, 2)
           );
@@ -20160,7 +22496,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$e(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$g(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createElementVNode("view", { class: "header" }, [
@@ -20353,7 +22689,7 @@ if (uni.restoreGlobal) {
                         }, [
                           vue.createElementVNode("image", {
                             class: "empty-medal-icon",
-                            src: _imports_0$5,
+                            src: _imports_0$6,
                             mode: "aspectFit"
                           }),
                           vue.createElementVNode("text", null, "暂无勋章")
@@ -20597,8 +22933,8 @@ if (uni.restoreGlobal) {
       ])) : vue.createCommentVNode("v-if", true)
     ]);
   }
-  const PagesProfileUserInfo = /* @__PURE__ */ _export_sfc(_sfc_main$f, [["render", _sfc_render$e], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/user-info.vue"]]);
-  const _sfc_main$e = {
+  const PagesProfileUserInfo = /* @__PURE__ */ _export_sfc(_sfc_main$h, [["render", _sfc_render$g], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/user-info.vue"]]);
+  const _sfc_main$g = {
     __name: "edit-basic-info",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -20730,7 +23066,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$d(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$f(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createElementVNode("view", { class: "header" }, [
@@ -20841,8 +23177,8 @@ if (uni.restoreGlobal) {
       ))
     ]);
   }
-  const PagesProfileEditBasicInfo = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["render", _sfc_render$d], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/edit-basic-info.vue"]]);
-  const _sfc_main$d = {
+  const PagesProfileEditBasicInfo = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["render", _sfc_render$f], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/edit-basic-info.vue"]]);
+  const _sfc_main$f = {
     __name: "edit-bio",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -20929,7 +23265,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$c(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$e(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createElementVNode("view", { class: "header" }, [
@@ -21015,8 +23351,8 @@ if (uni.restoreGlobal) {
       ))
     ]);
   }
-  const PagesProfileEditBio = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["render", _sfc_render$c], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/edit-bio.vue"]]);
-  const _sfc_main$c = {
+  const PagesProfileEditBio = /* @__PURE__ */ _export_sfc(_sfc_main$f, [["render", _sfc_render$e], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/edit-bio.vue"]]);
+  const _sfc_main$e = {
     __name: "edit-skills",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -21151,7 +23487,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$b(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$d(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createElementVNode("view", { class: "header" }, [
@@ -21286,8 +23622,8 @@ if (uni.restoreGlobal) {
       ))
     ]);
   }
-  const PagesProfileEditSkills = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["render", _sfc_render$b], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/edit-skills.vue"]]);
-  const _sfc_main$b = {
+  const PagesProfileEditSkills = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["render", _sfc_render$d], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/edit-skills.vue"]]);
+  const _sfc_main$d = {
     __name: "edit-awards",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -21487,8 +23823,8 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$a(_ctx, _cache, $props, $setup, $data, $options) {
-    const _component_uni_popup = resolveEasycom(vue.resolveDynamicComponent("uni-popup"), uniPopup);
+  function _sfc_render$c(_ctx, _cache, $props, $setup, $data, $options) {
+    const _component_uni_popup = resolveEasycom(vue.resolveDynamicComponent("uni-popup"), __easycom_0$3);
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createElementVNode("view", { class: "header" }, [
@@ -21737,7 +24073,450 @@ if (uni.restoreGlobal) {
       )
     ]);
   }
-  const PagesProfileEditAwards = /* @__PURE__ */ _export_sfc(_sfc_main$b, [["render", _sfc_render$a], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/edit-awards.vue"]]);
+  const PagesProfileEditAwards = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["render", _sfc_render$c], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/edit-awards.vue"]]);
+  const _sfc_main$c = {
+    __name: "my-awards",
+    setup(__props, { expose: __expose }) {
+      __expose();
+      const loading = vue.ref(true);
+      const refreshing = vue.ref(false);
+      const awardsList = vue.ref([]);
+      const currentPage = vue.ref(1);
+      const pageSize2 = vue.ref(10);
+      const hasMore = vue.ref(true);
+      const mockAwardsData = [
+        {
+          id: 1,
+          competitionId: 101,
+          competitionName: "2023年全国大学生创新创业大赛",
+          teamId: 201,
+          teamName: "创梦先锋队",
+          teamLogo: "/static/image/default-avatar.png",
+          awardType: "金奖",
+          announcedAt: "2023-11-20T10:00:00Z",
+          stageNameOrInfo: "全国总决赛",
+          awardDetails: { bonus: "10000", certificate: "GJ20231120-001" },
+          metadata: { sponsor: "科技部、教育部" },
+          memberAvatars: [
+            "/static/image/default-avatar.png",
+            "/static/image/default-avatar.png",
+            "/static/image/default-avatar.png"
+          ],
+          teamMembers: 5
+        },
+        {
+          id: 2,
+          competitionId: 102,
+          competitionName: "第十届互联网+大学生创新创业大赛",
+          teamId: 202,
+          teamName: "智联未来",
+          teamLogo: "/static/image/default-avatar.png",
+          awardType: "银奖",
+          announcedAt: "2023-10-15T14:30:00Z",
+          stageNameOrInfo: "省赛",
+          awardDetails: { bonus: "5000", certificate: "YJ20231015-042" },
+          metadata: { sponsor: "腾讯公司" },
+          memberAvatars: [
+            "/static/image/default-avatar.png",
+            "/static/image/default-avatar.png"
+          ],
+          teamMembers: 4
+        },
+        {
+          id: 3,
+          competitionId: 103,
+          competitionName: "全国大学生软件创新大赛",
+          teamId: 203,
+          teamName: "代码先锋",
+          teamLogo: "/static/image/default-avatar.png",
+          awardType: "优秀奖",
+          announcedAt: "2023-09-05T09:15:00Z",
+          stageNameOrInfo: "初赛",
+          awardDetails: { certificate: "YX20230905-118" },
+          metadata: { sponsor: "IBM" },
+          memberAvatars: [
+            "/static/image/default-avatar.png",
+            "/static/image/default-avatar.png",
+            "/static/image/default-avatar.png",
+            "/static/image/default-avatar.png"
+          ],
+          teamMembers: 4
+        },
+        {
+          id: 4,
+          competitionId: 104,
+          competitionName: "华为软件精英挑战赛",
+          teamId: 204,
+          teamName: "算法达人",
+          teamLogo: "/static/image/default-avatar.png",
+          awardType: "三等奖",
+          announcedAt: "2023-08-12T16:45:00Z",
+          stageNameOrInfo: "复赛",
+          awardDetails: { bonus: "2000", certificate: "SD20230812-076" },
+          metadata: { sponsor: "华为公司" },
+          memberAvatars: [
+            "/static/image/default-avatar.png",
+            "/static/image/default-avatar.png"
+          ],
+          teamMembers: 3
+        },
+        {
+          id: 5,
+          competitionId: 105,
+          competitionName: "全国高校人工智能创新大赛",
+          teamId: 205,
+          teamName: "AI未来",
+          teamLogo: "/static/image/default-avatar.png",
+          awardType: "特等奖",
+          announcedAt: "2023-07-28T11:20:00Z",
+          stageNameOrInfo: "总决赛",
+          awardDetails: { bonus: "20000", certificate: "TD20230728-003" },
+          metadata: { sponsor: "百度公司" },
+          memberAvatars: [
+            "/static/image/default-avatar.png",
+            "/static/image/default-avatar.png",
+            "/static/image/default-avatar.png"
+          ],
+          teamMembers: 3
+        }
+      ];
+      function getAwardsList(isRefresh = false) {
+        setTimeout(() => {
+          if (isRefresh) {
+            currentPage.value = 1;
+            awardsList.value = [];
+          }
+          formatAppLog("log", "at pages/profile/my-awards.vue:241", "获取获奖记录，页码:", currentPage.value);
+          const start = (currentPage.value - 1) * pageSize2.value;
+          const end = currentPage.value * pageSize2.value;
+          const pageData = mockAwardsData.slice(start, end);
+          hasMore.value = end < mockAwardsData.length;
+          if (pageData.length > 0) {
+            awardsList.value = [...awardsList.value, ...pageData];
+            if (hasMore.value) {
+              currentPage.value++;
+            }
+          }
+          if (isRefresh) {
+            refreshing.value = false;
+            uni.showToast({
+              title: "刷新成功",
+              icon: "success",
+              duration: 1500
+            });
+          }
+          loading.value = false;
+        }, 1e3);
+      }
+      function refreshData() {
+        refreshing.value = true;
+        getAwardsList(true);
+      }
+      function loadMore() {
+        if (hasMore.value && !loading.value) {
+          getAwardsList();
+        }
+      }
+      function getAwardClass(awardType) {
+        switch (awardType) {
+          case "金奖":
+            return "gold-award";
+          case "银奖":
+            return "silver-award";
+          case "铜奖":
+            return "bronze-award";
+          case "特等奖":
+            return "special-award";
+          case "一等奖":
+            return "first-award";
+          case "二等奖":
+            return "second-award";
+          case "三等奖":
+            return "third-award";
+          case "优秀奖":
+            return "excellent-award";
+          default:
+            return "";
+        }
+      }
+      function formatDate(dateString) {
+        if (!dateString)
+          return "未知时间";
+        try {
+          const date = new Date(dateString);
+          return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+        } catch (e) {
+          formatAppLog("error", "at pages/profile/my-awards.vue:317", "日期格式化失败:", e);
+          return "日期格式有误";
+        }
+      }
+      function viewCompetition(competitionId) {
+        uni.navigateTo({
+          url: `/pages/competition/detail?id=${competitionId}`
+        });
+      }
+      function viewTeam(teamId) {
+        uni.navigateTo({
+          url: `/pages/team/detail?id=${teamId}`
+        });
+      }
+      function gotoCompetitions() {
+        uni.switchTab({
+          url: "/pages/competition/index"
+        });
+      }
+      function navigateBack() {
+        uni.navigateBack();
+      }
+      vue.onMounted(() => {
+        getAwardsList();
+      });
+      const __returned__ = { loading, refreshing, awardsList, currentPage, pageSize: pageSize2, hasMore, mockAwardsData, getAwardsList, refreshData, loadMore, getAwardClass, formatDate, viewCompetition, viewTeam, gotoCompetitions, navigateBack, ref: vue.ref, onMounted: vue.onMounted, computed: vue.computed, SvgIcon, uniIcons };
+      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
+      return __returned__;
+    }
+  };
+  function _sfc_render$b(_ctx, _cache, $props, $setup, $data, $options) {
+    return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
+      vue.createCommentVNode(" 顶部导航栏 "),
+      vue.createElementVNode("view", { class: "header" }, [
+        vue.createElementVNode("view", {
+          class: "nav-back",
+          onClick: $setup.navigateBack
+        }, [
+          vue.createVNode($setup["SvgIcon"], {
+            name: "back",
+            class: "back-icon"
+          })
+        ]),
+        vue.createElementVNode("text", { class: "page-title" }, "我的获奖")
+      ]),
+      vue.createCommentVNode(" 页面内容 "),
+      vue.createElementVNode("view", { class: "content" }, [
+        vue.createCommentVNode(" 加载中状态 "),
+        $setup.loading ? (vue.openBlock(), vue.createElementBlock("view", {
+          key: 0,
+          class: "loading-container"
+        }, [
+          vue.createElementVNode("view", { class: "spinner" }),
+          vue.createElementVNode("text", { class: "loading-text" }, "加载中...")
+        ])) : $setup.awardsList.length === 0 ? (vue.openBlock(), vue.createElementBlock(
+          vue.Fragment,
+          { key: 1 },
+          [
+            vue.createCommentVNode(" 数据为空状态 "),
+            vue.createElementVNode("view", { class: "empty-state" }, [
+              vue.createVNode($setup["uniIcons"], {
+                type: "info",
+                size: "60",
+                color: "#CCCCCC"
+              }),
+              vue.createElementVNode("text", { class: "empty-text" }, "暂无获奖记录"),
+              vue.createElementVNode("text", { class: "empty-desc" }, "参加更多比赛，努力获取奖项！"),
+              vue.createElementVNode("button", {
+                class: "primary-btn",
+                onClick: $setup.gotoCompetitions
+              }, "去看看比赛")
+            ])
+          ],
+          2112
+          /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */
+        )) : (vue.openBlock(), vue.createElementBlock(
+          vue.Fragment,
+          { key: 2 },
+          [
+            vue.createCommentVNode(" 获奖列表 "),
+            vue.createElementVNode("scroll-view", {
+              "scroll-y": "",
+              class: "award-list",
+              onScrolltolower: $setup.loadMore,
+              "refresher-enabled": "",
+              "refresher-triggered": $setup.refreshing,
+              onRefresherrefresh: $setup.refreshData
+            }, [
+              (vue.openBlock(true), vue.createElementBlock(
+                vue.Fragment,
+                null,
+                vue.renderList($setup.awardsList, (award) => {
+                  return vue.openBlock(), vue.createElementBlock("view", {
+                    class: "award-item",
+                    key: award.id
+                  }, [
+                    vue.createCommentVNode(" 奖项标记 "),
+                    vue.createElementVNode(
+                      "view",
+                      {
+                        class: vue.normalizeClass(["award-badge", $setup.getAwardClass(award.awardType)])
+                      },
+                      vue.toDisplayString(award.awardType),
+                      3
+                      /* TEXT, CLASS */
+                    ),
+                    vue.createCommentVNode(" 奖项内容 "),
+                    vue.createElementVNode("view", { class: "award-content" }, [
+                      vue.createElementVNode("view", { class: "award-header" }, [
+                        vue.createElementVNode("view", { class: "team-info" }, [
+                          vue.createElementVNode("image", {
+                            class: "team-logo",
+                            src: award.teamLogo || "/static/image/default-avatar.png",
+                            mode: "aspectFill"
+                          }, null, 8, ["src"]),
+                          vue.createElementVNode("view", { class: "team-detail" }, [
+                            vue.createElementVNode(
+                              "text",
+                              { class: "team-name" },
+                              vue.toDisplayString(award.teamName),
+                              1
+                              /* TEXT */
+                            ),
+                            vue.createElementVNode(
+                              "text",
+                              { class: "competition-name" },
+                              vue.toDisplayString(award.competitionName),
+                              1
+                              /* TEXT */
+                            )
+                          ])
+                        ])
+                      ]),
+                      vue.createCommentVNode(" 奖项详情 "),
+                      vue.createElementVNode("view", { class: "award-details" }, [
+                        vue.createElementVNode("view", { class: "detail-item" }, [
+                          vue.createElementVNode("text", { class: "detail-label" }, "获奖时间："),
+                          vue.createElementVNode(
+                            "text",
+                            { class: "detail-value" },
+                            vue.toDisplayString($setup.formatDate(award.announcedAt)),
+                            1
+                            /* TEXT */
+                          )
+                        ]),
+                        award.stageNameOrInfo ? (vue.openBlock(), vue.createElementBlock("view", {
+                          key: 0,
+                          class: "detail-item"
+                        }, [
+                          vue.createElementVNode("text", { class: "detail-label" }, "比赛阶段："),
+                          vue.createElementVNode(
+                            "text",
+                            { class: "detail-value" },
+                            vue.toDisplayString(award.stageNameOrInfo),
+                            1
+                            /* TEXT */
+                          )
+                        ])) : vue.createCommentVNode("v-if", true),
+                        award.awardDetails && award.awardDetails.bonus ? (vue.openBlock(), vue.createElementBlock("view", {
+                          key: 1,
+                          class: "detail-item"
+                        }, [
+                          vue.createElementVNode("text", { class: "detail-label" }, "奖金金额："),
+                          vue.createElementVNode(
+                            "text",
+                            { class: "detail-value highlight" },
+                            vue.toDisplayString(award.awardDetails.bonus) + "元",
+                            1
+                            /* TEXT */
+                          )
+                        ])) : vue.createCommentVNode("v-if", true),
+                        award.awardDetails && award.awardDetails.certificate ? (vue.openBlock(), vue.createElementBlock("view", {
+                          key: 2,
+                          class: "detail-item"
+                        }, [
+                          vue.createElementVNode("text", { class: "detail-label" }, "证书编号："),
+                          vue.createElementVNode(
+                            "text",
+                            { class: "detail-value" },
+                            vue.toDisplayString(award.awardDetails.certificate),
+                            1
+                            /* TEXT */
+                          )
+                        ])) : vue.createCommentVNode("v-if", true),
+                        award.metadata && award.metadata.sponsor ? (vue.openBlock(), vue.createElementBlock("view", {
+                          key: 3,
+                          class: "detail-item"
+                        }, [
+                          vue.createElementVNode("text", { class: "detail-label" }, "赞助方："),
+                          vue.createElementVNode(
+                            "text",
+                            { class: "detail-value" },
+                            vue.toDisplayString(award.metadata.sponsor),
+                            1
+                            /* TEXT */
+                          )
+                        ])) : vue.createCommentVNode("v-if", true)
+                      ]),
+                      vue.createCommentVNode(" 获奖队员 "),
+                      award.memberAvatars && award.memberAvatars.length > 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+                        key: 0,
+                        class: "team-members"
+                      }, [
+                        vue.createElementVNode("text", { class: "members-label" }, "获奖队员："),
+                        vue.createElementVNode("view", { class: "members-avatars" }, [
+                          (vue.openBlock(true), vue.createElementBlock(
+                            vue.Fragment,
+                            null,
+                            vue.renderList(award.memberAvatars, (avatar, idx) => {
+                              return vue.openBlock(), vue.createElementBlock("image", {
+                                key: idx,
+                                src: avatar || "/static/image/default-avatar.png",
+                                class: "member-avatar"
+                              }, null, 8, ["src"]);
+                            }),
+                            128
+                            /* KEYED_FRAGMENT */
+                          )),
+                          award.teamMembers > award.memberAvatars.length ? (vue.openBlock(), vue.createElementBlock(
+                            "view",
+                            {
+                              key: 0,
+                              class: "more-members"
+                            },
+                            " +" + vue.toDisplayString(award.teamMembers - award.memberAvatars.length),
+                            1
+                            /* TEXT */
+                          )) : vue.createCommentVNode("v-if", true)
+                        ])
+                      ])) : vue.createCommentVNode("v-if", true),
+                      vue.createCommentVNode(" 操作按钮 "),
+                      vue.createElementVNode("view", { class: "award-footer" }, [
+                        vue.createElementVNode("view", { class: "footer-actions" }, [
+                          vue.createElementVNode("button", {
+                            class: "action-btn",
+                            onClick: ($event) => $setup.viewCompetition(award.competitionId)
+                          }, "查看比赛", 8, ["onClick"]),
+                          vue.createElementVNode("button", {
+                            class: "action-btn",
+                            onClick: ($event) => $setup.viewTeam(award.teamId)
+                          }, "查看队伍", 8, ["onClick"])
+                        ])
+                      ])
+                    ])
+                  ]);
+                }),
+                128
+                /* KEYED_FRAGMENT */
+              )),
+              vue.createCommentVNode(" 加载更多 "),
+              $setup.hasMore ? (vue.openBlock(), vue.createElementBlock("view", {
+                key: 0,
+                class: "load-more"
+              }, [
+                vue.createElementVNode("view", { class: "spinner-sm" }),
+                vue.createElementVNode("text", { class: "load-more-text" }, "加载更多...")
+              ])) : $setup.awardsList.length > 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+                key: 1,
+                class: "no-more"
+              }, [
+                vue.createElementVNode("text", { class: "no-more-text" }, "没有更多数据了")
+              ])) : vue.createCommentVNode("v-if", true)
+            ], 40, ["refresher-triggered"])
+          ],
+          2112
+          /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */
+        ))
+      ])
+    ]);
+  }
+  const PagesProfileMyAwards = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["render", _sfc_render$b], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/my-awards.vue"]]);
   const wsConfig = {
     url: env$1.wsUrl,
     // 使用环境配置中的WebSocket地址
@@ -22202,8 +24981,8 @@ if (uni.restoreGlobal) {
     getAvatarByType,
     getActionsForType
   };
-  const _imports_0$4 = "/static/empty-notification.png";
-  const _sfc_main$a = {
+  const _imports_0$5 = "/static/empty-notification.png";
+  const _sfc_main$b = {
     __name: "Xiaoxi",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -23094,7 +25873,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$9(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$a(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createElementVNode("view", { class: "header" }, [
@@ -23392,7 +26171,7 @@ if (uni.restoreGlobal) {
         }, [
           vue.createElementVNode("image", {
             class: "empty-image",
-            src: _imports_0$4,
+            src: _imports_0$5,
             mode: "aspectFit"
           }),
           vue.createElementVNode(
@@ -23450,9 +26229,9 @@ if (uni.restoreGlobal) {
       ])) : vue.createCommentVNode("v-if", true)
     ]);
   }
-  const PagesXiaoxiXiaoxi = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["render", _sfc_render$9], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/Xiaoxi/Xiaoxi.vue"]]);
-  const _imports_0$3 = "/static/images/empty.png";
-  const _sfc_main$9 = {
+  const PagesXiaoxiXiaoxi = /* @__PURE__ */ _export_sfc(_sfc_main$b, [["render", _sfc_render$a], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/Xiaoxi/Xiaoxi.vue"]]);
+  const _imports_0$4 = "/static/images/empty.png";
+  const _sfc_main$a = {
     __name: "application",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -23461,7 +26240,7 @@ if (uni.restoreGlobal) {
       const loading = vue.ref(false);
       const hasNoMore = vue.ref(false);
       const currentPage = vue.ref(1);
-      const pageSize = vue.ref(10);
+      const pageSize2 = vue.ref(10);
       const loadMoreText = {
         contentdown: "上拉显示更多",
         contentrefresh: "正在加载...",
@@ -23695,7 +26474,7 @@ if (uni.restoreGlobal) {
         try {
           const params = {
             pageNum: currentPage.value,
-            pageSize: pageSize.value
+            pageSize: pageSize2.value
           };
           if (selectedStatus.value !== "all" && selectedStatus.value !== "processed") {
             params.status = selectedStatus.value;
@@ -23734,7 +26513,7 @@ if (uni.restoreGlobal) {
         try {
           const params = {
             pageNum: currentPage.value,
-            pageSize: pageSize.value
+            pageSize: pageSize2.value
           };
           if (selectedStatus.value !== "all" && selectedStatus.value !== "processed") {
             params.status = selectedStatus.value;
@@ -23777,7 +26556,7 @@ if (uni.restoreGlobal) {
         try {
           const params = {
             pageNum: currentPage.value,
-            pageSize: pageSize.value
+            pageSize: pageSize2.value
           };
           if (selectedStatus.value !== "all" && selectedStatus.value !== "processed") {
             params.status = selectedStatus.value;
@@ -23823,7 +26602,7 @@ if (uni.restoreGlobal) {
               applications.value = [...applications.value, ...badgeList];
             }
             if (selectedType.value === "badge") {
-              const totalPages = Math.ceil(res.data.data.total / pageSize.value);
+              const totalPages = Math.ceil(res.data.data.total / pageSize2.value);
               hasNoMore.value = currentPage.value >= totalPages;
             }
             formatAppLog("log", "at pages/application/application.vue:685", "徽章申请列表:", badgeList);
@@ -24117,7 +26896,7 @@ if (uni.restoreGlobal) {
           }
         });
       }
-      const __returned__ = { baseApiUrl: baseApiUrl2, refreshing, loading, hasNoMore, currentPage, pageSize, loadMoreText, currentRole, safeAreaTop, tabs, currentTab, applicationTypes, getApplicationTypes, statusTypes, pendingStatusTypes, selectedType, selectedStatus, applications, filteredApplications, getQueryParams, handleUrlParams, targetApplicationId, scrollToApplication, highlightApplication, getCardTitle, getTypeClass, getApplicationClass, loadApplications, loadTaskApplications, loadTeamApplications, loadBadgeApplications, loadBadgeCount, onRefresh, loadMore, switchTab, selectType, selectStatus, getStatusClass, formatDateTime, handleApplication, cancelApplication, createApplication, viewDetail, goBack, getSystemInfo, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, getCurrentInstance: vue.getCurrentInstance, get taskApplicationApi() {
+      const __returned__ = { baseApiUrl: baseApiUrl2, refreshing, loading, hasNoMore, currentPage, pageSize: pageSize2, loadMoreText, currentRole, safeAreaTop, tabs, currentTab, applicationTypes, getApplicationTypes, statusTypes, pendingStatusTypes, selectedType, selectedStatus, applications, filteredApplications, getQueryParams, handleUrlParams, targetApplicationId, scrollToApplication, highlightApplication, getCardTitle, getTypeClass, getApplicationClass, loadApplications, loadTaskApplications, loadTeamApplications, loadBadgeApplications, loadBadgeCount, onRefresh, loadMore, switchTab, selectType, selectStatus, getStatusClass, formatDateTime, handleApplication, cancelApplication, createApplication, viewDetail, goBack, getSystemInfo, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, getCurrentInstance: vue.getCurrentInstance, get taskApplicationApi() {
         return taskApplicationApi;
       }, get teamApi() {
         return teamApi;
@@ -24128,7 +26907,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$8(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$9(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_uni_load_more = resolveEasycom(vue.resolveDynamicComponent("uni-load-more"), __easycom_0$2);
     return vue.openBlock(), vue.createElementBlock("view", { class: "application-container" }, [
       vue.createCommentVNode(" 固定区域 "),
@@ -24418,7 +27197,7 @@ if (uni.restoreGlobal) {
         }, [
           vue.createElementVNode("image", {
             class: "empty-image",
-            src: _imports_0$3,
+            src: _imports_0$4,
             mode: "aspectFit"
           }),
           vue.createElementVNode("text", { class: "empty-text" }, "暂无申请记录")
@@ -24447,8 +27226,8 @@ if (uni.restoreGlobal) {
       ], 40, ["refresher-triggered"])
     ]);
   }
-  const PagesApplicationApplication = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["render", _sfc_render$8], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/application/application.vue"]]);
-  const _sfc_main$8 = {
+  const PagesApplicationApplication = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["render", _sfc_render$9], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/application/application.vue"]]);
+  const _sfc_main$9 = {
     data() {
       return {
         // 环境配置
@@ -24643,7 +27422,7 @@ if (uni.restoreGlobal) {
       }
     }
   };
-  function _sfc_render$7(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$8(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部状态栏 "),
       vue.createElementVNode(
@@ -24895,9 +27674,9 @@ if (uni.restoreGlobal) {
       ])
     ]);
   }
-  const PagesWebsocketTestIndex = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["render", _sfc_render$7], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/websocket-test/index.vue"]]);
-  const _imports_0$2 = "/static/image/empty-calendar.png";
-  const _sfc_main$7 = {
+  const PagesWebsocketTestIndex = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["render", _sfc_render$8], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/websocket-test/index.vue"]]);
+  const _imports_0$3 = "/static/image/empty-calendar.png";
+  const _sfc_main$8 = {
     __name: "index",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -25126,7 +27905,7 @@ if (uni.restoreGlobal) {
         return `${month}月${day}日 星期${weekDay}`;
       });
       const eventsForSelectedDate = vue.computed(() => {
-        return events.value.filter((event) => event.date === selectedDate.value).sort((a, b) => a.startTime.localeCompare(b.startTime));
+        return events.value.filter((event2) => event2.date === selectedDate.value).sort((a, b) => a.startTime.localeCompare(b.startTime));
       });
       function generateCalendar() {
         const days = [];
@@ -25199,7 +27978,7 @@ if (uni.restoreGlobal) {
         selectedDate.value = date.fullDate;
       }
       function hasEvent(date) {
-        return events.value.some((event) => event.date === date);
+        return events.value.some((event2) => event2.date === date);
       }
       function addEvent() {
         newEvent.value = {
@@ -25279,7 +28058,7 @@ if (uni.restoreGlobal) {
           icon: "success"
         });
       }
-      function viewEventDetail(event) {
+      function viewEventDetail(event2) {
         uni.showToast({
           title: "查看事件详情功能开发中",
           icon: "none"
@@ -25318,8 +28097,8 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$6(_ctx, _cache, $props, $setup, $data, $options) {
-    const _component_uni_popup = resolveEasycom(vue.resolveDynamicComponent("uni-popup"), uniPopup);
+  function _sfc_render$7(_ctx, _cache, $props, $setup, $data, $options) {
+    const _component_uni_popup = resolveEasycom(vue.resolveDynamicComponent("uni-popup"), __easycom_0$3);
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createVNode(
@@ -25457,11 +28236,11 @@ if (uni.restoreGlobal) {
             $setup.eventsForSelectedDate.length > 0 ? (vue.openBlock(true), vue.createElementBlock(
               vue.Fragment,
               { key: 0 },
-              vue.renderList($setup.eventsForSelectedDate, (event, index) => {
+              vue.renderList($setup.eventsForSelectedDate, (event2, index) => {
                 return vue.openBlock(), vue.createElementBlock("view", {
                   key: index,
-                  class: vue.normalizeClass(["event-item", { "completed": event.completed }]),
-                  onClick: ($event) => $setup.viewEventDetail(event)
+                  class: vue.normalizeClass(["event-item", { "completed": event2.completed }]),
+                  onClick: ($event) => $setup.viewEventDetail(event2)
                 }, [
                   vue.createElementVNode("view", { class: "event-time" }, [
                     vue.createVNode($setup["SvgIcon"], {
@@ -25471,7 +28250,7 @@ if (uni.restoreGlobal) {
                     vue.createElementVNode(
                       "text",
                       null,
-                      vue.toDisplayString($setup.formatTime(event.startTime)) + " - " + vue.toDisplayString($setup.formatTime(event.endTime)),
+                      vue.toDisplayString($setup.formatTime(event2.startTime)) + " - " + vue.toDisplayString($setup.formatTime(event2.endTime)),
                       1
                       /* TEXT */
                     )
@@ -25480,11 +28259,11 @@ if (uni.restoreGlobal) {
                     vue.createElementVNode(
                       "text",
                       { class: "event-title" },
-                      vue.toDisplayString(event.title),
+                      vue.toDisplayString(event2.title),
                       1
                       /* TEXT */
                     ),
-                    event.location ? (vue.openBlock(), vue.createElementBlock("text", {
+                    event2.location ? (vue.openBlock(), vue.createElementBlock("text", {
                       key: 0,
                       class: "event-location"
                     }, [
@@ -25493,22 +28272,22 @@ if (uni.restoreGlobal) {
                         size: "14"
                       }),
                       vue.createTextVNode(
-                        " " + vue.toDisplayString(event.location),
+                        " " + vue.toDisplayString(event2.location),
                         1
                         /* TEXT */
                       )
                     ])) : vue.createCommentVNode("v-if", true)
                   ]),
-                  event.type ? (vue.openBlock(), vue.createElementBlock("view", {
+                  event2.type ? (vue.openBlock(), vue.createElementBlock("view", {
                     key: 0,
                     class: "event-status"
                   }, [
                     vue.createElementVNode(
                       "text",
                       {
-                        class: vue.normalizeClass(["status-tag", event.type])
+                        class: vue.normalizeClass(["status-tag", event2.type])
                       },
-                      vue.toDisplayString($setup.getEventTypeText(event.type)),
+                      vue.toDisplayString($setup.getEventTypeText(event2.type)),
                       3
                       /* TEXT, CLASS */
                     )
@@ -25523,7 +28302,7 @@ if (uni.restoreGlobal) {
             }, [
               vue.createElementVNode("image", {
                 class: "empty-image",
-                src: _imports_0$2,
+                src: _imports_0$3,
                 mode: "aspectFit"
               }),
               vue.createElementVNode("text", { class: "empty-text" }, "今日暂无日程安排")
@@ -25690,8 +28469,8 @@ if (uni.restoreGlobal) {
       )
     ]);
   }
-  const PagesScheduleIndex = /* @__PURE__ */ _export_sfc(_sfc_main$7, [["render", _sfc_render$6], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/schedule/index.vue"]]);
-  const _sfc_main$6 = {
+  const PagesScheduleIndex = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["render", _sfc_render$7], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/schedule/index.vue"]]);
+  const _sfc_main$7 = {
     __name: "create",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -25867,7 +28646,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$5(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$6(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_uni_easyinput = resolveEasycom(vue.resolveDynamicComponent("uni-easyinput"), __easycom_0);
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
@@ -26261,8 +29040,8 @@ if (uni.restoreGlobal) {
       ])
     ]);
   }
-  const PagesProjectCreate = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["render", _sfc_render$5], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/project/create.vue"]]);
-  const _sfc_main$5 = {
+  const PagesProjectCreate = /* @__PURE__ */ _export_sfc(_sfc_main$7, [["render", _sfc_render$6], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/project/create.vue"]]);
+  const _sfc_main$6 = {
     __name: "medal-detail",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -26437,19 +29216,19 @@ if (uni.restoreGlobal) {
       function goBack() {
         uni.navigateBack();
       }
-      function handleTouchStart(event) {
-        if (event.touches.length === 2) {
-          const touch1 = event.touches[0];
-          const touch2 = event.touches[1];
+      function handleTouchStart(event2) {
+        if (event2.touches.length === 2) {
+          const touch1 = event2.touches[0];
+          const touch2 = event2.touches[1];
           touchStartDistance.value = Math.sqrt(
             Math.pow(touch2.pageX - touch1.pageX, 2) + Math.pow(touch2.pageY - touch1.pageY, 2)
           );
         }
       }
-      function handleTouchMove(event) {
-        if (event.touches.length === 2 && touchStartDistance.value > 0) {
-          const touch1 = event.touches[0];
-          const touch2 = event.touches[1];
+      function handleTouchMove(event2) {
+        if (event2.touches.length === 2 && touchStartDistance.value > 0) {
+          const touch1 = event2.touches[0];
+          const touch2 = event2.touches[1];
           const currentDistance = Math.sqrt(
             Math.pow(touch2.pageX - touch1.pageX, 2) + Math.pow(touch2.pageY - touch1.pageY, 2)
           );
@@ -26489,7 +29268,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$4(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$5(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createElementVNode("view", { class: "header" }, [
@@ -26742,7 +29521,7 @@ if (uni.restoreGlobal) {
               }, [
                 vue.createElementVNode("image", {
                   class: "empty-badge-icon",
-                  src: _imports_0$5,
+                  src: _imports_0$6,
                   mode: "aspectFit"
                 }),
                 vue.createElementVNode(
@@ -26998,9 +29777,9 @@ if (uni.restoreGlobal) {
       ])
     ]);
   }
-  const PagesProfileMedalDetail = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["render", _sfc_render$4], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/medal-detail.vue"]]);
+  const PagesProfileMedalDetail = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["render", _sfc_render$5], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/medal-detail.vue"]]);
   const name = "apply-badge";
-  const _sfc_main$4 = {
+  const _sfc_main$5 = {
     __name: "apply-badge",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -27153,12 +29932,12 @@ if (uni.restoreGlobal) {
       vue.onMounted(() => {
         formatAppLog("log", "at pages/profile/apply-badge.vue:399", "勋章申请页面加载");
       });
-      const __returned__ = { name, formData, uploadFiles, submitting, myTeams, selectedTeamName, teamPopup, competitions, selectedCompetitionName, competitionPopup, awardOptions, availableBadges, showTeamPicker, closeTeamPicker, selectTeam, showCompetitionPicker, closeCompetitionPicker, selectCompetition, selectBadge, chooseFile, removeFile, submitApplication, goBack, ref: vue.ref, reactive: vue.reactive, onMounted: vue.onMounted, SvgIcon, UniPopup: uniPopup };
+      const __returned__ = { name, formData, uploadFiles, submitting, myTeams, selectedTeamName, teamPopup, competitions, selectedCompetitionName, competitionPopup, awardOptions, availableBadges, showTeamPicker, closeTeamPicker, selectTeam, showCompetitionPicker, closeCompetitionPicker, selectCompetition, selectBadge, chooseFile, removeFile, submitApplication, goBack, ref: vue.ref, reactive: vue.reactive, onMounted: vue.onMounted, SvgIcon, UniPopup: __easycom_0$3 };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
     }
   };
-  function _sfc_render$3(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$4(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createElementVNode("view", { class: "header" }, [
@@ -27541,8 +30320,8 @@ if (uni.restoreGlobal) {
       )
     ]);
   }
-  const PagesProfileApplyBadge = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["render", _sfc_render$3], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/apply-badge.vue"]]);
-  const _sfc_main$3 = {
+  const PagesProfileApplyBadge = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["render", _sfc_render$4], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/apply-badge.vue"]]);
+  const _sfc_main$4 = {
     __name: "material-reward",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -27707,12 +30486,12 @@ if (uni.restoreGlobal) {
       vue.onMounted(() => {
         formatAppLog("log", "at pages/profile/material-reward.vue:419", "实物奖励申请页面加载");
       });
-      const __returned__ = { formData, uploadFiles, submitting, competitions, selectedCompetitionName, competitionPopup, activities, selectedActivityName, activityPopup, increaseQuantity, decreaseQuantity, showCompetitionPicker, closeCompetitionPicker, selectCompetition, showActivityPicker, closeActivityPicker, selectActivity, chooseFile, removeFile, submitApplication, goBack, ref: vue.ref, reactive: vue.reactive, onMounted: vue.onMounted, SvgIcon, uniPopup };
+      const __returned__ = { formData, uploadFiles, submitting, competitions, selectedCompetitionName, competitionPopup, activities, selectedActivityName, activityPopup, increaseQuantity, decreaseQuantity, showCompetitionPicker, closeCompetitionPicker, selectCompetition, showActivityPicker, closeActivityPicker, selectActivity, chooseFile, removeFile, submitApplication, goBack, ref: vue.ref, reactive: vue.reactive, onMounted: vue.onMounted, SvgIcon, uniPopup: __easycom_0$3 };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
     }
   };
-  function _sfc_render$2(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$3(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createElementVNode("view", { class: "header" }, [
@@ -28154,13 +30933,13 @@ if (uni.restoreGlobal) {
       )
     ]);
   }
-  const PagesProfileMaterialReward = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["render", _sfc_render$2], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/material-reward.vue"]]);
-  const _imports_0$1 = "/static/image/empty-ongoing.png";
+  const PagesProfileMaterialReward = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["render", _sfc_render$3], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/profile/material-reward.vue"]]);
+  const _imports_0$2 = "/static/image/empty-ongoing.png";
   const _imports_1 = "/static/image/empty-upcoming.png";
   const _imports_2 = "/static/image/empty-completed.png";
   const _imports_3 = "/static/image/logo.png";
   const _imports_4 = "/static/image/qrcode.png";
-  const _sfc_main$2 = {
+  const _sfc_main$3 = {
     __name: "mycompetitions",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -28616,7 +31395,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render$1(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$2(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createVNode(
@@ -28957,7 +31736,7 @@ if (uni.restoreGlobal) {
                 }, [
                   vue.createElementVNode("image", {
                     class: "empty-image",
-                    src: _imports_0$1,
+                    src: _imports_0$2,
                     mode: "aspectFit"
                   }),
                   vue.createElementVNode("text", { class: "empty-text" }, "暂无进行中的竞赛"),
@@ -29900,9 +32679,9 @@ if (uni.restoreGlobal) {
       ])) : vue.createCommentVNode("v-if", true)
     ]);
   }
-  const PagesMycompetitionsMycompetitions = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["render", _sfc_render$1], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/mycompetitions/mycompetitions.vue"]]);
-  const _imports_0 = "/static/image/empty-teams.png";
-  const _sfc_main$1 = {
+  const PagesMycompetitionsMycompetitions = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["render", _sfc_render$2], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/mycompetitions/mycompetitions.vue"]]);
+  const _imports_0$1 = "/static/image/empty-teams.png";
+  const _sfc_main$2 = {
     __name: "myTeam",
     setup(__props, { expose: __expose }) {
       __expose();
@@ -30243,7 +33022,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+  function _sfc_render$1(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createVNode($setup["HeaderBar"], {
@@ -30638,7 +33417,7 @@ if (uni.restoreGlobal) {
                   vue.createElementVNode("view", { class: "empty-state" }, [
                     vue.createElementVNode("image", {
                       class: "empty-image",
-                      src: _imports_0,
+                      src: _imports_0$1,
                       mode: "aspectFit"
                     }),
                     vue.createElementVNode(
@@ -30763,7 +33542,1151 @@ if (uni.restoreGlobal) {
       ])
     ]);
   }
-  const PagesMyTeamMyTeam = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["render", _sfc_render], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/myTeam/myTeam.vue"]]);
+  const PagesMyTeamMyTeam = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["render", _sfc_render$1], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/myTeam/myTeam.vue"]]);
+  const _imports_0 = "/static/image/empty-data.png";
+  const pageSize = 10;
+  const _sfc_main$1 = {
+    __name: "index",
+    setup(__props, { expose: __expose }) {
+      __expose();
+      const tabs = ["我创建的", "我参与的"];
+      const activeTab = vue.ref(0);
+      const statusOptions = vue.computed(() => {
+        if (activeTab.value === 0) {
+          return [
+            { label: "全部", value: "all" },
+            { label: "招募中", value: "recruiting" },
+            { label: "进行中", value: "ongoing" },
+            { label: "已结束", value: "ended" },
+            { label: "已完成", value: "completed" },
+            { label: "已取消", value: "canceled" }
+          ];
+        } else {
+          return [
+            { label: "全部", value: "all" },
+            { label: "招募中", value: "recruiting" },
+            { label: "进行中", value: "ongoing" },
+            { label: "已结束", value: "ended" },
+            { label: "已完成", value: "completed" },
+            { label: "已退出", value: "left" },
+            { label: "被踢出", value: "kicked_out" }
+          ];
+        }
+      });
+      const selectedStatus = vue.ref("all");
+      const createdPage = vue.ref(1);
+      const participatedPage = vue.ref(1);
+      const hasMore = vue.ref(true);
+      const loading = vue.ref(false);
+      const refreshing = vue.ref(false);
+      const createdTasks = vue.ref([]);
+      const participatedTasks = vue.ref([]);
+      const participantsPopupVisible = vue.ref(false);
+      const currentTaskId = vue.ref(null);
+      const participantsPopupRef = vue.ref(null);
+      const statusPopupRef = vue.ref(null);
+      const selectedParticipationStatus = vue.ref("");
+      const statusReason = vue.ref("");
+      const currentParticipationId = vue.ref(null);
+      const currentTaskIndex = vue.ref(-1);
+      const participationStatusOptions = vue.computed(() => {
+        formatAppLog("log", "at pages/mytasks/index.vue:418", "计算可选状态选项，当前状态:", selectedParticipationStatus.value);
+        return [
+          { label: "进行中", value: "in_progress" },
+          { label: "已完成", value: "completed" },
+          { label: "已离开", value: "left" }
+        ];
+      });
+      const taskStatusPopupRef = vue.ref(null);
+      const currentTaskStatus = vue.ref("");
+      const selectedTaskStatus = vue.ref("");
+      const cancelReason = vue.ref("");
+      vue.onMounted(() => {
+        loadTasks();
+        uni.$on("refreshTaskList", refreshTaskList);
+      });
+      vue.onUnmounted(() => {
+        uni.$off("refreshTaskList", refreshTaskList);
+      });
+      function refreshTaskList() {
+        formatAppLog("log", "at pages/mytasks/index.vue:449", "收到刷新任务列表事件");
+        resetList();
+        loadTasks();
+      }
+      function switchTab(index) {
+        activeTab.value = index;
+        selectedStatus.value = "all";
+        resetList();
+        loadTasks();
+      }
+      function filterByStatus(status) {
+        selectedStatus.value = status;
+        resetList();
+        loadTasks();
+      }
+      function resetList() {
+        if (activeTab.value === 0) {
+          createdTasks.value = [];
+          createdPage.value = 1;
+        } else {
+          participatedTasks.value = [];
+          participatedPage.value = 1;
+        }
+        hasMore.value = true;
+      }
+      async function loadTasks() {
+        if (!hasMore.value || loading.value)
+          return;
+        loading.value = true;
+        try {
+          const params = {
+            pageNum: activeTab.value === 0 ? createdPage.value : participatedPage.value,
+            pageSize
+          };
+          if (selectedStatus.value && selectedStatus.value !== "all") {
+            params.status = selectedStatus.value;
+          }
+          formatAppLog("log", "at pages/mytasks/index.vue:500", `请求${activeTab.value === 0 ? "我创建的" : "我参与的"}任务列表，参数:`, params);
+          let res;
+          if (activeTab.value === 0) {
+            res = await tasksApi.getMyCreatedTasks(params);
+          } else {
+            res = await tasksApi.getMyParticipatedTasks(params);
+          }
+          formatAppLog("log", "at pages/mytasks/index.vue:511", `${activeTab.value === 0 ? "我创建的" : "我参与的"}任务列表响应:`, res);
+          if (res.code === 200 && res.data) {
+            const { records, total, current, pages } = res.data;
+            formatAppLog("log", "at pages/mytasks/index.vue:517", `获取到${records.length}条记录，总计${total}条`);
+            if (activeTab.value === 0) {
+              createdTasks.value = [...createdTasks.value, ...records];
+              createdPage.value++;
+            } else {
+              participatedTasks.value = [...participatedTasks.value, ...records];
+              participatedPage.value++;
+            }
+            hasMore.value = current < pages;
+          } else {
+            formatAppLog("error", "at pages/mytasks/index.vue:531", "加载任务失败:", res);
+            uni.showToast({
+              title: res.message || "加载任务失败",
+              icon: "none"
+            });
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/mytasks/index.vue:538", "加载任务出错:", error);
+          uni.showToast({
+            title: "加载任务出错",
+            icon: "none"
+          });
+        } finally {
+          loading.value = false;
+        }
+      }
+      function onRefresh() {
+        refreshing.value = true;
+        resetList();
+        loadTasks().finally(() => {
+          refreshing.value = false;
+        });
+      }
+      function loadMore() {
+        loadTasks();
+      }
+      function getStatusClass(status) {
+        const statusMap = {
+          "recruiting": "status-recruiting",
+          "ongoing": "status-ongoing",
+          "ended": "status-ended",
+          "completed": "status-completed",
+          "canceled": "status-canceled"
+        };
+        return statusMap[status] || "status-default";
+      }
+      function formatDate(dateString) {
+        if (!dateString)
+          return "";
+        const date = new Date(dateString);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        return `${year}-${month}-${day} ${hours}:${minutes}`;
+      }
+      function navigateToDetail(task, index) {
+        if (activeTab.value === 0) {
+          uni.navigateTo({
+            url: `/pages/task-square/detail?id=${task.id}`
+          });
+        } else {
+          uni.navigateTo({
+            url: `/pages/task-square/detail?id=${task.id}`
+          });
+        }
+      }
+      function navigateToCreate() {
+        uni.navigateTo({
+          url: "/pages/task-square/create"
+        });
+      }
+      function navigateToTaskSquare() {
+        uni.switchTab({
+          url: "/pages/task-square/index"
+        });
+      }
+      function viewParticipants(taskId) {
+        const e = event || window.event;
+        if (e) {
+          e.stopPropagation();
+        }
+        formatAppLog("log", "at pages/mytasks/index.vue:624", "查看参与者按钮被点击，任务ID:", taskId);
+        currentTaskId.value = taskId;
+        formatAppLog("log", "at pages/mytasks/index.vue:628", "currentTaskId已更新为:", currentTaskId.value);
+        if (participantsPopupRef.value) {
+          formatAppLog("log", "at pages/mytasks/index.vue:632", "找到参与者弹窗组件引用，直接调用方法");
+          vue.nextTick(() => {
+            participantsPopupRef.value.open();
+          });
+        } else {
+          formatAppLog("log", "at pages/mytasks/index.vue:638", "未找到组件引用，使用事件总线");
+          uni.$emit("openParticipantsPopup");
+        }
+      }
+      function getRewardUnit(typeId) {
+        const unitMap = {
+          1: "元",
+          // 现金
+          2: "分",
+          // 学分
+          3: "小时",
+          // 志愿服务
+          4: "天",
+          // 实习机会
+          5: "件",
+          // 礼品
+          6: "张"
+          // 证书
+        };
+        return unitMap[typeId] || "";
+      }
+      function getRewardText(task) {
+        if (!task.rewardTypeId || !task.rewardAmount)
+          return "无奖励";
+        return `${task.rewardTypeName}: ${task.rewardAmount}${getRewardUnit(task.rewardTypeId)}`;
+      }
+      function getParticipationStatusClass(status) {
+        const statusMap = {
+          "joined": "status-joined",
+          "in_progress": "status-progress",
+          "completed": "status-completed",
+          "left": "status-left",
+          "kicked_out": "status-kicked"
+        };
+        return statusMap[status] || "status-default";
+      }
+      function getParticipationStatusText(status) {
+        const statusMap = {
+          "joined": "已加入",
+          "in_progress": "进行中",
+          "completed": "已完成",
+          "left": "已退出",
+          "kicked_out": "被踢出"
+        };
+        return statusMap[status] || "未知状态";
+      }
+      function openStatusUpdatePopup(task, index) {
+        if (task.participationStatus === "completed" || task.participationStatus === "left") {
+          uni.showToast({
+            title: "已" + getParticipationStatusText(task.participationStatus) + "的任务不能再更新状态",
+            icon: "none",
+            duration: 2e3
+          });
+          return;
+        }
+        currentParticipationId.value = task.participationId;
+        statusReason.value = "";
+        currentTaskIndex.value = index;
+        currentTaskId.value = task.id;
+        formatAppLog("log", "at pages/mytasks/index.vue:708", "设置初始状态为:", task.participationStatus);
+        selectedParticipationStatus.value = task.participationStatus;
+        formatAppLog("log", "at pages/mytasks/index.vue:712", "准备打开状态更新弹窗");
+        if (statusPopupRef.value) {
+          statusPopupRef.value.open("center");
+          formatAppLog("log", "at pages/mytasks/index.vue:715", "弹窗已打开");
+        } else {
+          uni.showToast({
+            title: "打开弹窗失败",
+            icon: "none"
+          });
+        }
+      }
+      function closeStatusPopup() {
+        if (statusPopupRef.value) {
+          statusPopupRef.value.close();
+        }
+      }
+      async function confirmUpdateStatus() {
+        if (!currentParticipationId.value) {
+          uni.showToast({
+            title: "参与记录ID不存在",
+            icon: "none"
+          });
+          return;
+        }
+        if (!currentTaskId.value) {
+          uni.showToast({
+            title: "任务ID不存在",
+            icon: "none"
+          });
+          return;
+        }
+        try {
+          uni.showLoading({ title: "更新中..." });
+          const data = {
+            status: selectedParticipationStatus.value
+          };
+          if (statusReason.value.trim()) {
+            data.reason = statusReason.value.trim();
+          }
+          formatAppLog("log", "at pages/mytasks/index.vue:760", "发送状态更新请求:", {
+            participationId: currentParticipationId.value,
+            taskId: currentTaskId.value,
+            data
+          });
+          const res = await tasksApi.updateParticipationStatus(
+            currentParticipationId.value,
+            data,
+            currentTaskId.value
+          );
+          if (res.code === 200) {
+            if (currentTaskIndex.value >= 0 && participatedTasks.value[currentTaskIndex.value]) {
+              participatedTasks.value[currentTaskIndex.value].participationStatus = selectedParticipationStatus.value;
+              formatAppLog("log", "at pages/mytasks/index.vue:777", "更新后的状态:", participatedTasks.value[currentTaskIndex.value].participationStatus);
+              participatedTasks.value = [...participatedTasks.value];
+            }
+            uni.showToast({
+              title: "状态更新成功",
+              icon: "success"
+            });
+            closeStatusPopup();
+            setTimeout(() => {
+              resetList();
+              loadTasks();
+            }, 500);
+          } else {
+            uni.showToast({
+              title: res.message || "状态更新失败",
+              icon: "none"
+            });
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/mytasks/index.vue:802", "更新参与状态失败:", error);
+          uni.showToast({
+            title: "状态更新失败，请稍后重试",
+            icon: "none"
+          });
+        } finally {
+          uni.hideLoading();
+        }
+      }
+      function selectParticipationStatus(status) {
+        formatAppLog("log", "at pages/mytasks/index.vue:814", "======= 选择状态操作 =======");
+        formatAppLog("log", "at pages/mytasks/index.vue:815", "选择了状态:", status);
+        formatAppLog("log", "at pages/mytasks/index.vue:816", "之前的状态:", selectedParticipationStatus.value);
+        if (selectedParticipationStatus.value !== status) {
+          selectedParticipationStatus.value = status;
+          formatAppLog("log", "at pages/mytasks/index.vue:821", "状态已更新为:", status);
+          uni.showToast({
+            title: "已选择: " + getParticipationStatusText(status),
+            icon: "none",
+            duration: 1e3
+          });
+        } else {
+          formatAppLog("log", "at pages/mytasks/index.vue:830", "状态未变化，保持:", status);
+        }
+      }
+      function openTaskStatusPopup(task, index) {
+        currentTaskId.value = task.id;
+        currentTaskIndex.value = index;
+        currentTaskStatus.value = task.status;
+        selectedTaskStatus.value = "";
+        cancelReason.value = "";
+        formatAppLog("log", "at pages/mytasks/index.vue:842", "打开任务状态弹窗，任务ID:", task.id, "当前状态:", task.status);
+        vue.nextTick(() => {
+          if (taskStatusPopupRef.value) {
+            taskStatusPopupRef.value.open("center");
+          } else {
+            uni.showToast({
+              title: "打开弹窗失败",
+              icon: "none"
+            });
+          }
+        });
+      }
+      function closeTaskStatusPopup() {
+        if (taskStatusPopupRef.value) {
+          taskStatusPopupRef.value.close();
+        }
+      }
+      function selectTaskStatus(status) {
+        formatAppLog("log", "at pages/mytasks/index.vue:866", "选择任务状态:", status, "之前的状态:", selectedTaskStatus.value);
+        selectedTaskStatus.value = status;
+        uni.showToast({
+          title: "已选择: " + getTaskStatusText(status),
+          icon: "none",
+          duration: 1e3
+        });
+        function getTaskStatusText(status2) {
+          const statusMap = {
+            "recruiting": "招募中",
+            "ongoing": "进行中",
+            "ended": "已结束",
+            "completed": "已完成",
+            "canceled": "已取消"
+          };
+          return statusMap[status2] || status2;
+        }
+      }
+      async function confirmUpdateTaskStatus() {
+        if (!selectedTaskStatus.value) {
+          uni.showToast({
+            title: "请选择要更新的状态",
+            icon: "none"
+          });
+          return;
+        }
+        if (selectedTaskStatus.value === "canceled" && !cancelReason.value.trim()) {
+          uni.showToast({
+            title: "请填写取消原因",
+            icon: "none"
+          });
+          return;
+        }
+        try {
+          uni.showLoading({ title: "更新中..." });
+          const data = {
+            status: selectedTaskStatus.value
+          };
+          if (selectedTaskStatus.value === "canceled") {
+            data.cancelReason = cancelReason.value.trim();
+          }
+          formatAppLog("log", "at pages/mytasks/index.vue:922", "发送任务状态更新请求:", {
+            taskId: currentTaskId.value,
+            data
+          });
+          const res = await tasksApi.updateTaskStatus(currentTaskId.value, data);
+          if (res.code === 200) {
+            if (currentTaskIndex.value >= 0 && createdTasks.value[currentTaskIndex.value]) {
+              createdTasks.value[currentTaskIndex.value].status = selectedTaskStatus.value;
+              const statusTextMap = {
+                "recruiting": "招募中",
+                "ongoing": "进行中",
+                "ended": "已结束",
+                "completed": "已完成",
+                "canceled": "已取消"
+              };
+              createdTasks.value[currentTaskIndex.value].statusText = statusTextMap[selectedTaskStatus.value] || "未知状态";
+              createdTasks.value = [...createdTasks.value];
+            }
+            uni.showToast({
+              title: "状态更新成功",
+              icon: "success"
+            });
+            closeTaskStatusPopup();
+            setTimeout(() => {
+              if (activeTab.value === 0) {
+                resetList();
+                loadTasks();
+              }
+            }, 500);
+          } else {
+            uni.showToast({
+              title: res.message || "状态更新失败",
+              icon: "none"
+            });
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/mytasks/index.vue:970", "更新任务状态失败:", error);
+          uni.showToast({
+            title: "状态更新失败，请稍后重试",
+            icon: "none"
+          });
+        } finally {
+          uni.hideLoading();
+        }
+      }
+      const __returned__ = { tabs, activeTab, statusOptions, selectedStatus, pageSize, createdPage, participatedPage, hasMore, loading, refreshing, createdTasks, participatedTasks, participantsPopupVisible, currentTaskId, participantsPopupRef, statusPopupRef, selectedParticipationStatus, statusReason, currentParticipationId, currentTaskIndex, participationStatusOptions, taskStatusPopupRef, currentTaskStatus, selectedTaskStatus, cancelReason, refreshTaskList, switchTab, filterByStatus, resetList, loadTasks, onRefresh, loadMore, getStatusClass, formatDate, navigateToDetail, navigateToCreate, navigateToTaskSquare, viewParticipants, getRewardUnit, getRewardText, getParticipationStatusClass, getParticipationStatusText, openStatusUpdatePopup, closeStatusPopup, confirmUpdateStatus, selectParticipationStatus, openTaskStatusPopup, closeTaskStatusPopup, selectTaskStatus, confirmUpdateTaskStatus, ref: vue.ref, reactive: vue.reactive, onMounted: vue.onMounted, computed: vue.computed, nextTick: vue.nextTick, onUnmounted: vue.onUnmounted, get tasksApi() {
+        return tasksApi;
+      }, TaskParticipantsPopup, HeaderBar };
+      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
+      return __returned__;
+    }
+  };
+  function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+    const _component_uni_popup = resolveEasycom(vue.resolveDynamicComponent("uni-popup"), __easycom_0$3);
+    return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
+      vue.createCommentVNode(" 顶部导航栏替换为HeaderBar组件 "),
+      vue.createVNode($setup["HeaderBar"], {
+        title: "我的任务",
+        showSearch: false,
+        showFilter: false
+      }),
+      vue.createCommentVNode(" 页面内容容器，考虑顶部HeaderBar的高度 "),
+      vue.createElementVNode("view", { class: "content-container" }, [
+        vue.createCommentVNode(" 标签页选择器 "),
+        vue.createElementVNode("view", { class: "tabs" }, [
+          (vue.openBlock(), vue.createElementBlock(
+            vue.Fragment,
+            null,
+            vue.renderList($setup.tabs, (tab, index) => {
+              return vue.createElementVNode("view", {
+                key: index,
+                class: vue.normalizeClass(["tab-item", { "active": $setup.activeTab === index }]),
+                onClick: ($event) => $setup.switchTab(index)
+              }, [
+                vue.createElementVNode(
+                  "text",
+                  null,
+                  vue.toDisplayString(tab),
+                  1
+                  /* TEXT */
+                )
+              ], 10, ["onClick"]);
+            }),
+            64
+            /* STABLE_FRAGMENT */
+          ))
+        ]),
+        vue.createCommentVNode(" 筛选器 "),
+        vue.createElementVNode("view", { class: "status-filter-container" }, [
+          vue.createElementVNode("scroll-view", {
+            "scroll-x": "",
+            class: "status-scroll",
+            "show-scrollbar": "false",
+            "scroll-into-view": "status-" + $setup.selectedStatus,
+            "scroll-with-animation": ""
+          }, [
+            vue.createElementVNode("view", { class: "status-list" }, [
+              (vue.openBlock(true), vue.createElementBlock(
+                vue.Fragment,
+                null,
+                vue.renderList($setup.statusOptions, (status, index) => {
+                  return vue.openBlock(), vue.createElementBlock("view", {
+                    key: index,
+                    id: "status-" + status.value,
+                    class: vue.normalizeClass(["status-item", { "active": $setup.selectedStatus === status.value }]),
+                    onClick: ($event) => $setup.filterByStatus(status.value)
+                  }, [
+                    vue.createElementVNode(
+                      "text",
+                      null,
+                      vue.toDisplayString(status.label),
+                      1
+                      /* TEXT */
+                    )
+                  ], 10, ["id", "onClick"]);
+                }),
+                128
+                /* KEYED_FRAGMENT */
+              ))
+            ])
+          ], 8, ["scroll-into-view"])
+        ]),
+        vue.createCommentVNode(" 列表内容区域 "),
+        vue.createElementVNode("scroll-view", {
+          "scroll-y": "",
+          class: "task-list-container",
+          onScrolltolower: $setup.loadMore,
+          "refresher-enabled": "",
+          "refresher-triggered": $setup.refreshing,
+          onRefresherrefresh: $setup.onRefresh
+        }, [
+          vue.createCommentVNode(" 我创建的任务 "),
+          $setup.activeTab === 0 ? (vue.openBlock(), vue.createElementBlock(
+            vue.Fragment,
+            { key: 0 },
+            [
+              $setup.createdTasks.length === 0 && !$setup.loading ? (vue.openBlock(), vue.createElementBlock("view", {
+                key: 0,
+                class: "empty-container"
+              }, [
+                vue.createElementVNode("image", {
+                  src: _imports_0,
+                  mode: "aspectFit",
+                  class: "empty-image"
+                }),
+                vue.createElementVNode("text", { class: "empty-text" }, "您还没有创建任何任务"),
+                vue.createElementVNode("button", {
+                  class: "create-btn",
+                  onClick: $setup.navigateToCreate
+                }, "创建任务")
+              ])) : (vue.openBlock(), vue.createElementBlock("view", {
+                key: 1,
+                class: "task-list"
+              }, [
+                (vue.openBlock(true), vue.createElementBlock(
+                  vue.Fragment,
+                  null,
+                  vue.renderList($setup.createdTasks, (task, index) => {
+                    return vue.openBlock(), vue.createElementBlock("view", {
+                      key: task.id,
+                      class: "task-card",
+                      onClick: ($event) => $setup.navigateToDetail(task, index)
+                    }, [
+                      vue.createElementVNode("view", { class: "task-header" }, [
+                        vue.createElementVNode("view", { class: "task-title-row" }, [
+                          vue.createElementVNode(
+                            "text",
+                            { class: "task-title" },
+                            vue.toDisplayString(task.title),
+                            1
+                            /* TEXT */
+                          ),
+                          vue.createElementVNode(
+                            "view",
+                            {
+                              class: vue.normalizeClass(["task-status", $setup.getStatusClass(task.status)])
+                            },
+                            [
+                              vue.createElementVNode(
+                                "text",
+                                null,
+                                vue.toDisplayString(task.statusText),
+                                1
+                                /* TEXT */
+                              )
+                            ],
+                            2
+                            /* CLASS */
+                          )
+                        ]),
+                        vue.createElementVNode("view", { class: "task-meta" }, [
+                          vue.createElementVNode(
+                            "view",
+                            { class: "category-tag" },
+                            vue.toDisplayString(task.categoryName),
+                            1
+                            /* TEXT */
+                          ),
+                          vue.createElementVNode(
+                            "text",
+                            { class: "task-date" },
+                            "截止时间: " + vue.toDisplayString($setup.formatDate(task.deadline)),
+                            1
+                            /* TEXT */
+                          )
+                        ])
+                      ]),
+                      vue.createElementVNode("view", { class: "task-content" }, [
+                        vue.createElementVNode(
+                          "text",
+                          { class: "task-desc" },
+                          vue.toDisplayString(task.shortDescription),
+                          1
+                          /* TEXT */
+                        ),
+                        vue.createElementVNode("view", { class: "task-footer" }, [
+                          vue.createElementVNode("view", { class: "task-reward" }, [
+                            vue.createElementVNode(
+                              "text",
+                              { class: "reward-text" },
+                              vue.toDisplayString($setup.getRewardText(task)),
+                              1
+                              /* TEXT */
+                            )
+                          ]),
+                          vue.createElementVNode("view", { class: "task-progress" }, [
+                            vue.createElementVNode(
+                              "text",
+                              { class: "progress-text" },
+                              vue.toDisplayString(task.currentParticipants) + "/" + vue.toDisplayString(task.maxParticipants),
+                              1
+                              /* TEXT */
+                            ),
+                            vue.createElementVNode("view", { class: "progress-bar" }, [
+                              vue.createElementVNode(
+                                "view",
+                                {
+                                  class: "progress-inner",
+                                  style: vue.normalizeStyle({ width: task.currentParticipants / task.maxParticipants * 100 + "%" })
+                                },
+                                null,
+                                4
+                                /* STYLE */
+                              )
+                            ])
+                          ])
+                        ]),
+                        vue.createCommentVNode(" 按钮区域 "),
+                        vue.createElementVNode("view", { class: "task-actions" }, [
+                          vue.createCommentVNode(" 参与者查看按钮 "),
+                          task.currentParticipants > 0 ? (vue.openBlock(), vue.createElementBlock("button", {
+                            key: 0,
+                            class: "participants-btn",
+                            onClick: vue.withModifiers(($event) => $setup.viewParticipants(task.id), ["stop", "prevent"]),
+                            "data-id": task.id
+                          }, [
+                            vue.createElementVNode("text", { class: "participants-btn-text" }, "查看参与者")
+                          ], 8, ["onClick", "data-id"])) : vue.createCommentVNode("v-if", true),
+                          vue.createCommentVNode(" 更新任务状态按钮 "),
+                          vue.createElementVNode("button", {
+                            class: "task-status-btn",
+                            onClick: vue.withModifiers(($event) => $setup.openTaskStatusPopup(task, index), ["stop", "prevent"])
+                          }, [
+                            vue.createElementVNode("text", { class: "task-status-btn-text" }, "更新状态")
+                          ], 8, ["onClick"])
+                        ])
+                      ])
+                    ], 8, ["onClick"]);
+                  }),
+                  128
+                  /* KEYED_FRAGMENT */
+                )),
+                vue.createCommentVNode(" 加载更多状态 "),
+                $setup.loading ? (vue.openBlock(), vue.createElementBlock("view", {
+                  key: 0,
+                  class: "loading-more"
+                }, [
+                  vue.createElementVNode("text", null, "加载中...")
+                ])) : vue.createCommentVNode("v-if", true),
+                !$setup.hasMore && $setup.createdTasks.length > 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+                  key: 1,
+                  class: "no-more"
+                }, [
+                  vue.createElementVNode("text", null, "没有更多了")
+                ])) : vue.createCommentVNode("v-if", true)
+              ]))
+            ],
+            64
+            /* STABLE_FRAGMENT */
+          )) : vue.createCommentVNode("v-if", true),
+          vue.createCommentVNode(" 我参与的任务 "),
+          $setup.activeTab === 1 ? (vue.openBlock(), vue.createElementBlock(
+            vue.Fragment,
+            { key: 1 },
+            [
+              $setup.participatedTasks.length === 0 && !$setup.loading ? (vue.openBlock(), vue.createElementBlock("view", {
+                key: 0,
+                class: "empty-container"
+              }, [
+                vue.createElementVNode("image", {
+                  src: _imports_0,
+                  mode: "aspectFit",
+                  class: "empty-image"
+                }),
+                vue.createElementVNode("text", { class: "empty-text" }, "您还没有参与任何任务"),
+                vue.createElementVNode("button", {
+                  class: "browse-btn",
+                  onClick: $setup.navigateToTaskSquare
+                }, "浏览任务广场")
+              ])) : (vue.openBlock(), vue.createElementBlock("view", {
+                key: 1,
+                class: "task-list"
+              }, [
+                (vue.openBlock(true), vue.createElementBlock(
+                  vue.Fragment,
+                  null,
+                  vue.renderList($setup.participatedTasks, (task, index) => {
+                    return vue.openBlock(), vue.createElementBlock("view", {
+                      key: task.id,
+                      class: "task-card"
+                    }, [
+                      vue.createElementVNode("view", {
+                        class: "task-header",
+                        onClick: ($event) => $setup.navigateToDetail(task, index)
+                      }, [
+                        vue.createElementVNode("view", { class: "task-title-row" }, [
+                          vue.createElementVNode(
+                            "text",
+                            { class: "task-title" },
+                            vue.toDisplayString(task.title),
+                            1
+                            /* TEXT */
+                          ),
+                          vue.createElementVNode(
+                            "view",
+                            {
+                              class: vue.normalizeClass(["task-status", $setup.getStatusClass(task.status)])
+                            },
+                            [
+                              vue.createElementVNode(
+                                "text",
+                                null,
+                                vue.toDisplayString(task.statusText),
+                                1
+                                /* TEXT */
+                              )
+                            ],
+                            2
+                            /* CLASS */
+                          )
+                        ]),
+                        vue.createElementVNode("view", { class: "task-meta" }, [
+                          vue.createElementVNode(
+                            "view",
+                            { class: "category-tag" },
+                            vue.toDisplayString(task.categoryName),
+                            1
+                            /* TEXT */
+                          ),
+                          vue.createElementVNode(
+                            "text",
+                            { class: "task-date" },
+                            "截止时间: " + vue.toDisplayString($setup.formatDate(task.deadline)),
+                            1
+                            /* TEXT */
+                          )
+                        ])
+                      ], 8, ["onClick"]),
+                      vue.createElementVNode("view", {
+                        class: "task-content",
+                        onClick: ($event) => $setup.navigateToDetail(task, index)
+                      }, [
+                        vue.createElementVNode("view", { class: "creator-info" }, [
+                          vue.createElementVNode("image", {
+                            src: task.creatorAvatarUrl,
+                            class: "creator-avatar"
+                          }, null, 8, ["src"]),
+                          vue.createElementVNode("view", { class: "creator-detail" }, [
+                            vue.createElementVNode(
+                              "text",
+                              { class: "creator-name" },
+                              vue.toDisplayString(task.creatorName),
+                              1
+                              /* TEXT */
+                            ),
+                            vue.createElementVNode(
+                              "text",
+                              { class: "creator-major" },
+                              vue.toDisplayString(task.creatorMajor),
+                              1
+                              /* TEXT */
+                            )
+                          ])
+                        ]),
+                        vue.createCommentVNode(" 添加我的参与状态 "),
+                        vue.createElementVNode("view", { class: "participation-status" }, [
+                          vue.createElementVNode("text", { class: "status-label" }, "我的状态:"),
+                          vue.createElementVNode(
+                            "view",
+                            {
+                              class: vue.normalizeClass(["status-tag", $setup.getParticipationStatusClass(task.participationStatus)])
+                            },
+                            vue.toDisplayString($setup.getParticipationStatusText(task.participationStatus)),
+                            3
+                            /* TEXT, CLASS */
+                          )
+                        ]),
+                        vue.createElementVNode(
+                          "text",
+                          { class: "task-desc" },
+                          vue.toDisplayString(task.shortDescription),
+                          1
+                          /* TEXT */
+                        ),
+                        vue.createElementVNode("view", { class: "task-footer" }, [
+                          vue.createElementVNode("view", { class: "task-reward" }, [
+                            vue.createElementVNode(
+                              "text",
+                              { class: "reward-text" },
+                              vue.toDisplayString($setup.getRewardText(task)),
+                              1
+                              /* TEXT */
+                            )
+                          ]),
+                          vue.createElementVNode("view", { class: "task-location" }, [
+                            vue.createElementVNode("text", { class: "location-icon iconfont icon-location" }),
+                            vue.createElementVNode(
+                              "text",
+                              { class: "location-text" },
+                              vue.toDisplayString(task.location),
+                              1
+                              /* TEXT */
+                            )
+                          ])
+                        ]),
+                        vue.createCommentVNode(" 新增参与人数显示 "),
+                        task.currentParticipants > 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+                          key: 0,
+                          class: "participants-count"
+                        }, [
+                          vue.createElementVNode(
+                            "text",
+                            { class: "participants-count-text" },
+                            "当前参与人数: " + vue.toDisplayString(task.currentParticipants) + "人",
+                            1
+                            /* TEXT */
+                          )
+                        ])) : vue.createCommentVNode("v-if", true)
+                      ], 8, ["onClick"]),
+                      vue.createCommentVNode(" 新增操作按钮区域 "),
+                      vue.createElementVNode("view", { class: "action-buttons" }, [
+                        vue.createElementVNode("button", {
+                          class: "action-btn view-btn",
+                          onClick: ($event) => $setup.navigateToDetail(task, index)
+                        }, " 查看详情 ", 8, ["onClick"]),
+                        vue.createElementVNode("button", {
+                          class: vue.normalizeClass(["action-btn update-btn", { "disabled-btn": task.participationStatus === "completed" || task.participationStatus === "left" }]),
+                          onClick: ($event) => task.participationStatus !== "completed" && task.participationStatus !== "left" ? $setup.openStatusUpdatePopup(task, index) : null
+                        }, " 更新状态" + vue.toDisplayString(task.participationStatus === "completed" || task.participationStatus === "left" ? "(已锁定)" : ""), 11, ["onClick"])
+                      ])
+                    ]);
+                  }),
+                  128
+                  /* KEYED_FRAGMENT */
+                )),
+                vue.createCommentVNode(" 加载更多状态 "),
+                $setup.loading ? (vue.openBlock(), vue.createElementBlock("view", {
+                  key: 0,
+                  class: "loading-more"
+                }, [
+                  vue.createElementVNode("text", null, "加载中...")
+                ])) : vue.createCommentVNode("v-if", true),
+                !$setup.hasMore && $setup.participatedTasks.length > 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+                  key: 1,
+                  class: "no-more"
+                }, [
+                  vue.createElementVNode("text", null, "没有更多了")
+                ])) : vue.createCommentVNode("v-if", true)
+              ]))
+            ],
+            64
+            /* STABLE_FRAGMENT */
+          )) : vue.createCommentVNode("v-if", true)
+        ], 40, ["refresher-triggered"]),
+        vue.createCommentVNode(" 悬浮按钮 "),
+        $setup.activeTab === 0 ? (vue.openBlock(), vue.createElementBlock("view", {
+          key: 0,
+          class: "float-btn",
+          onClick: $setup.navigateToCreate
+        }, [
+          vue.createElementVNode("text", { class: "add-icon" }, "+")
+        ])) : vue.createCommentVNode("v-if", true),
+        vue.createCommentVNode(" 参与者弹窗组件 "),
+        vue.createVNode($setup["TaskParticipantsPopup"], {
+          ref: "participantsPopupRef",
+          "task-id": $setup.currentTaskId
+        }, null, 8, ["task-id"]),
+        vue.createCommentVNode(" 新增参与者状态弹窗 "),
+        vue.createVNode(
+          _component_uni_popup,
+          {
+            ref: "statusPopupRef",
+            type: "center"
+          },
+          {
+            default: vue.withCtx(() => [
+              vue.createElementVNode("view", { class: "status-popup-content" }, [
+                vue.createElementVNode("view", { class: "status-popup-header" }, [
+                  vue.createElementVNode("text", { class: "status-popup-title" }, "更新参与状态"),
+                  vue.createElementVNode("view", {
+                    class: "close-icon",
+                    onClick: $setup.closeStatusPopup
+                  }, [
+                    vue.createElementVNode("text", {
+                      class: "iconfont icon-guanbi",
+                      style: { "font-size": "36rpx", "color": "#666" }
+                    })
+                  ])
+                ]),
+                vue.createElementVNode("view", { class: "status-options" }, [
+                  vue.createCommentVNode(' 当前是已加入状态，显示"进行中"选项 '),
+                  $setup.selectedParticipationStatus === "joined" ? (vue.openBlock(), vue.createElementBlock("view", {
+                    key: 0,
+                    class: "status-option",
+                    style: { "background-color": "#4a90e2", "color": "#FFFFFF", "font-weight": "bold" },
+                    onClick: _cache[0] || (_cache[0] = ($event) => $setup.selectParticipationStatus("in_progress"))
+                  }, " 进行中 ")) : vue.createCommentVNode("v-if", true),
+                  vue.createCommentVNode(' 当前是进行中状态，只显示"已完成"选项 '),
+                  $setup.selectedParticipationStatus === "in_progress" ? (vue.openBlock(), vue.createElementBlock("view", {
+                    key: 1,
+                    class: "status-option",
+                    onClick: _cache[1] || (_cache[1] = ($event) => $setup.selectParticipationStatus("completed"))
+                  }, " 已完成 ")) : vue.createCommentVNode("v-if", true),
+                  vue.createCommentVNode(' 当前是进行中状态，也显示"已离开"选项 '),
+                  $setup.selectedParticipationStatus === "in_progress" || $setup.selectedParticipationStatus === "joined" ? (vue.openBlock(), vue.createElementBlock("view", {
+                    key: 2,
+                    class: "status-option",
+                    onClick: _cache[2] || (_cache[2] = ($event) => $setup.selectParticipationStatus("left"))
+                  }, " 已离开 ")) : vue.createCommentVNode("v-if", true)
+                ]),
+                $setup.selectedParticipationStatus === "completed" || $setup.selectedParticipationStatus === "left" ? (vue.openBlock(), vue.createElementBlock("view", {
+                  key: 0,
+                  class: "reason-input-container"
+                }, [
+                  vue.createElementVNode("text", { class: "reason-label" }, "原因说明(选填):"),
+                  vue.withDirectives(vue.createElementVNode(
+                    "textarea",
+                    {
+                      class: "reason-input",
+                      "onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => $setup.statusReason = $event),
+                      placeholder: "请输入状态更新原因",
+                      maxlength: "200"
+                    },
+                    null,
+                    512
+                    /* NEED_PATCH */
+                  ), [
+                    [vue.vModelText, $setup.statusReason]
+                  ]),
+                  vue.createElementVNode(
+                    "text",
+                    { class: "reason-count" },
+                    vue.toDisplayString($setup.statusReason.length) + "/200",
+                    1
+                    /* TEXT */
+                  )
+                ])) : vue.createCommentVNode("v-if", true),
+                vue.createElementVNode("view", { class: "status-popup-footer" }, [
+                  vue.createElementVNode("button", {
+                    class: "cancel-btn",
+                    onClick: $setup.closeStatusPopup
+                  }, "取消"),
+                  vue.createElementVNode("button", {
+                    class: "confirm-btn",
+                    onClick: $setup.confirmUpdateStatus
+                  }, "确认")
+                ])
+              ])
+            ]),
+            _: 1
+            /* STABLE */
+          },
+          512
+          /* NEED_PATCH */
+        ),
+        vue.createCommentVNode(" 添加任务状态更新弹窗 "),
+        vue.createVNode(
+          _component_uni_popup,
+          {
+            ref: "taskStatusPopupRef",
+            type: "center"
+          },
+          {
+            default: vue.withCtx(() => [
+              vue.createElementVNode("view", { class: "status-popup-content" }, [
+                vue.createElementVNode("view", { class: "status-popup-header" }, [
+                  vue.createElementVNode("text", { class: "status-popup-title" }, "更新任务状态"),
+                  vue.createElementVNode("view", {
+                    class: "close-icon",
+                    onClick: $setup.closeTaskStatusPopup
+                  }, [
+                    vue.createElementVNode("text", {
+                      class: "iconfont icon-guanbi",
+                      style: { "font-size": "36rpx", "color": "#666" }
+                    })
+                  ])
+                ]),
+                vue.createElementVNode("view", { class: "status-options" }, [
+                  vue.createCommentVNode(" 添加招募中选项，如果任务还没有进入招募状态 "),
+                  $setup.currentTaskStatus === "pending" || $setup.currentTaskStatus === "" ? (vue.openBlock(), vue.createElementBlock(
+                    "view",
+                    {
+                      key: 0,
+                      class: vue.normalizeClass(["status-option", { "active": $setup.selectedTaskStatus === "recruiting" }]),
+                      onClick: _cache[4] || (_cache[4] = ($event) => $setup.selectTaskStatus("recruiting"))
+                    },
+                    " 招募中 ",
+                    2
+                    /* CLASS */
+                  )) : vue.createCommentVNode("v-if", true),
+                  vue.createCommentVNode(" 显示进入进行中选项 "),
+                  $setup.currentTaskStatus === "recruiting" ? (vue.openBlock(), vue.createElementBlock(
+                    "view",
+                    {
+                      key: 1,
+                      class: vue.normalizeClass(["status-option", { "active": $setup.selectedTaskStatus === "ongoing" }]),
+                      onClick: _cache[5] || (_cache[5] = ($event) => $setup.selectTaskStatus("ongoing"))
+                    },
+                    " 进行中 ",
+                    2
+                    /* CLASS */
+                  )) : vue.createCommentVNode("v-if", true),
+                  $setup.currentTaskStatus === "ongoing" ? (vue.openBlock(), vue.createElementBlock(
+                    "view",
+                    {
+                      key: 2,
+                      class: vue.normalizeClass(["status-option", { "active": $setup.selectedTaskStatus === "ended" }]),
+                      onClick: _cache[6] || (_cache[6] = ($event) => $setup.selectTaskStatus("ended"))
+                    },
+                    " 已结束 ",
+                    2
+                    /* CLASS */
+                  )) : vue.createCommentVNode("v-if", true),
+                  $setup.currentTaskStatus === "ended" ? (vue.openBlock(), vue.createElementBlock(
+                    "view",
+                    {
+                      key: 3,
+                      class: vue.normalizeClass(["status-option", { "active": $setup.selectedTaskStatus === "completed" }]),
+                      onClick: _cache[7] || (_cache[7] = ($event) => $setup.selectTaskStatus("completed"))
+                    },
+                    " 已完成 ",
+                    2
+                    /* CLASS */
+                  )) : vue.createCommentVNode("v-if", true),
+                  vue.createCommentVNode(" 取消选项始终可见（除非已完成或已取消） "),
+                  $setup.currentTaskStatus !== "canceled" && $setup.currentTaskStatus !== "completed" ? (vue.openBlock(), vue.createElementBlock(
+                    "view",
+                    {
+                      key: 4,
+                      class: vue.normalizeClass(["status-option", { "active": $setup.selectedTaskStatus === "canceled" }]),
+                      onClick: _cache[8] || (_cache[8] = ($event) => $setup.selectTaskStatus("canceled"))
+                    },
+                    " 已取消 ",
+                    2
+                    /* CLASS */
+                  )) : vue.createCommentVNode("v-if", true)
+                ]),
+                vue.createCommentVNode(" 当选择已取消状态时，需要输入取消原因 "),
+                $setup.selectedTaskStatus === "canceled" ? (vue.openBlock(), vue.createElementBlock("view", {
+                  key: 0,
+                  class: "reason-input-container"
+                }, [
+                  vue.createElementVNode("text", { class: "reason-label" }, "取消原因(必填):"),
+                  vue.withDirectives(vue.createElementVNode(
+                    "textarea",
+                    {
+                      class: "reason-input",
+                      "onUpdate:modelValue": _cache[9] || (_cache[9] = ($event) => $setup.cancelReason = $event),
+                      placeholder: "请输入取消任务的原因",
+                      maxlength: "200"
+                    },
+                    null,
+                    512
+                    /* NEED_PATCH */
+                  ), [
+                    [vue.vModelText, $setup.cancelReason]
+                  ]),
+                  vue.createElementVNode(
+                    "text",
+                    { class: "reason-count" },
+                    vue.toDisplayString($setup.cancelReason.length) + "/200",
+                    1
+                    /* TEXT */
+                  )
+                ])) : vue.createCommentVNode("v-if", true),
+                vue.createElementVNode("view", { class: "status-popup-footer" }, [
+                  vue.createElementVNode("button", {
+                    class: "cancel-btn",
+                    onClick: $setup.closeTaskStatusPopup
+                  }, "取消"),
+                  vue.createElementVNode("button", {
+                    class: "confirm-btn",
+                    onClick: $setup.confirmUpdateTaskStatus
+                  }, "确认")
+                ])
+              ])
+            ]),
+            _: 1
+            /* STABLE */
+          },
+          512
+          /* NEED_PATCH */
+        )
+      ])
+    ]);
+  }
+  const PagesMytasksIndex = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["render", _sfc_render], ["__file", "D:/Uniapp/htmlTest/赛创项目/pages/mytasks/index.vue"]]);
   __definePage("pages/login/login", PagesLoginLogin);
   __definePage("pages/index/index", PagesIndexIndex);
   __definePage("pages/project/project-showcase", PagesProjectProjectShowcase);
@@ -30784,6 +34707,7 @@ if (uni.restoreGlobal) {
   __definePage("pages/profile/edit-bio", PagesProfileEditBio);
   __definePage("pages/profile/edit-skills", PagesProfileEditSkills);
   __definePage("pages/profile/edit-awards", PagesProfileEditAwards);
+  __definePage("pages/profile/my-awards", PagesProfileMyAwards);
   __definePage("pages/Xiaoxi/Xiaoxi", PagesXiaoxiXiaoxi);
   __definePage("pages/application/application", PagesApplicationApplication);
   __definePage("pages/websocket-test/index", PagesWebsocketTestIndex);
@@ -30794,6 +34718,7 @@ if (uni.restoreGlobal) {
   __definePage("pages/profile/material-reward", PagesProfileMaterialReward);
   __definePage("pages/mycompetitions/mycompetitions", PagesMycompetitionsMycompetitions);
   __definePage("pages/myTeam/myTeam", PagesMyTeamMyTeam);
+  __definePage("pages/mytasks/index", PagesMytasksIndex);
   const _sfc_main = {
     globalData: {
       unreadNotificationCount: 0

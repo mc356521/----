@@ -50,6 +50,9 @@
                        <SvgIcon name="Baominrenshulunbotu" ></SvgIcon>
                     <text class="hot-team">{{ item.teamSize }}~{{ item.teamMax }}人</text>
                   </view>
+                  <view class="hot-info-item">
+                    <text class="hot-team-count">{{ item.teamCount || 0 }}队已报名</text>
+                  </view>
                 </view>
               </view>
             </view>
@@ -94,7 +97,7 @@
                 </text>
                 <text class="team-tag">
                   <SvgIcon name="baomingrhenshu2" size="20" style="padding-bottom: 10rpx;" />
-                  {{ item.participantCount || 0 }}人已报名
+                  {{ item.teamCount || 0 }}队已报名
                 </text>
               </view>
               <view class="card-footer">
@@ -228,7 +231,25 @@ export default {
         });
         
         if (res && res.code === 200 && res.data && Array.isArray(res.data.list)) {
-          this.hotCompetitions = res.data.list;
+          const hotCompetitionsData = res.data.list;
+          
+          // 获取每个热门竞赛的团队数量
+          if (hotCompetitionsData.length > 0) {
+            await Promise.all(hotCompetitionsData.map(async (competition) => {
+              try {
+                const teamCountRes = await api.competitions.getCompetitionTeamCount(competition.id);
+                if (teamCountRes && teamCountRes.code === 200 && teamCountRes.data) {
+                  competition.teamCount = teamCountRes.data.teamCount;
+                }
+              } catch (error) {
+                console.error(`获取热门竞赛 ${competition.id} 的团队数量失败:`, error);
+                competition.teamCount = 0;
+              }
+              return competition;
+            }));
+          }
+          
+          this.hotCompetitions = hotCompetitionsData;
         } 
       } catch (error) {
         console.error('获取热门竞赛失败:', error);
@@ -271,12 +292,28 @@ export default {
         const res = await api.competitions.getCompetitionsList(params);
         
         if (res && res.code === 200 && res.data) {
+          let competitionData = Array.isArray(res.data.list) ? res.data.list : [];
+          
+          // 获取每个竞赛的团队数量
+          if (competitionData.length > 0) {
+            await Promise.all(competitionData.map(async (competition) => {
+              try {
+                const teamCountRes = await api.competitions.getCompetitionTeamCount(competition.id);
+                if (teamCountRes && teamCountRes.code === 200 && teamCountRes.data) {
+                  competition.teamCount = teamCountRes.data.teamCount;
+                }
+              } catch (error) {
+                console.error(`获取竞赛 ${competition.id} 的团队数量失败:`, error);
+                competition.teamCount = 0;
+              }
+              return competition;
+            }));
+          }
+          
           if (reset) {
-            this.competitionList = Array.isArray(res.data.list) ? res.data.list : [];
+            this.competitionList = competitionData;
           } else {
-            if (Array.isArray(res.data.list)) {
-              this.competitionList = [...this.competitionList, ...res.data.list];
-            }
+            this.competitionList = [...this.competitionList, ...competitionData];
           }
           
           // 更新分页信息
@@ -599,7 +636,7 @@ page {
                 margin-right: 6rpx;
               }
               
-              .hot-date, .hot-team {
+              .hot-date, .hot-team, .hot-team-count {
                 font-size: 22rpx;
                 color: rgba(255, 255, 255, 0.8);
               }
