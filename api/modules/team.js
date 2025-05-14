@@ -160,6 +160,7 @@ const teamApi = {
    * @returns {Promise} 请求结果Promise对象
    */
   disbandTeam(teamId) {
+
     return request({
       url: `/teams/${teamId}/dissolve`,
       method: 'POST'
@@ -212,6 +213,18 @@ const teamApi = {
   },
   
   /**
+   * 删除团队记录（仅适用于已解散的团队）
+   * @param {Number|String} teamId - 团队ID
+   * @returns {Promise} 请求结果Promise对象
+   */
+  deleteTeamRecord(teamId) {
+    return request({
+      url: `/teams/${teamId}/delete-record`,
+      method: 'POST'
+    });
+  },
+  
+  /**
    * 获取AI智能推荐的队伍
    * @param {Object} params - 查询参数
    * @param {Boolean} params.useCache - 是否使用服务器端缓存的结果
@@ -222,6 +235,44 @@ const teamApi = {
       url: '/teams/recommend',
       method: 'GET',
       params
+    });
+  },
+  
+  /**
+   * 移除团队成员 (队长)
+   * @param {Number} teamId - 团队ID
+   * @param {Number} memberId - 要移除的成员ID
+   * @returns {Promise} 请求结果Promise对象
+   */
+  removeTeamMember(teamId, memberId) {
+    return request({
+      url: `/teams/${teamId}/members/${memberId}`,
+      method: 'DELETE'
+    });
+  },
+  
+  /**
+   * 更新团队基本信息（队长）
+   * @param {Object} data - 团队数据
+   * @param {Number} data.id - 团队ID（必需）
+   * @param {String} data.name - 团队名称（必需）
+   * @param {String} data.description - 团队简介
+   * @param {String} data.direction - 研究方向
+   * @param {String} data.recruitmentDeadline - 招募截止时间
+   * @param {Object} data.contactInfo - 联系方式
+   * @returns {Promise} 更新结果的Promise对象
+   */
+  updateTeamInfo(data) {
+    // 验证必填字段
+    if (!data.id || !data.name) {
+      console.error('更新团队信息缺少必要参数:', data);
+      return Promise.reject(new Error('更新团队信息缺少团队ID或团队名称'));
+    }
+    
+    return request({
+      url: '/teams',
+      method: 'PUT',
+      data
     });
   }
 };

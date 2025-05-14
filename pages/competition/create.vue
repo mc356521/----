@@ -581,7 +581,7 @@ import config from '@/config/env/dev';
 
 // 步骤指示器
 const steps = ['基本信息', '比赛阶段', '联系附件', '预览发布'];
-const currentStep = ref(1);
+const currentStep = ref(0);
 
 // 比赛阶段弹窗
 const stagePopup = ref(null);

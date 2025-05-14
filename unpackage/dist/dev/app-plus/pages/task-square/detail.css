@@ -79,7 +79,7 @@
   width: 1.5625rem;
   height: 1.5625rem;
   border-radius: 50%;
-  background-color: #F3F4F6;
+  background-color: #EEEFF2;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -139,7 +139,7 @@
   display: inline-block;
   padding: 0.3125rem 0.5rem;
   border-radius: 3.125rem;
-  background-color: #F3F4F6;
+  background-color: #EEEFF2;
   font-size: 0.75rem;
   color: #666666;
   transition: all 0.3s;

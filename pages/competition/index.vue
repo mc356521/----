@@ -47,10 +47,11 @@
                     <text class="hot-date">报名截止: {{ formatDate(item.registrationDeadline) }}</text>
                   </view>
                   <view class="hot-info-item">
-                       <SvgIcon name="Baominrenshulunbotu" ></SvgIcon>
-                    <text class="hot-team">{{ item.teamSize }}~{{ item.teamMax }}人</text>
+                       <SvgIcon name="baomingrhenshu2" size="18" color="#ffffff" style="margin-right: 5rpx;"></SvgIcon>
+                    <text class="hot-team">{{ item.teamSize && item.teamMax ? `${item.teamSize}~${item.teamMax}人` : '个人赛' }}</text>
                   </view>
                   <view class="hot-info-item">
+                    <SvgIcon name="Baominrenshu" size="18" color="#ffffff" style="margin-right: 5rpx;"></SvgIcon>
                     <text class="hot-team-count">{{ item.teamCount || 0 }}队已报名</text>
                   </view>
                 </view>
@@ -89,14 +90,20 @@
             <view class="card-content">
               <text class="card-title">{{ item.title }}</text>
               <text class="card-desc">{{ item.shortDescription }}</text>
+              <view class="card-tags" >
+                <text class="category-tag" v-for="category in item.categoryNames" :key="category" :class="getCategoryClass(category)">{{ category }}</text>
+              </view>
               <view class="card-tags">
-                <text class="category-tag" :class="getCategoryClass(item.categoryName)">{{ item.categoryName }}</text>
                 <text class="level-tag">
                   <SvgIcon name="dengji" size="18" style="padding-bottom: 15rpx;"/>
                   {{ item.level }}
                 </text>
                 <text class="team-tag">
-                  <SvgIcon name="baomingrhenshu2" size="20" style="padding-bottom: 10rpx;" />
+                  <SvgIcon name="baomingrhenshu2" size="18" style="padding-bottom: 10rpx;" />
+                  {{ item.teamSize && item.teamMax ? `${item.teamSize}~${item.teamMax}人` : '个人赛' }}
+                </text>
+                <text class="team-size-tag">
+                  <SvgIcon name="Baominrenshu" size="20" style="padding-bottom: 10rpx;" />
                   {{ item.teamCount || 0 }}队已报名
                 </text>
               </view>
@@ -360,16 +367,28 @@ export default {
     // 获取分类对应的样式类
     getCategoryClass(category) {
       switch(category) {
+        case '程序设计':
+          return 'tag-blue';       // 蓝色 - 技术相关
+        case '数学建模':
+          return 'tag-purple';     // 紫色 - 数学/分析
+        case '电子设计':
+          return 'tag-cyan';       // 青色 - 电子/工程
+        case '机器人':
+          return 'tag-teal';       // 蓝绿色 - 智能/机械
         case '创新创业':
-          return 'tag-orange';
-        case '学科竞赛':
-          return 'tag-green';
-        case '科技竞赛':
-          return 'tag-blue';
-        case '文体竞赛':
-          return 'tag-purple';
+          return 'tag-orange';     // 橙色 - 创业相关
+        case '商业挑战':
+          return 'tag-amber';      // 琥珀色 - 商业相关
+        case '艺术设计':
+          return 'tag-pink';       // 粉色 - 艺术相关
+        case '体育竞技':
+          return 'tag-green';      // 绿色 - 体育相关
+        case '学术科研':
+          return 'tag-indigo';     // 靛蓝色 - 学术相关
+        case '其他':
+          return 'tag-gray';       // 灰色 - 其他类别
         default:
-          return '';
+          return 'tag-gray';
       }
     },
     
@@ -629,6 +648,7 @@ page {
             
             .hot-info-item {
               @include flex-center;
+              margin-right: 15rpx;
               
               .iconfont {
                 font-size: 22rpx;
@@ -704,25 +724,27 @@ page {
         position: absolute;
         top: 20rpx;
         right: 20rpx;
-        padding: 6rpx 16rpx;
+        padding: 8rpx 18rpx;
         border-radius: 8rpx;
-        font-size: 22rpx;
+        font-size: 24rpx;
         color: white;
+        font-weight: 600;
+        box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2);
         
         &.status-active {
-          background-color: $status-active-bg;
+          background-color: #00C07F;
         }
         
         &.status-upcoming {
-          background-color: $status-upcoming-bg;
+          background-color: #5368BD;
         }
         
         &.status-ongoing {
-          background-color: $status-ongoing-bg;
+          background-color: #1888E8;
         }
         
         &.status-ended {
-          background-color: $status-ended-bg;
+          background-color: #525B7A;
         }
       }
     }
@@ -753,47 +775,91 @@ page {
         @include flex-center;
         flex-wrap: wrap;
         margin-bottom: 20rpx;
+        
         .category-tag {
-          padding: 4rpx 0rpx;
-          border-radius: 6rpx;
-          font-size: 22rpx;
-          &.tag-orange {
-            background-color: $category-orange-bg;
-            color: $category-orange-text;
-          }
-          
-          &.tag-green {
-            background-color: $category-green-bg;
-            color: $category-green-text;
-          }
+          padding: 6rpx 16rpx;
+          border-radius: 8rpx;
+          font-size: 24rpx;
+          margin-right: 12rpx;
+          margin-bottom: 8rpx;
           
           &.tag-blue {
-            background-color: $category-blue-bg;
-            color: $category-blue-text;
+            background-color: rgba(37, 99, 235, 0.15);
+            color: #0052D9;
           }
           
           &.tag-purple {
-            background-color: $category-purple-bg;
-            color: $category-purple-text;
+            background-color: rgba(124, 58, 237, 0.15);
+            color: #6419E6;
+          }
+          
+          &.tag-cyan {
+            background-color: rgba(6, 182, 212, 0.15);
+            color: #07A6C6;
+          }
+          
+          &.tag-teal {
+            background-color: rgba(20, 184, 166, 0.15);
+            color: #0C9488;
+          }
+          
+          &.tag-orange {
+            background-color: rgba(249, 115, 22, 0.15);
+            color: #D35908;
+          }
+          
+          &.tag-amber {
+            background-color: rgba(245, 158, 11, 0.15);
+            color: #C87C00;
+          }
+          
+          &.tag-pink {
+            background-color: rgba(236, 72, 153, 0.15);
+            color: #D82D8B;
+          }
+          
+          &.tag-green {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: #049669;
+          }
+          
+          &.tag-indigo {
+            background-color: rgba(79, 70, 229, 0.15);
+            color: #3730CA;
+          }
+          
+          &.tag-gray {
+            background-color: rgba(107, 114, 128, 0.15);
+            color: #4B5563;
           }
         }
         
         .level-tag, .team-tag {
           @include flex-center;
-          font-size: 25rpx;
-          color: $text-muted;
+          font-size: 26rpx;
+          color: #4B5563;
+          font-weight: 500;
           margin-right: 26rpx;
+          
           .icon-image {
             width: 30rpx;
             height: 30rpx;
             margin-right: 6rpx;
           }
+          
           .icon-image2 {
             width: 30rpx;
             height: 30rpx;
-        
             margin-right: 6rpx;
           }
+        }
+        
+        .team-size-tag {
+          @include flex-center;
+          font-size: 26rpx;
+          color: #4B5563;
+          font-weight: 500;
+          margin-left: 16rpx;
         }
       }
       
@@ -805,23 +871,26 @@ page {
           
           .iconfont {
             font-size: 24rpx;
-            color: $text-muted;
+            color: #4B5563;
             margin-right: 6rpx;
           }
           
           .date-text {
-            font-size: 24rpx;
-            color: $text-muted;
+            font-size: 26rpx;
+            color: #4B5563;
+            font-weight: 500;
           }
         }
         
         .action-btn {
           @include flex-center;
-          padding: 8rpx 20rpx;
+          padding: 10rpx 24rpx;
           border-radius: $border-radius-full;
-          background-color: $status-color-bg;
+          background-color: #1888E8;
           color: rgb(255, 255, 255);
-          font-size: 24rpx;
+          font-size: 26rpx;
+          font-weight: 600;
+          box-shadow: 0 2rpx 8rpx rgba(24, 136, 232, 0.25);
           
           .btn-icon {
             width: 24rpx;
@@ -830,8 +899,9 @@ page {
           }
           
           &.disabled-btn {
-            background-color: #e5e7eb;
-            color: #9ca3af;
+            background-color: #8A92A6;
+            color: #ffffff;
+            box-shadow: none;
           }
         }
       }

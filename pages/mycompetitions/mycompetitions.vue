@@ -121,8 +121,7 @@
                 <view class="team-header">
                   <text class="team-label">参赛团队</text>
                   <text class="team-name">{{ competition.teamName }}</text>
-                </view>
-                <view class="team-members">
+                  <view class="team-members">
                   <view class="member-avatars">
                     <image 
                       class="member-avatar" 
@@ -136,6 +135,8 @@
                   </view>
                   <text class="member-count">{{ competition.teamMembers.length }}人团队</text>
                 </view>
+                </view>
+        
               </view>
               
               <view class="action-buttons">
@@ -145,7 +146,7 @@
                 </view>
                 <view class="action-btn secondary" @click.stop="navigateToTeam(competition.teamId)">
                   <SvgIcon name="users" size="16"></SvgIcon>
-                  <text>团队管理</text>
+                  <text>查看团队</text>
                 </view>
               </view>
             </view>
@@ -648,6 +649,9 @@
 import { ref, computed, onMounted } from 'vue';
 import SvgIcon from '@/components/SvgIcon.vue';
 import HeaderBar from '@/components/HeaderBar.vue';
+import competitionsApi from '@/api/modules/competitions';
+import teamApi from '@/api/modules/team';
+import { getToken } from '@/utils/request';
 
 // HeaderBar引用
 const headerBarRef = ref(null);
@@ -665,38 +669,9 @@ const loading = ref(true);
 // 当前选中的状态标签
 const activeStatus = ref('all');
 // 竞赛列表
-const myCompetitions = ref([
-  {
-    id: 1,
-    title: '2023年全国大学生计算机设计大赛',
-    status: 'ongoing',
-    stage: '省赛',
-    description: '全国大学生计算机设计大赛是由教育部高等学校计算机类专业教学指导委员会、教育部高等学校软件工程专业教学指导委员会、教育部高等学校大学计算机课程教学指导委员会主办的全国性赛事。',
-    startDate: '2023-04-15',
-    endDate: '2023-06-30',
-    organizerName: '教育部',
-    category: '人工智能',
-    tags: ['科技创新', 'AI应用'],
-    teamSize: 3,
-    teamId: 5,
-    teamName: '创梦之星'
-  },
-  {
-    id: 2,
-    title: '2022互联网+大学生创新创业大赛',
-    status: 'finished',
-    stage: '校赛',
-    description: '中国"互联网+"大学生创新创业大赛，是由教育部与政府有关部门、有关行业协会和企业共同举办的全国性创新创业赛事。',
-    startDate: '2022-03-10',
-    endDate: '2022-05-20',
-    organizerName: '教育部',
-    category: '创新创业',
-    tags: ['商业计划', '创业'],
-    teamSize: 5,
-    teamId: 2,
-    teamName: '星火创业'
-  }
-]);
+const myCompetitions = ref([]);
+// 竞赛详细数据（包含团队成员和阶段信息）
+const competitionsData = ref([]);
 // 筛选相关
 const showFilter = ref(false);
 const selectedLevels = ref(['全部']);
@@ -712,158 +687,217 @@ const cancelCompetition = ref({});
 
 // 计算属性
 const ongoingCompetitions = computed(() => {
-  if (!myCompetitions.value || myCompetitions.value.length === 0) return [];
-  return myCompetitions.value.filter(comp => 
+  if (!competitionsData.value || competitionsData.value.length === 0) return [];
+  return competitionsData.value.filter(comp => 
     comp.status === 'ongoing' || comp.status === 'registering'
   );
 });
 
 const upcomingCompetitions = computed(() => {
-  if (!myCompetitions.value || myCompetitions.value.length === 0) return [];
-  return myCompetitions.value.filter(comp => comp.status === 'upcoming');
+  if (!competitionsData.value || competitionsData.value.length === 0) return [];
+  return competitionsData.value.filter(comp => comp.status === 'upcoming');
 });
 
 const completedCompetitions = computed(() => {
-  if (!myCompetitions.value || myCompetitions.value.length === 0) return [];
-  return myCompetitions.value.filter(comp => comp.status === 'finished' || comp.status === 'completed');
+  if (!competitionsData.value || competitionsData.value.length === 0) return [];
+  return competitionsData.value.filter(comp => comp.status === 'finished' || comp.status === 'completed');
 });
 
-// 将竞赛数据排序
-function getMyCompetitions() {
+// 获取竞赛列表
+async function getMyCompetitions() {
   loading.value = true;
   
   try {
-    // 模拟API请求
+    // 检查登录状态
+    const token = getToken();
+    if (!token) {
+      uni.showToast({
+        title: '请先登录',
+        icon: 'none'
+      });
+      
     setTimeout(() => {
-      myCompetitions.value = [
-        {
-          id: 1,
-          name: "第16届全国大学生程序设计竞赛",
-          imageUrl: "/static/image/competition/comp1.jpg",
-          level: "国家级",
-          type: "编程开发",
-          status: "ongoing",
-          startDate: "2024-07-15",
-          endDate: "2024-08-30",
-          currentStage: "初赛阶段",
-          stageEndDate: "2024-07-30",
-          stageDescription: "线上初赛，提交算法解题",
-          progress: 45,
-          teamId: 1,
-          teamName: "代码先锋队",
-          teamMembers: [
-            { id: 1, name: "张三", avatar: "/static/image/avatar/user1.jpg" },
-            { id: 2, name: "李四", avatar: "/static/image/avatar/user2.jpg" },
-            { id: 3, name: "王五", avatar: "/static/image/avatar/user3.jpg" }
-          ]
-        },
-        {
-          id: 2,
-          name: "2024年互联网+创新创业大赛",
-          imageUrl: "/static/image/competition/comp2.jpg",
-          level: "省级",
-          type: "商业创新",
-          status: "ongoing",
-          startDate: "2024-06-01",
-          endDate: "2024-09-15",
-          currentStage: "项目开发阶段",
-          stageEndDate: "2024-08-15",
-          stageDescription: "完成项目原型开发和商业计划书",
-          progress: 60,
-          teamId: 2,
-          teamName: "创新先锋队",
-          teamMembers: [
-            { id: 1, name: "张三", avatar: "/static/image/avatar/user1.jpg" },
-            { id: 4, name: "赵六", avatar: "/static/image/avatar/user4.jpg" },
-            { id: 5, name: "孙七", avatar: "/static/image/avatar/user5.jpg" },
-            { id: 6, name: "周八", avatar: "/static/image/avatar/user6.jpg" }
-          ]
-        },
-        {
-          id: 3,
-          name: "第5届人工智能应用创新大赛",
-          imageUrl: "/static/image/competition/comp3.jpg",
-          level: "国家级",
-          type: "科研学术",
-          status: "upcoming",
-          startDate: "2024-08-15",
-          endDate: "2024-10-30",
-          teamId: 3,
-          teamName: "AI创新团队",
-          teamMembers: [
-            { id: 1, name: "张三", avatar: "/static/image/avatar/user1.jpg" },
-            { id: 7, name: "吴九", avatar: "/static/image/avatar/user7.jpg" },
-            { id: 8, name: "郑十", avatar: "/static/image/avatar/user8.jpg" }
-          ]
-        },
-        {
-          id: 4,
-          name: "校园创意设计大赛",
-          imageUrl: "/static/image/competition/comp5.jpg",
-          level: "校级",
-          type: "设计创意",
-          status: "completed",
-          startDate: "2024-03-01",
-          endDate: "2024-04-30",
-          result: "一等奖",
-          hasCertificate: true,
-          teamId: 4,
-          teamName: "创意工坊",
-          teamMembers: [
-            { id: 1, name: "张三", avatar: "/static/image/avatar/user1.jpg" },
-            { id: 9, name: "陈十一", avatar: "/static/image/avatar/user9.jpg" }
-          ]
-        },
-        {
-          id: 5,
-          name: "全国大学生电子设计竞赛",
-          imageUrl: "/static/image/competition/comp4.jpg",
-          level: "国家级",
-          type: "科研学术",
-          status: "completed",
-          startDate: "2023-09-01",
-          endDate: "2023-11-30",
-          result: "二等奖",
-          hasCertificate: true,
-          teamId: 5,
-          teamName: "电子创客",
-          teamMembers: [
-            { id: 1, name: "张三", avatar: "/static/image/avatar/user1.jpg" },
-            { id: 2, name: "李四", avatar: "/static/image/avatar/user2.jpg" },
-            { id: 10, name: "林十二", avatar: "/static/image/avatar/user10.jpg" }
-          ]
-        },
-        {
-          id: 6,
-          name: "市级大学生创新创业挑战赛",
-          imageUrl: "/static/image/competition/comp6.jpg",
-          level: "市级",
-          type: "商业创新",
-          status: "completed",
-          startDate: "2023-06-15",
-          endDate: "2023-08-30",
-          result: "优秀奖",
-          hasCertificate: true,
-          teamId: 6,
-          teamName: "创业梦工厂",
-          teamMembers: [
-            { id: 1, name: "张三", avatar: "/static/image/avatar/user1.jpg" },
-            { id: 4, name: "赵六", avatar: "/static/image/avatar/user4.jpg" },
-            { id: 11, name: "黄十三", avatar: "/static/image/avatar/user11.jpg" },
-            { id: 12, name: "秦十四", avatar: "/static/image/avatar/user12.jpg" }
-          ]
-        }
-      ];
+        uni.navigateTo({
+          url: '/pages/login/login'
+        });
+      }, 1500);
       
       loading.value = false;
-    }, 800);
+      return;
+    }
+    
+    // 获取用户参与的竞赛列表
+    const participatedRes = await competitionsApi.getUserParticipatedCompetitions();
+    
+    if (participatedRes.code === 200 && participatedRes.data) {
+      myCompetitions.value = participatedRes.data || [];
+      console.log('获取到的参与竞赛列表:', myCompetitions.value);
+      
+      // 根据竞赛列表获取详细信息
+      await fetchCompetitionsDetails();
+    } else {
+      console.error('获取参与竞赛列表失败', participatedRes);
+      uni.showToast({
+        title: participatedRes.message || '获取竞赛列表失败',
+        icon: 'none'
+      });
+    }
   } catch (error) {
     console.error('获取我的竞赛列表失败:', error);
     uni.showToast({
       title: '获取竞赛列表失败',
       icon: 'none'
     });
+  } finally {
     loading.value = false;
+  }
+}
+
+// 获取竞赛详细信息（团队成员和阶段信息）
+async function fetchCompetitionsDetails() {
+  try {
+    // 为每个竞赛获取详细信息
+    const detailsPromises = await Promise.all(
+      myCompetitions.value.map(async (competition) => {
+        // 为每个竞赛构造一个基本对象
+        const competitionData = {
+          id: competition.competitionId,
+          name: competition.competitionName,
+          categories: competition.categories || [],
+          teamId: competition.teamId,
+          teamName: competition.teamName,
+          teamMembers: [],
+          status: 'unknown', // 默认状态，后续根据阶段确定
+          imageUrl: competition.imageUrl || '/static/image/competition/comp1.jpg', // 默认图片
+          level: competition.level || '未知',
+          startDate: '',
+          endDate: '',
+          currentStage: '',
+          stageEndDate: '',
+          stageDescription: '',
+          progress: 0
+        };
+        
+        try {
+          // 获取团队成员信息
+          const teamRes = await teamApi.getTeamMembers(competition.teamId);
+          if (teamRes.code === 200 && teamRes.data) {
+            competitionData.teamMembers = teamRes.data.map(member => ({
+              id: member.userId,
+              name: member.userName,
+              avatar: member.userAvatarUrl || '/static/image/avatar/default.jpg',
+              isLeader: member.isLeader,
+              role: member.roleName || (member.isLeader ? '队长' : '队员')
+            }));
+          }
+          
+          // 获取竞赛阶段信息
+          const stagesRes = await competitionsApi.getCompetitionStages(competition.competitionId);
+          if (stagesRes.code === 200 && stagesRes.data && stagesRes.data.length > 0) {
+            const stages = stagesRes.data;
+            
+            // 排序阶段（按开始时间）
+            stages.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+            
+            // 获取竞赛起止时间
+            competitionData.startDate = stages[0].startTime;
+            competitionData.endDate = stages[stages.length - 1].endTime;
+            
+            // 确定当前阶段和竞赛状态
+            const now = new Date();
+            const firstStageStart = new Date(stages[0].startTime);
+            const lastStageEnd = new Date(stages[stages.length - 1].endTime);
+            
+            let currentStage = null;
+            let activeStageIndex = -1;
+            
+            // 查找当前阶段
+            for (let i = 0; i < stages.length; i++) {
+              const stageStart = new Date(stages[i].startTime);
+              const stageEnd = new Date(stages[i].endTime);
+              
+              if (now >= stageStart && now <= stageEnd) {
+                currentStage = stages[i];
+                activeStageIndex = i;
+                break;
+              } else if (now < stageStart && activeStageIndex === -1) {
+                // 如果还没有找到活跃阶段，且当前时间小于这个阶段的开始时间
+                // 说明这个阶段是未来的第一个阶段
+                currentStage = stages[i];
+                activeStageIndex = i;
+                break;
+              }
+            }
+            
+            // 如果没有找到当前阶段，可能竞赛已经结束
+            if (activeStageIndex === -1 && now > lastStageEnd) {
+              currentStage = stages[stages.length - 1];
+              activeStageIndex = stages.length - 1;
+              competitionData.status = 'completed';
+            } else if (now < firstStageStart) {
+              // 竞赛还未开始
+              competitionData.status = 'upcoming';
+            } else if (now > lastStageEnd) {
+              // 竞赛已结束
+              competitionData.status = 'completed';
+            } else {
+              // 竞赛进行中
+              competitionData.status = 'ongoing';
+            }
+            
+            // 设置当前阶段信息
+            if (currentStage) {
+              competitionData.currentStage = currentStage.stageName;
+              competitionData.stageEndDate = currentStage.endTime;
+              competitionData.stageDescription = currentStage.description;
+              
+              // 计算进度
+              if (competitionData.status === 'ongoing') {
+                const totalStages = stages.length;
+                const completedStages = stages.filter(s => new Date(s.endTime) < now).length;
+                const currentStageProgress = currentStage ? 
+                  (now - new Date(currentStage.startTime)) / (new Date(currentStage.endTime) - new Date(currentStage.startTime)) : 0;
+                
+                competitionData.progress = Math.min(100, Math.round(((completedStages + (currentStageProgress || 0)) / totalStages) * 100));
+              } else if (competitionData.status === 'completed') {
+                competitionData.progress = 100;
+              } else {
+                competitionData.progress = 0;
+              }
+            }
+          }
+          
+          // 如果是已完成的竞赛，获取结果
+          if (competitionData.status === 'completed') {
+            try {
+              const resultRes = await competitionsApi.getCompetitionResults(competition.competitionId);
+              if (resultRes.code === 200 && resultRes.data) {
+                const teamResult = resultRes.data.find(result => result.teamId === competition.teamId);
+                if (teamResult) {
+                  competitionData.result = teamResult.awardLevel || '未获奖';
+                  competitionData.hasCertificate = !!teamResult.certificateUrl;
+                }
+              }
+            } catch (error) {
+              console.error('获取竞赛结果失败:', error);
+            }
+          }
+        } catch (error) {
+          console.error(`获取竞赛 ${competition.competitionId} 详情失败:`, error);
+        }
+        
+        return competitionData;
+      })
+    );
+    
+    competitionsData.value = detailsPromises;
+    console.log('处理后的竞赛详细数据:', competitionsData.value);
+  } catch (error) {
+    console.error('获取竞赛详情失败:', error);
+    uni.showToast({
+      title: '获取竞赛详情失败',
+      icon: 'none'
+    });
   }
 }
 
@@ -874,9 +908,9 @@ function setActiveStatus(status) {
 
 // 根据状态获取竞赛数量
 const getCompetitionCountByStatus = (status) => {
-  if (!myCompetitions || !myCompetitions.value || myCompetitions.value.length === 0) return 0;
+  if (!competitionsData.value || !competitionsData.value.length === 0) return 0;
   
-  return myCompetitions.value.filter(comp => {
+  return competitionsData.value.filter(comp => {
     if (status === 'ongoing') {
       return comp.status === 'registering' || comp.status === 'ongoing';
     } else if (status === 'finished') {
@@ -1174,7 +1208,7 @@ function saveImage() {
 // 取消报名
 function cancelRegistration(id) {
   // 查找竞赛信息
-  const competition = myCompetitions.value.find(comp => comp.id === id);
+  const competition = competitionsData.value.find(comp => comp.id === id);
   if (competition) {
     cancelCompetition.value = competition;
     showCancelConfirm.value = true;
@@ -1195,7 +1229,7 @@ function confirmCancelRegistration() {
   
   setTimeout(() => {
     // 从列表中移除该竞赛
-    myCompetitions.value = myCompetitions.value.filter(comp => comp.id !== cancelCompetition.value.id);
+    competitionsData.value = competitionsData.value.filter(comp => comp.id !== cancelCompetition.value.id);
     
     uni.hideLoading();
     uni.showToast({
@@ -1692,7 +1726,7 @@ page {
             
             .member-avatars {
               display: flex;
-              
+              margin-left:105rpx;
               .member-avatar {
                 width: 50rpx;
                 height: 50rpx;

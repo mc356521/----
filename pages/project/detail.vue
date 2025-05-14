@@ -4,16 +4,16 @@
     <header-bar
       title="项目详情"
       :show-search="false"
-      @back="goBack"
+    
     ></header-bar>
 
     <!-- 主要内容区域 -->
     <scroll-view scroll-y class="content-scroll">
       <!-- 项目封面图 -->
       <view class="project-cover">
-        <image src="/static/image/placeholder.jpg" mode="aspectFill" class="cover-image"></image>
+        <image :src="project.coverImage" mode="aspectFill" class="cover-image"></image>
         <view :class="['status-badge', `status-${project.statusClass}`]">{{ project.statusText }}</view>
-      </view>
+      </view> 
 
       <!-- 项目基本信息 -->
       <view class="project-info-card">
@@ -120,7 +120,7 @@ function getProjectDetail(id) {
       id: 1,
       title: '智能校园导航系统',
       description: '基于AR技术的校园导航系统，提供实时路线规划和校园信息查询功能，帮助新生和访客快速熟悉校园环境。',
-      coverImage: '/static/image/placeholder.jpg',
+      coverImage: '/static/image/Lianxi/sucai/sc1.png',
       statusText: '进行中',
       statusClass: 'ongoing',
       type: '创新创业项目',
@@ -136,7 +136,7 @@ function getProjectDetail(id) {
       achievements: '1. 完成了基础地图数据的收集和整理\n2. 开发了AR导航的核心算法\n3. 设计了用户友好的界面原型\n4. 获得了校级创新项目立项',
       teamMembers: [
         { name: '张三', role: '项目负责人', avatar: 'https://saichuang.oss-cn-beijing.aliyuncs.com/task_attachment/f3cdb7f93475495b8eff87a7657acad4.png' },
-        { name: '李四', role: 'AR开发工程师', avatar: 'https://saichuang.oss-cn-beijing.aliyuncs.com/task_attachment/d7e2c603cc9b4c0186d2b58b7814f209.png' },
+        { name: '李四', role: 'AR开发工程师', avatar: 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/5e7a3bd200434a709908ab72675607ca.png' },
         { name: '赵六', role: '后端开发', avatar: 'https://saichuang.oss-cn-beijing.aliyuncs.com/task_attachment/63dd5c18e6bc4e2ab9fc7a4355da0837.png' },
         { name: '钱七', role: '产品经理', avatar: 'https://saichuang.oss-cn-beijing.aliyuncs.com/task_attachment/2e30989de7514893a2f0a8cf9df14b70.png' }
       ]
@@ -145,7 +145,7 @@ function getProjectDetail(id) {
       id: 2,
       title: '校园二手交易平台',
       description: '面向在校学生的二手物品交易平台，支持物品发布、搜索、交易和评价，促进校园资源循环利用。',
-      coverImage: '/static/image/placeholder.jpg',
+      coverImage: '/static/image/Lianxi/sucai/sc2.png',
       statusText: '已完成',
       statusClass: 'completed',
       type: '创业项目',
@@ -170,7 +170,7 @@ function getProjectDetail(id) {
       id: 3,
       title: '智慧教室管理系统',
       description: '结合物联网技术的智能教室管理系统，实现教室设备远程控制、使用情况监控和智能预约功能。',
-      coverImage: '/static/image/placeholder.jpg',
+      coverImage: '/static/image/Lianxi/sucai/sc3.png',
       statusText: '进行中',
       statusClass: 'ongoing',
       type: '智能硬件',
@@ -197,7 +197,7 @@ function getProjectDetail(id) {
       id: 4,
       title: '校园文化数字展示平台',
       description: '结合VR技术的校园文化数字展示平台，让用户能够沉浸式体验校园历史、文化景点和重要活动。',
-      coverImage: '/static/image/placeholder.jpg',
+      coverImage: '/static/image/Lianxi/sucai/sc4.png',
       statusText: '进行中',
       statusClass: 'ongoing',
       type: '数字文创',
@@ -223,7 +223,7 @@ function getProjectDetail(id) {
       id: 5,
       title: '智能化学实验助手',
       description: '基于计算机视觉的智能化学实验助手，通过摄像头实时识别实验操作，提供步骤提示和安全警告。',
-      coverImage: '/static/image/placeholder.jpg',
+      coverImage: '/static/image/Lianxi/sucai/sc5.png',
       statusText: '已完成',
       statusClass: 'completed',
       type: '科研项目',
@@ -248,7 +248,7 @@ function getProjectDetail(id) {
       id: 6,
       title: '校园碳排放监测系统',
       description: '基于物联网的校园碳排放监测系统，通过传感器网络实时收集和分析校园各区域的能源消耗和碳排放数据。',
-      coverImage: '/static/image/placeholder.jpg',
+      coverImage: '/static/image/Lianxi/sucai/sc6.png',
       statusText: '进行中',
       statusClass: 'ongoing',
       type: '可持续发展',
@@ -276,7 +276,7 @@ function getProjectDetail(id) {
       id: 7,
       title: '校园智能健康助手',
       description: '结合可穿戴设备的校园智能健康助手，为学生提供运动追踪、健康监测和个性化健康建议。',
-      coverImage: '/static/image/placeholder.jpg',
+      coverImage: '/static/image/Lianxi/sucai/sc7.png',
       statusText: '进行中',
       statusClass: 'ongoing',
       type: '健康科技',
@@ -302,7 +302,7 @@ function getProjectDetail(id) {
       id: 8,
       title: '智能垃圾分类系统',
       description: '基于计算机视觉和机器学习的智能垃圾分类系统，能自动识别垃圾类型并引导用户进行正确分类。',
-      coverImage: '/static/image/placeholder.jpg',
+      coverImage: '/static/image/Lianxi/sucai/sc8.png',
       statusText: '已完成',
       statusClass: 'completed',
       type: '环保科技',
@@ -327,7 +327,7 @@ function getProjectDetail(id) {
       id: 9,
       title: '校园文创IP设计',
       description: '基于校园文化元素的创意设计项目，包括吉祥物、插画、表情包等系列文创产品设计。',
-      coverImage: '/static/image/placeholder.jpg',
+      coverImage: '/static/image/Lianxi/sucai/sc9.png',
       statusText: '已完成',
       statusClass: 'completed',
       type: '文化创意',
@@ -351,7 +351,7 @@ function getProjectDetail(id) {
       id: 10,
       title: '智能课程推荐系统',
       description: '基于大数据和深度学习的个性化课程推荐系统，根据学生的学习历史、兴趣偏好和发展规划推荐适合的课程。',
-      coverImage: '/static/image/placeholder.jpg',
+      coverImage: '/static/image/Lianxi/sucai/sc10.png',
       statusText: '进行中',
       statusClass: 'ongoing',
       type: '教育科技',

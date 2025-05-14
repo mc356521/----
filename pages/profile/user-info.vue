@@ -92,7 +92,12 @@
                   v-for="(medal, index) in medals" 
                   :key="index"
                   @click="showMedalImage(medal)" >
-                  <image class="medal-image" :src="medal.imageUrl" mode="aspectFit" ></image>
+                  <image 
+                    class="medal-image" 
+                 
+                    :src="medal.imageUrl" 
+                    mode="aspectFit" 
+                  ></image>
                   <text class="medal-name">{{ medal.name }}</text>
                 </view>
                 
@@ -245,81 +250,8 @@ const loading = ref(true);
 // 刷新状态
 const isRefreshing = ref(false);
 
-// 模拟勋章数据
-const medals = ref([
-  {
-    id: 1,
-    name: '国赛一等奖',
-    imageUrl: '/static/image/Lianxi/mc/1-1.png',
-    description: '表彰在团队合作中表现突出的成员'
-  },
-  {
-    id: 2,
-    name: '创新先锋',
-    imageUrl: '/static/image/Lianxi/mc/1-2.png',
-    description: '表彰在项目中提出创新想法的成员'
-  },
-  {
-    id: 3,
-    name: '技术能手',
-    imageUrl: '/static/image/Lianxi/mc/1-3.png',
-    description: '表彰技术能力出众的成员'
-  },
-  {
-    id: 4,
-    name: '勤奋之星',
-    imageUrl: '/static/image/Lianxi/mc/1-4.png',
-    description: '表彰工作勤奋、认真负责的成员'
-  },
-  {
-    id: 1,
-    name: '国赛一等奖',
-    imageUrl: '/static/image/Lianxi/mc/1-1.png',
-    description: '表彰在团队合作中表现突出的成员'
-  },
-  {
-    id: 2,
-    name: '创新先锋',
-    imageUrl: '/static/image/Lianxi/mc/1-2.png',
-    description: '表彰在项目中提出创新想法的成员'
-  },
-  {
-    id: 3,
-    name: '技术能手',
-    imageUrl: '/static/image/Lianxi/mc/1-3.png',
-    description: '表彰技术能力出众的成员'
-  },
-  {
-    id: 4,
-    name: '勤奋之星',
-    imageUrl: '/static/image/Lianxi/mc/1-4.png',
-    description: '表彰工作勤奋、认真负责的成员'
-  },  {
-    id: 1,
-    name: '国赛一等奖',
-    imageUrl: '/static/image/Lianxi/mc/1-1.png',
-    description: '表彰在团队合作中表现突出的成员'
-  },
-  {
-    id: 2,
-    name: '创新先锋',
-    imageUrl: '/static/image/Lianxi/mc/1-2.png',
-    description: '表彰在项目中提出创新想法的成员'
-  },
-  {
-    id: 3,
-    name: '技术能手',
-    imageUrl: '/static/image/Lianxi/mc/1-3.png',
-    description: '表彰技术能力出众的成员'
-  },
-  {
-    id: 4,
-    name: '勤奋之星',
-    imageUrl: '/static/image/Lianxi/mc/1-4.png',
-    description: '表彰工作勤奋、认真负责的成员'
-  },
-  
-]);
+// 用户勋章数据
+const medals = ref([]);
 
 // 底部提示状态
 const reachedBottom = ref(false);
@@ -362,6 +294,29 @@ async function getUserProfile() {
   }
 }
 
+// 获取用户勋章
+async function getUserBadges() {
+  try {
+    const res = await userApi.getUserBadges();
+    if (res.code === 200 && res.data) {
+      medals.value = res.data.map(badge => ({
+        id: badge.badgeId,
+        name: badge.name,
+        imageUrl: badge.icon,
+        description: `${badge.name} - 稀有度: ${badge.rarity}/6`,
+        type: badge.badgeType,
+        glowEffect: badge.glowEffect,
+        rarity: badge.rarity
+      }));
+      console.log('获取到用户勋章:', medals.value);
+    } else {
+      console.error('获取勋章失败:', res.message);
+    }
+  } catch (error) {
+    console.error('获取用户勋章失败:', error);
+  }
+}
+
 // 刷新用户信息
 async function refreshUserInfo() {
   if (isRefreshing.value) return;
@@ -374,21 +329,32 @@ async function refreshUserInfo() {
   });
   
   try {
-    const res = await userApi.getUserProfile();
+    const [profileRes, badgesRes] = await Promise.all([
+      userApi.getUserProfile(),
+      userApi.getUserBadges()
+    ]);
     
-    if (res.code === 200 && res.data) {
-      userInfo.value = res.data;
-      uni.showToast({
-        title: '刷新成功',
-        icon: 'success',
-        duration: 1000
-      });
-    } else {
-      uni.showToast({
-        title: res.message || '刷新失败',
-        icon: 'none'
-      });
+    if (profileRes.code === 200 && profileRes.data) {
+      userInfo.value = profileRes.data;
     }
+    
+    if (badgesRes.code === 200 && badgesRes.data) {
+      medals.value = badgesRes.data.map(badge => ({
+        id: badge.badgeId,
+        name: badge.name,
+        imageUrl: badge.icon,
+        description: `${badge.name} - 稀有度: ${badge.rarity}/6`,
+        type: badge.badgeType,
+        glowEffect: badge.glowEffect,
+        rarity: badge.rarity
+      }));
+    }
+    
+    uni.showToast({
+      title: '刷新成功',
+      icon: 'success',
+      duration: 1000
+    });
   } catch (error) {
     console.error('刷新用户资料失败:', error);
     uni.showToast({
@@ -678,6 +644,19 @@ function handleTouchEnd() {
   touchStartDistance.value = 0;
 }
 
+// 根据稀有度获取发光效果
+function getMedalEffectByRarity(rarity) {
+  if (!rarity) return 'common_shine';
+  
+  switch (Number(rarity)) {
+    case 6: return 'gold_glow';
+    case 5: return 'purple_pulse';
+    case 4: return 'blue_shimmer';
+    case 3: return 'green_sparkle';
+    default: return 'common_shine';
+  }
+}
+
 // 显示勋章详情
 function showMedalDetail(medal) {
   uni.showModal({
@@ -695,9 +674,10 @@ function goToMedalDetail() {
   });
 }
 
-// 页面加载时获取用户资料
+// 页面加载时获取用户资料和勋章
 onMounted(() => {
   getUserProfile();
+  getUserBadges();
 });
 </script>
 
@@ -789,7 +769,6 @@ page {
 // 内容区域
 .content-scroll {
   flex: 1;
-  padding: 0 0 30rpx 0;
 }
 
 // 头像区域
@@ -1039,10 +1018,31 @@ page {
       margin-bottom: 24rpx;
       
       .medal-image {
-        width: 130rpx;
-        height: 130rpx;
+        width: 160rpx;
+        height: 160rpx;
         margin-bottom: 8rpx;
         transition: transform 0.2s ease;
+        border-radius: 50%;
+        
+        &.gold_glow {
+          animation: gold_glow 2s infinite;
+        }
+        
+        &.purple_pulse {
+          animation: purple_pulse 2s infinite;
+        }
+        
+        &.blue_shimmer {
+          animation: blue_shimmer 2s infinite;
+        }
+        
+        &.green_sparkle {
+          animation: green_sparkle 2s infinite;
+        }
+        
+        &.common_shine {
+          animation: common_shine 2s infinite;
+        }
         
         &:active {
           transform: scale(0.95);
@@ -1346,5 +1346,31 @@ page {
 @keyframes shine {
   0% { transform: translateX(-100%) rotate(25deg); }
   100% { transform: translateX(100%) rotate(25deg); }
+}
+
+/* 勋章发光效果 */
+@keyframes gold_glow {
+  0%, 100% { box-shadow: 0 0 8rpx 2rpx rgba(255, 215, 0, 0.6); }
+  50% { box-shadow: 0 0 20rpx 5rpx rgba(255, 215, 0, 0.8); }
+}
+
+@keyframes purple_pulse {
+  0%, 100% { box-shadow: 0 0 8rpx 2rpx rgba(128, 0, 128, 0.6); }
+  50% { box-shadow: 0 0 15rpx 5rpx rgba(128, 0, 128, 0.8); }
+}
+
+@keyframes blue_shimmer {
+  0%, 100% { box-shadow: 0 0 8rpx 2rpx rgba(70, 130, 180, 0.6); }
+  50% { box-shadow: 0 0 12rpx 4rpx rgba(70, 130, 180, 0.8); }
+}
+
+@keyframes green_sparkle {
+  0%, 100% { box-shadow: 0 0 5rpx 2rpx rgba(0, 128, 0, 0.5); }
+  50% { box-shadow: 0 0 10rpx 3rpx rgba(0, 128, 0, 0.7); }
+}
+
+@keyframes common_shine {
+  0%, 100% { box-shadow: 0 0 4rpx 1rpx rgba(169, 169, 169, 0.5); }
+  50% { box-shadow: 0 0 8rpx 2rpx rgba(169, 169, 169, 0.7); }
 }
 </style> 

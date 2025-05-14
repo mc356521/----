@@ -695,6 +695,28 @@ to {
   background-color: #84CC16;
   color: #ffffff;
 }
+.selected-award {
+  background-color: #6366F1;
+  color: #ffffff;
+}
+
+/* 状态标记 */
+.status-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #ffffff;
+  z-index: 1;
+}
+.status-announced {
+  background-color: #10B981;
+}
+.status-pending {
+  background-color: #F97316;
+}
 
 /* 奖项内容 */
 .award-content {

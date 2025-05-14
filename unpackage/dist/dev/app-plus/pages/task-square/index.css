@@ -319,7 +319,7 @@
 
 /* 状态筛选标签 */
 .status-scroll {
-  padding: 0.3125rem 0.9375rem 0.625rem;
+  padding: 0 0.9375rem 0 0.9375rem;
 }
 .status-scroll .status-container {
   display: flex;

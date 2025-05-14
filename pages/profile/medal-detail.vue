@@ -209,7 +209,6 @@
     
     <!-- 悬浮申请按钮 -->
     <view class="apply-badge-btn" @click="goToApplyBadge">
-      <SvgIcon name="plus" size="24" color="#ffffff"></SvgIcon>
       <text>申请勋章</text>
     </view>
   </view>
@@ -218,6 +217,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import SvgIcon from '@/components/SvgIcon.vue';
+import userApi from '@/api/modules/user';
 
 // 加载状态
 const loading = ref(true);
@@ -254,83 +254,11 @@ async function getBadges() {
   try {
     loading.value = true;
     
-    // 模拟API请求
-    // 实际项目中，替换为真实API调用
-    // const res = await api.getBadges();
-    
-    // 模拟数据
-    const res = {
-      code: 200,
-      message: "操作成功",
-      data: {
-        records: [
-          {
-            badgeId: 1,
-            name: "全国赛金奖",
-            badgeType: "team_competition",
-            icon: "/static/image/Lianxi/mc/1-1.png",  // 使用本地图标
-            glowEffect: "gold_glow",
-            rarity: 6,
-            teamId: 1,
-            teamName: "代码先锋队",
-            competitionId: 1,
-            competitionName: "第15届全国大学生程序设计竞赛",
-            conditionTemplate: {
-              level: "国家级",
-              rank: "金奖"
-            },
-            acquiredTime: "2024-03-15",
-            expireTime: "2025-06-21",
-            displayOrder: 0,
-            isExpired: false
-          },
-          {
-            badgeId: 3,
-            name: "市赛铜奖",
-            badgeType: "team_competition",
-            icon: "/static/image/Lianxi/mc/1-3.png",  // 使用本地图标
-            glowEffect: null,
-            rarity: 3,
-            teamId: 3,
-            teamName: "商界新锐",
-            competitionId: 6,
-            competitionName: "全国大学生商业模拟挑战赛",
-            conditionTemplate: {
-              level: "市级",
-              rank: "铜奖"
-            },
-            acquiredTime: "2024-02-01",
-            expireTime: null,
-            displayOrder: 0,
-            isExpired: false
-          },
-          {
-            badgeId: 5,
-            name: "技术博客专家",
-            badgeType: "personal_achievement",
-            icon: "/static/image/Lianxi/mc/1-2.png",  // 使用本地图标
-            glowEffect: null,
-            rarity: 3,
-            teamId: null,
-            teamName: null,
-            competitionId: null,
-            competitionName: null,
-            conditionTemplate: {},
-            acquiredTime: "2024-01-05",
-            expireTime: null,
-            displayOrder: 0,
-            isExpired: false
-          }
-        ],
-        total: 3,
-        size: 10,
-        current: 1,
-        pages: 1
-      }
-    };
+    // 调用API获取勋章详情
+    const res = await userApi.getUserBadgesDetail();
     
     if (res.code === 200 && res.data) {
-      badgesList.value = res.data.records;
+      badgesList.value = res.data.records || [];
       console.log('获取到勋章数据:', res.data);
     } else {
       uni.showToast({
@@ -670,8 +598,8 @@ page {
     
     .badge-image-container {
       position: relative;
-      width: 120rpx;
-      height: 120rpx;
+      width: 160rpx;
+      height: 160rpx;
       flex-shrink: 0;
       margin-right: 20rpx;
       

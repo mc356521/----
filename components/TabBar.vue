@@ -68,7 +68,14 @@ const userRole = ref('');
 // 获取用户角色
 async function getUserRole() {
   try {
-    const res = await userApi.getUserRole();
+    const token = uni.getStorageSync('token');
+    if (!token) {
+      console.error('获取用户角色失败: 未登录');
+      return;
+    }
+    
+    // 使用/users/role/parse接口获取用户角色
+    const res = await userApi.parseUserRole(token);
     if (res.code === 200 && res.data) {
       userRole.value = res.data;
       console.log('当前用户角色:', userRole.value);
@@ -141,7 +148,7 @@ function showPublishOptions() {
   // 如果还没获取到角色，先获取用户角色
   if (!userRole.value) {
     console.log('开始获取用户角色...');
-    userApi.getUserRole(token).then(res => {
+    userApi.parseUserRole(token).then(res => {
       console.log('获取角色成功, 完整响应:', res);
       if (res.code === 200 && res.data) {
         userRole.value = res.data;

@@ -103,6 +103,8 @@
 			
 			<!-- 如果当前角色是创建者，显示申请人信息 -->
 			<view class="card-info">
+          
+              
               <view class="info-item" v-if="currentRole === 'creator' || currentRole === 'leader'">
 				<text class="info-label">申请人：</text>
                 <text class="info-value">{{ item.applicantName }} {{ item.applicantMajor ? '· ' + item.applicantMajor : '' }}</text>
@@ -417,7 +419,11 @@
     } else if (item.type === 'team') {
       return item.teamName || '队伍申请';
     } else if (item.type === 'badge') {
-      return item.badgeTitle || '徽章申请';
+      // 使用新的字段构造更丰富的勋章标题
+      if (item.badgeName) {
+        return item.badgeTitle || item.badgeName;
+      }
+      return item.badgeTitle || '勋章申请';
     }
     return '申请';
   }
@@ -656,8 +662,15 @@
           message: item.reviewMessage,
           reviewNotes: item.adminFeedback,
           // 为了适配显示格式，添加一些字段
-          badgeTitle: '徽章申请 ' + (item.requestedBadge ? `#${item.requestedBadge}` : ''),
-          applicantName: item.applicantType === 'team' ? '团队申请' : '个人申请',
+          badgeTitle: item.competitionName 
+            ? `${item.competitionName} - ${item.badgeName || '勋章申请'}`
+            : (item.badgeName ? item.badgeName : '勋章申请'),
+          applicantName: item.badgeType 
+            ? (item.badgeType === 'team_competition' ? '团队竞赛勋章' : '个人勋章') 
+            : (item.applicantType === 'team' ? '团队申请' : '个人申请'),
+          applicantMajor: item.competitionLevel && item.awardRank 
+            ? `${item.competitionLevel} · ${item.awardRank}` 
+            : '',
         }));
         
         // 处理返回的数据
@@ -1021,6 +1034,14 @@
         title: '徽章申请详情功能开发中',
 		  icon: 'none'
 		});
+
+      // 显示徽章申请详情弹窗
+      uni.showModal({
+        title: item.badgeName || '勋章申请详情',
+        content: `竞赛：${item.competitionName || '未知竞赛'}\n等级：${item.competitionLevel || '未知'}\n奖项：${item.awardRank || '未知'}\n申请时间：${formatDateTime(item.appliedAt)}\n申请说明：${item.message || '无'}\n${item.reviewNotes ? `审核反馈：${item.reviewNotes}` : ''}`,
+        showCancel: false,
+        confirmText: '关闭'
+      });
 	  }
   }
   
@@ -1482,6 +1503,20 @@
   .badge-type {
     background-color: rgba($badge-color, 0.1);
     color: $badge-color;
+  }
+  
+  // 勋章图标样式
+  .badge-icon-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16rpx;
+    
+    .badge-icon {
+      width: 120rpx;
+      height: 120rpx;
+      border-radius: 10rpx;
+      box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+    }
   }
   
   // 高亮显示的申请卡片

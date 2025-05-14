@@ -161,8 +161,8 @@ to {
 }
 .badges-list .badge-card .badge-image-container {
   position: relative;
-  width: 3.75rem;
-  height: 3.75rem;
+  width: 5rem;
+  height: 5rem;
   flex-shrink: 0;
   margin-right: 0.625rem;
 }

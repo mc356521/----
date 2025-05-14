@@ -7,7 +7,7 @@
       </view>
       <view class="header-title">发布项目</view>
       <view class="header-right">
-        <button class="publish-btn" @click="submitProject">发布</button>
+     
       </view>
     </view>
 
@@ -258,9 +258,9 @@ const form = ref({
   status: 'ongoing', // 默认为进行中
   coverImage: '',
   teamMembers: [
-    { name: '张明', role: '项目负责人', avatar: '/static/image/touxiang1.png' },
-    { name: '李华', role: '技术开发', avatar: '/static/image/touxiang5.png' },
-    { name: '王芳', role: 'UI设计', avatar: '/static/image/touxiang7.png' }
+    { name: '张明', role: '项目负责人', avatar: 'https://saichuang.oss-cn-beijing.aliyuncs.com/task_attachment/3900eb55be7c4cb3b17c0b02d07a18bc.png' },
+    { name: '李华', role: '技术开发', avatar: 'https://saichuang.oss-cn-beijing.aliyuncs.com/task_attachment/9ca105ebe429473faebca9c81b8e6f78.png' },
+    { name: '王芳', role: 'UI设计', avatar: 'https://saichuang.oss-cn-beijing.aliyuncs.com/task_attachment/e71bf50a98ec42079b9746bbd982e405.png' }
   ],
   background: '',
   features: '',
@@ -345,10 +345,10 @@ function showAddMemberModal() {
         const randomNames = ['赵云', '孙悦', '李明', '王强', '张艺', '刘洋'];
         const randomRoles = ['前端开发', '后端工程师', '产品经理', '设计师', '测试工程师', '运营'];
         const randomAvatars = [
-          '/static/image/touxiang14.png', 
-          '/static/image/touxiang15.png', 
-          '/static/image/touxiang17.png',
-          '/static/image/touxiang119.png'
+          'https://beijing.aliyuncs.com/task_attachment/6d94aa83cfc8475d8bb0aa3d8dba9928.png', 
+          'https://beijing.aliyuncs.com/task_attachment/9ca105ebe429473faebca9c81b8e6f78.png', 
+          'https://beijing.aliyuncs.com/task_attachment/e71bf50a98ec42079b9746bbd982e405.png',
+          'https://beijing.aliyuncs.com/task_attachment/fa539323f8304e5885a7a454ef468849.jpeg'
         ];
         
         const randomName = randomNames[Math.floor(Math.random() * randomNames.length)];
@@ -504,7 +504,7 @@ function showToast(title) {
 /* 主内容区域 */
 .main-content {
   flex: 1;
-  padding: 30rpx;
+
   margin-top: calc(90rpx + env(safe-area-inset-top, 0));
   margin-bottom: 150rpx; /* 为底部按钮留出空间 */
 }

@@ -39,6 +39,11 @@
             {{ award.awardType }}
           </view>
           
+          <!-- 状态标记 -->
+          <view class="status-badge" :class="{'status-announced': award.resultStatus === 'announced', 'status-pending': award.resultStatus === 'pending'}">
+            {{ award.resultStatus === 'announced' ? '已公布' : '待公布' }}
+          </view>
+          
           <!-- 奖项内容 -->
           <view class="award-content">
             <view class="award-header">
@@ -55,12 +60,12 @@
             <view class="award-details">
               <view class="detail-item">
                 <text class="detail-label">获奖时间：</text>
-                <text class="detail-value">{{ formatDate(award.announcedAt) }}</text>
+                <text class="detail-value">{{ award.announcedAt ? formatDate(award.announcedAt) : '待公布' }}</text>
               </view>
               
-              <view class="detail-item" v-if="award.stageNameOrInfo">
+              <view class="detail-item" v-if="award.stageName">
                 <text class="detail-label">比赛阶段：</text>
-                <text class="detail-value">{{ award.stageNameOrInfo }}</text>
+                <text class="detail-value">{{ award.stageName }}</text>
               </view>
               
               <view class="detail-item" v-if="award.awardDetails && award.awardDetails.bonus">
@@ -76,6 +81,21 @@
               <view class="detail-item" v-if="award.metadata && award.metadata.sponsor">
                 <text class="detail-label">赞助方：</text>
                 <text class="detail-value">{{ award.metadata.sponsor }}</text>
+              </view>
+              
+              <view class="detail-item" v-if="award.metadata && award.metadata.category">
+                <text class="detail-label">奖项类别：</text>
+                <text class="detail-value">{{ award.metadata.category }}</text>
+              </view>
+              
+              <view class="detail-item" v-if="award.metadata && award.metadata.special_mention">
+                <text class="detail-label">特别提名：</text>
+                <text class="detail-value">{{ award.metadata.special_mention }}</text>
+              </view>
+              
+              <view class="detail-item" v-if="award.metadata && award.metadata.patent_support">
+                <text class="detail-label">专利支持：</text>
+                <text class="detail-value">{{ award.metadata.patent_support ? '是' : '否' }}</text>
               </view>
             </view>
             
@@ -120,6 +140,9 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
+import api from '@/api';
+import teamApi from '@/api/modules/team';
+import competitionResultsApi from '@/api/modules/competitionResults';
 import SvgIcon from '@/components/SvgIcon.vue';
 import uniIcons from '@/uni_modules/uni-icons/components/uni-icons/uni-icons.vue';
 
@@ -130,143 +153,155 @@ const awardsList = ref([]);
 const currentPage = ref(1);
 const pageSize = ref(10);
 const hasMore = ref(true);
+const myTeams = ref([]); // 存储我的团队列表
 
-// 模拟数据
-const mockAwardsData = [
-  {
-    id: 1,
-    competitionId: 101,
-    competitionName: '2023年全国大学生创新创业大赛',
-    teamId: 201,
-    teamName: '创梦先锋队',
-    teamLogo: '/static/image/default-avatar.png',
-    awardType: '金奖',
-    announcedAt: '2023-11-20T10:00:00Z',
-    stageNameOrInfo: '全国总决赛',
-    awardDetails: { bonus: '10000', certificate: 'GJ20231120-001' },
-    metadata: { sponsor: '科技部、教育部' },
-    memberAvatars: [
-      '/static/image/default-avatar.png',
-      '/static/image/default-avatar.png',
-      '/static/image/default-avatar.png'
-    ],
-    teamMembers: 5
-  },
-  {
-    id: 2,
-    competitionId: 102,
-    competitionName: '第十届互联网+大学生创新创业大赛',
-    teamId: 202,
-    teamName: '智联未来',
-    teamLogo: '/static/image/default-avatar.png',
-    awardType: '银奖',
-    announcedAt: '2023-10-15T14:30:00Z',
-    stageNameOrInfo: '省赛',
-    awardDetails: { bonus: '5000', certificate: 'YJ20231015-042' },
-    metadata: { sponsor: '腾讯公司' },
-    memberAvatars: [
-      '/static/image/default-avatar.png',
-      '/static/image/default-avatar.png'
-    ],
-    teamMembers: 4
-  },
-  {
-    id: 3,
-    competitionId: 103,
-    competitionName: '全国大学生软件创新大赛',
-    teamId: 203,
-    teamName: '代码先锋',
-    teamLogo: '/static/image/default-avatar.png',
-    awardType: '优秀奖',
-    announcedAt: '2023-09-05T09:15:00Z',
-    stageNameOrInfo: '初赛',
-    awardDetails: { certificate: 'YX20230905-118' },
-    metadata: { sponsor: 'IBM' },
-    memberAvatars: [
-      '/static/image/default-avatar.png',
-      '/static/image/default-avatar.png',
-      '/static/image/default-avatar.png',
-      '/static/image/default-avatar.png'
-    ],
-    teamMembers: 4
-  },
-  {
-    id: 4,
-    competitionId: 104,
-    competitionName: '华为软件精英挑战赛',
-    teamId: 204,
-    teamName: '算法达人',
-    teamLogo: '/static/image/default-avatar.png',
-    awardType: '三等奖',
-    announcedAt: '2023-08-12T16:45:00Z',
-    stageNameOrInfo: '复赛',
-    awardDetails: { bonus: '2000', certificate: 'SD20230812-076' },
-    metadata: { sponsor: '华为公司' },
-    memberAvatars: [
-      '/static/image/default-avatar.png',
-      '/static/image/default-avatar.png'
-    ],
-    teamMembers: 3
-  },
-  {
-    id: 5,
-    competitionId: 105,
-    competitionName: '全国高校人工智能创新大赛',
-    teamId: 205,
-    teamName: 'AI未来',
-    teamLogo: '/static/image/default-avatar.png',
-    awardType: '特等奖',
-    announcedAt: '2023-07-28T11:20:00Z',
-    stageNameOrInfo: '总决赛',
-    awardDetails: { bonus: '20000', certificate: 'TD20230728-003' },
-    metadata: { sponsor: '百度公司' },
-    memberAvatars: [
-      '/static/image/default-avatar.png',
-      '/static/image/default-avatar.png',
-      '/static/image/default-avatar.png'
-    ],
-    teamMembers: 3
+// 获取获奖记录列表
+async function getAwardsList(isRefresh = false) {
+  if (isRefresh) {
+    currentPage.value = 1;
+    hasMore.value = true;
+    awardsList.value = [];
   }
-];
 
-// 获取获奖记录列表 (模拟)
-function getAwardsList(isRefresh = false) {
-  // 模拟加载时间
-  setTimeout(() => {
-    if (isRefresh) {
-      currentPage.value = 1;
-      awardsList.value = [];
-    }
+  if (!hasMore.value && !isRefresh) return;
+  
+  try {
+    loading.value = true;
     
-    console.log('获取获奖记录，页码:', currentPage.value);
+    // 1. 首先获取用户的团队列表
+    const teamsRes = await teamApi.getMyTeams();
     
-    // 模拟分页
-    const start = (currentPage.value - 1) * pageSize.value;
-    const end = currentPage.value * pageSize.value;
-    const pageData = mockAwardsData.slice(start, end);
-    
-    // 还有更多数据吗
-    hasMore.value = end < mockAwardsData.length;
-    
-    if (pageData.length > 0) {
-      awardsList.value = [...awardsList.value, ...pageData];
+    if (teamsRes && teamsRes.code === 200 && teamsRes.data) {
+      myTeams.value = teamsRes.data;
       
+      // 2. 对于每个团队，获取其成员和获奖信息
+      let allAwards = [];
+      
+      for (const team of myTeams.value) {
+        try {
+          // 获取团队成员信息
+          const teamMembersRes = await teamApi.getTeamMembers(team.id);
+          let memberAvatars = [];
+          let teamMembers = 0;
+          
+          if (teamMembersRes && teamMembersRes.code === 200 && teamMembersRes.data) {
+            const members = teamMembersRes.data;
+            teamMembers = members.length;
+            
+            // 提取成员头像
+            members.forEach(member => {
+              if (member.userAvatarUrl) {
+                memberAvatars.push(member.userAvatarUrl);
+              }
+            });
+            
+            // 排序，确保队长在前
+            const leaderMember = members.find(m => m.isLeader === true);
+            if (leaderMember && leaderMember.userAvatarUrl) {
+              memberAvatars = memberAvatars.filter(avatar => avatar !== leaderMember.userAvatarUrl);
+              memberAvatars.unshift(leaderMember.userAvatarUrl);
+            }
+          }
+          
+          // 获取团队的获奖记录
+          const awardsRes = await competitionResultsApi.getTeamAwards(team.id);
+          
+          if (awardsRes && awardsRes.code === 200 && awardsRes.data) {
+            const teamAwards = awardsRes.data;
+            
+            // 处理每个获奖记录
+            teamAwards.forEach(award => {
+              try {
+                // 解析奖项详情和元数据
+                let awardDetails = {};
+                let metadata = {};
+                
+                if (award.awardDetails) {
+                  awardDetails = typeof award.awardDetails === 'string' 
+                    ? JSON.parse(award.awardDetails) 
+                    : award.awardDetails;
+                }
+                
+                if (award.metadata) {
+                  metadata = typeof award.metadata === 'string' 
+                    ? JSON.parse(award.metadata) 
+                    : award.metadata;
+                }
+                
+                // 添加团队信息到获奖记录中
+                allAwards.push({
+                  ...award,
+                  awardDetails,
+                  metadata,
+                  teamName: team.name,
+                  teamLogo: team.leaderAvatarUrl,
+                  memberAvatars,
+                  teamMembers
+                });
+              } catch (e) {
+                console.error('处理获奖记录错误:', e);
+              }
+            });
+          }
+        } catch (e) {
+          console.error(`获取团队 ${team.id} 信息失败:`, e);
+        }
+      }
+      
+      // 3. 按照公布时间排序获奖记录（最新的在前）
+      allAwards.sort((a, b) => {
+        if (!a.announcedAt) return 1;
+        if (!b.announcedAt) return -1;
+        return new Date(b.announcedAt) - new Date(a.announcedAt);
+      });
+      
+      // 4. 分页处理
+      const startIndex = (currentPage.value - 1) * pageSize.value;
+      const endIndex = currentPage.value * pageSize.value;
+      const pageAwards = allAwards.slice(startIndex, endIndex);
+      
+      // 5. 更新列表数据
+      if (isRefresh) {
+        awardsList.value = pageAwards;
+      } else {
+        awardsList.value = [...awardsList.value, ...pageAwards];
+      }
+      
+      // 更新分页信息
+      hasMore.value = endIndex < allAwards.length;
+      
+      if (isRefresh) {
+        refreshing.value = false;
+        uni.showToast({
+          title: '刷新成功',
+          icon: 'success',
+          duration: 1500
+        });
+      }
+      
+      // 是否还有更多数据
       if (hasMore.value) {
         currentPage.value++;
       }
+    } else {
+      console.warn('获取用户团队失败:', teamsRes);
+      if (isRefresh) {
+        refreshing.value = false;
+      }
     }
-    
+  } catch (error) {
+    console.error('获取获奖记录错误:', error);
     if (isRefresh) {
       refreshing.value = false;
       uni.showToast({
-        title: '刷新成功',
-        icon: 'success',
+        title: '刷新失败',
+        icon: 'none',
         duration: 1500
       });
     }
-    
+  } finally {
     loading.value = false;
-  }, 1000); // 模拟网络延迟
+  }
 }
 
 // 刷新数据
@@ -301,6 +336,8 @@ function getAwardClass(awardType) {
       return 'third-award';
     case '优秀奖':
       return 'excellent-award';
+    case '入选':
+      return 'selected-award';
     default:
       return '';
   }
@@ -531,6 +568,31 @@ page {
 .excellent-award {
   background-color: #84CC16;
   color: #ffffff;
+}
+
+.selected-award {
+  background-color: #6366F1;
+  color: #ffffff;
+}
+
+/* 状态标记 */
+.status-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 8rpx 20rpx;
+  font-size: 24rpx;
+  font-weight: bold;
+  color: #ffffff;
+  z-index: 1;
+}
+
+.status-announced {
+  background-color: #10B981;
+}
+
+.status-pending {
+  background-color: #F97316;
 }
 
 /* 奖项内容 */

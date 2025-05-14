@@ -524,6 +524,17 @@ body {
   background-color: rgba(245, 166, 35, 0.1);
   color: #F5A623;
 }
+.badge-icon-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+.badge-icon-container .badge-icon {
+  width: 3.75rem;
+  height: 3.75rem;
+  border-radius: 0.3125rem;
+  box-shadow: 0 0.0625rem 0.25rem rgba(0, 0, 0, 0.1);
+}
 .highlight-application {
   animation: highlight-pulse 3s ease-in-out;
   box-shadow: 0 0 0.46875rem rgba(74, 144, 226, 0.8);

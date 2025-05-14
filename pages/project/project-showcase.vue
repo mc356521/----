@@ -68,7 +68,12 @@
     </scroll-view>
 
     <!-- 底部导航栏 -->
-    <TabBar activeTab="projects" />
+    <TabBar name="project" />
+    
+    <!-- 悬浮创建按钮 -->
+    <view class="create-btn" @click="createProject">
+      <SvgIcon name="chuangjiantubiao" size="40" color="#ffffff"></SvgIcon>
+    </view>
   </view>
 </template>
 
@@ -88,7 +93,7 @@ const projectsData = [
     id: 1,
     title: '智能校园导航系统',
     description: '基于AR技术的校园导航系统，提供实时路线规划和校园信息查询功能，帮助新生和访客快速熟悉校园环境。',
-    coverImage: '/static/image/placeholder.jpg',
+    coverImage: '/static/image/Lianxi/sucai/sc1.png',
     statusText: '进行中',
     statusClass: 'ongoing',
     type: '创新创业项目',
@@ -114,7 +119,7 @@ const projectsData = [
     id: 2,
     title: '校园二手交易平台',
     description: '面向在校学生的二手物品交易平台，支持物品发布、搜索、交易和评价，促进校园资源循环利用。',
-    coverImage: '/static/image/placeholder.jpg',
+    coverImage: '/static/image/Lianxi/sucai/sc2.png',
     statusText: '已完成',
     statusClass: 'completed',
     type: '创业项目',
@@ -139,7 +144,7 @@ const projectsData = [
     id: 3,
     title: '智慧教室管理系统',
     description: '结合物联网技术的智能教室管理系统，实现教室设备远程控制、使用情况监控和智能预约功能。',
-    coverImage: '/static/image/placeholder.jpg',
+    coverImage: '/static/image/Lianxi/sucai/sc3.png',
     statusText: '进行中',
     statusClass: 'ongoing',
     type: '智能硬件',
@@ -166,7 +171,7 @@ const projectsData = [
     id: 4,
     title: '校园文化数字展示平台',
     description: '结合VR技术的校园文化数字展示平台，让用户能够沉浸式体验校园历史、文化景点和重要活动。',
-    coverImage: '/static/image/placeholder.jpg',
+    coverImage: '/static/image/Lianxi/sucai/sc4.png',
     statusText: '进行中',
     statusClass: 'ongoing',
     type: '数字文创',
@@ -192,7 +197,7 @@ const projectsData = [
     id: 5,
     title: '智能化学实验助手',
     description: '基于计算机视觉的智能化学实验助手，通过摄像头实时识别实验操作，提供步骤提示和安全警告。',
-    coverImage: '/static/image/placeholder.jpg',
+    coverImage: '/static/image/Lianxi/sucai/sc5.png',
     statusText: '已完成',
     statusClass: 'completed',
     type: '科研项目',
@@ -217,7 +222,7 @@ const projectsData = [
     id: 6,
     title: '校园碳排放监测系统',
     description: '基于物联网的校园碳排放监测系统，通过传感器网络实时收集和分析校园各区域的能源消耗和碳排放数据。',
-    coverImage: '/static/image/placeholder.jpg',
+    coverImage: '/static/image/Lianxi/sucai/sc6.png',
     statusText: '进行中',
     statusClass: 'ongoing',
     type: '可持续发展',
@@ -245,7 +250,7 @@ const projectsData = [
     id: 7,
     title: '校园智能健康助手',
     description: '结合可穿戴设备的校园智能健康助手，为学生提供运动追踪、健康监测和个性化健康建议。',
-    coverImage: '/static/image/placeholder.jpg',
+    coverImage: '/static/image/Lianxi/sucai/sc7.png',
     statusText: '进行中',
     statusClass: 'ongoing',
     type: '健康科技',
@@ -271,7 +276,7 @@ const projectsData = [
     id: 8,
     title: '智能垃圾分类系统',
     description: '基于计算机视觉和机器学习的智能垃圾分类系统，能自动识别垃圾类型并引导用户进行正确分类。',
-    coverImage: '/static/image/placeholder.jpg',
+    coverImage: '/static/image/Lianxi/sucai/sc8.png',
     statusText: '已完成',
     statusClass: 'completed',
     type: '环保科技',
@@ -296,7 +301,7 @@ const projectsData = [
     id: 9,
     title: '校园文创IP设计',
     description: '基于校园文化元素的创意设计项目，包括吉祥物、插画、表情包等系列文创产品设计。',
-    coverImage: '/static/image/placeholder.jpg',
+    coverImage: '/static/image/Lianxi/sucai/sc9.png',
     statusText: '已完成',
     statusClass: 'completed',
     type: '文化创意',
@@ -320,7 +325,7 @@ const projectsData = [
     id: 10,
     title: '智能课程推荐系统',
     description: '基于大数据和深度学习的个性化课程推荐系统，根据学生的学习历史、兴趣偏好和发展规划推荐适合的课程。',
-    coverImage: '/static/image/placeholder.jpg',
+    coverImage: '/static/image/Lianxi/sucai/sc10.png',
     statusText: '进行中',
     statusClass: 'ongoing',
     type: '教育科技',
@@ -375,6 +380,13 @@ function viewProjectDetail(id) {
     url: `/pages/project/detail?id=${id}`
   });
 }
+
+// 创建新项目
+function createProject() {
+  uni.navigateTo({
+    url: '/pages/project/create'
+  });
+}
 </script>
 
 <style lang="scss">
@@ -385,11 +397,12 @@ function viewProjectDetail(id) {
   flex-direction: column;
   min-height: 100vh;
   background-color: #f9fafb;
+  padding:0 20rpx;
 }
 
 .content-scroll {
   flex: 1;
-  padding: 20rpx;
+
   margin-top: 120rpx; /* 为顶部导航栏留出空间 */
 }
 
@@ -414,7 +427,8 @@ function viewProjectDetail(id) {
   display: inline-flex;
   flex-wrap: nowrap;
   gap: 16rpx;
-  padding: 10rpx 0;
+  margin-top: 10rpx;
+  padding: 15rpx 0;
 }
 
 .category-item {
@@ -563,5 +577,25 @@ function viewProjectDetail(id) {
 /* 适配安全区域 */
 .content-scroll {
   padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* 悬浮创建按钮 */
+.create-btn {
+  position: fixed;
+  right: 40rpx;
+  bottom: 140rpx;
+  width: 100rpx;
+  height: 100rpx;
+  background-color: $primary-color;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6rpx 16rpx rgba($primary-color, 0.3);
+  z-index: 99;
+  
+  &:active {
+    transform: scale(0.95);
+  }
 }
 </style> 

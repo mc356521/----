@@ -145,6 +145,25 @@ const userApi = {
   },
   
   /**
+   * 解析用户角色
+   * @param {String} token - 用户token
+   * @returns {Promise} 请求结果Promise对象，返回用户角色（student/teacher/admin）
+   */
+  parseUserRole(token) {
+    if (!token) {
+      return Promise.reject(new Error('未提供token'));
+    }
+    
+    return request({
+      url: `/users/role/parse?token=${encodeURIComponent(token)}`,
+      method: 'POST',
+      header: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+  },
+  
+  /**
    * 退出登录
    * @returns {Promise} 请求结果Promise对象
    */
@@ -264,6 +283,34 @@ const userApi = {
     return request({
       url: '/api/skill-tags/group-by-category',
       method: 'GET'
+    });
+  },
+
+  /**
+   * 获取用户勋章数据
+   * @returns {Promise} 用户勋章数据的Promise对象
+   */
+  getUserBadges() {
+    return request({
+      url: '/user/honors/simple-badges',
+      method: 'GET',
+      header: {
+        'Authorization': 'Bearer ' + getToken()
+      }
+    });
+  },
+  
+  /**
+   * 获取用户详细勋章数据
+   * @returns {Promise} 用户详细勋章数据的Promise对象
+   */
+  getUserBadgesDetail() {
+    return request({
+      url: '/user/honors/badges',
+      method: 'GET',
+      header: {
+        'Authorization': 'Bearer ' + getToken()
+      }
     });
   }
 };

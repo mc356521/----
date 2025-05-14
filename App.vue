@@ -30,7 +30,7 @@ export default {
   // 检查AI推荐相关的缓存数据是否过期
   try {
     // 缓存有效时间（3小时，单位：毫秒）
-    const cacheValidDuration = 3 * 60 * 60 * 1000;
+    const cacheValidDuration = 12 * 60 * 60 * 1000;
     
     // 获取缓存时间
     const cachedTime = uni.getStorageSync('ai_recommend_cache_time');

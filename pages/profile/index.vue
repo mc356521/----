@@ -51,38 +51,38 @@
       <view class="menu-group">
   
         <view class="menu-item" @click="navigateTo('material-reward')">
-          <text class="iconfont icon-users menu-icon"></text>
+          <SvgIcon name="shiwu" class="menu-icon"></SvgIcon>
           <text class="menu-text">实物奖励</text>
-          <text class="iconfont icon-arrow-left menu-arrow"></text>
+          <SvgIcon name="zuojiantou" size="20"></SvgIcon>
         </view>
         <view class="menu-item" @click="navigateTo('apply-badge')">
-          <text class="iconfont icon-star menu-icon"></text>
+          <SvgIcon name="xunzhang" class="menu-icon"></SvgIcon>
           <text class="menu-text">勋章申请</text>
-          <text class="iconfont icon-arrow-left menu-arrow"></text>
+          <SvgIcon name="zuojiantou" size="20"></SvgIcon>
         </view>
         <view class="menu-item" @click="navigateTo('applications')">
-          <text class="iconfont icon-paper-plane menu-icon"></text>
+          <SvgIcon name="shenqing" class="menu-icon"></SvgIcon>
           <text class="menu-text">申请管理</text>
-          <text class="iconfont icon-arrow-left menu-arrow"></text>
+          <SvgIcon name="zuojiantou" size="20"></SvgIcon>
         </view>
      
       </view>
       
       <view class="menu-group">
         <view class="menu-item" @click="navigateTo('settings')">
-          <text class="iconfont icon-settings menu-icon"></text>
+          <SvgIcon name="shezhi" class="menu-icon"></SvgIcon>
           <text class="menu-text">账号设置</text>
-          <text class="iconfont icon-arrow-left menu-arrow"></text>
+          <SvgIcon name="zuojiantou" size="20"></SvgIcon>
         </view>
         <view class="menu-item" @click="navigateTo('feedback')">
-          <text class="iconfont icon-feedback menu-icon"></text>
+          <SvgIcon name="yijianfankui" class="menu-icon"></SvgIcon>
           <text class="menu-text">意见反馈</text>
-          <text class="iconfont icon-arrow-left menu-arrow"></text>
+          <SvgIcon name="zuojiantou" size="20"></SvgIcon>
         </view>
         <view class="menu-item" @click="navigateTo('about')">
-          <text class="iconfont icon-info-circle menu-icon"></text>
+          <SvgIcon name="guanyuwomen" class="menu-icon"></SvgIcon>
           <text class="menu-text">关于我们</text>
-          <text class="iconfont icon-arrow-left menu-arrow"></text>
+          <SvgIcon name="zuojiantou" size="20"></SvgIcon>
         </view>
       </view>
     </view>

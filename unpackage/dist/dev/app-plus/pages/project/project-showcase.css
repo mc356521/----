@@ -79,7 +79,7 @@
   width: 1.5625rem;
   height: 1.5625rem;
   border-radius: 50%;
-  background-color: #F3F4F6;
+  background-color: #EEEFF2;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -139,7 +139,7 @@
   display: inline-block;
   padding: 0.3125rem 0.5rem;
   border-radius: 3.125rem;
-  background-color: #F3F4F6;
+  background-color: #EEEFF2;
   font-size: 0.75rem;
   color: #666666;
   transition: all 0.3s;
@@ -257,10 +257,10 @@
   flex-direction: column;
   min-height: 100vh;
   background-color: #f9fafb;
+  padding: 0 0.625rem;
 }
 .content-scroll {
   flex: 1;
-  padding: 0.625rem;
   margin-top: 3.75rem;
   /* 为顶部导航栏留出空间 */
 }
@@ -285,7 +285,8 @@
   display: inline-flex;
   flex-wrap: nowrap;
   gap: 0.5rem;
-  padding: 0.3125rem 0;
+  margin-top: 0.3125rem;
+  padding: 0.46875rem 0;
 }
 .category-item {
   display: inline-block;
@@ -411,4 +412,22 @@
 /* 适配安全区域 */
 .content-scroll {
   padding-bottom: env(safe-area-inset-bottom, 0);
+}
+/* 悬浮创建按钮 */
+.create-btn {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 4.375rem;
+  width: 3.125rem;
+  height: 3.125rem;
+  background-color: #2d8cf0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0.1875rem 0.5rem rgba(45, 140, 240, 0.3);
+  z-index: 99;
+}
+.create-btn:active {
+  transform: scale(0.95);
 }

@@ -100,6 +100,38 @@ const competitionResultsApi = {
         'Authorization': `Bearer ${token}`
       }
     });
+  },
+  
+  /**
+   * 获取团队的获奖记录
+   * @param {Number|String} teamId - 团队ID
+   * @returns {Promise} 请求结果Promise对象
+   */
+  getTeamAwards(teamId) {
+    // 检查是否有token
+    const token = getToken();
+    if (!token) {
+      uni.showToast({
+        title: '请先登录',
+        icon: 'none'
+      });
+      
+      setTimeout(() => {
+        uni.navigateTo({
+          url: '/pages/login/login'
+        });
+      }, 1500);
+      
+      return Promise.reject(new Error('未登录'));
+    }
+    
+    return request({
+      url: `/competitionResults/team/${teamId}`,
+      method: 'GET',
+      header: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
   }
 };
 

@@ -250,6 +250,34 @@ const competitionsApi = {
       url: `/competitions/${competitionId}/team-count`,
       method: 'GET'
     });
+  },
+  
+  /**
+   * 按文件类型获取竞赛附件
+   * @param {Number|String} competitionId - 竞赛ID
+   * @param {String} fileType - 文件类型，默认为 'document'
+   * @returns {Promise} 请求结果Promise对象，包含附件列表
+   */
+  getCompetitionAttachmentsByType(competitionId, fileType = 'document') {
+    return request({
+      url: `/competitions/attachments/list-by-type/${competitionId}`,
+      method: 'GET',
+      params: {
+        fileType
+      }
+    });
+  },
+  
+  /**
+   * 获取用户参与的所有竞赛
+   * @param {Number|String} userId - 用户ID，如果不传则获取当前登录用户的参赛信息
+   * @returns {Promise} 请求结果Promise对象
+   */
+  getUserParticipatedCompetitions(userId) {
+    return request({
+      url: userId ? `/competitions/user/${userId}/participated` : '/competitions/user/participated',
+      method: 'GET'
+    });
   }
 };
 

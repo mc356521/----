@@ -55,7 +55,7 @@
         </view>
         
         <!-- 状态筛选标签 -->
-        <view class="divider"></view>
+    
         <scroll-view scroll-x class="status-scroll" show-scrollbar="false">
           <view class="status-container">
             <view 
@@ -677,7 +677,7 @@ $border-color: #eeeeee;
 
 /* 状态筛选标签 */
 .status-scroll {
-  padding: 10rpx 30rpx 20rpx;
+  padding:0 30rpx 0rpx 30rpx;
   
   .status-container {
     display: flex;

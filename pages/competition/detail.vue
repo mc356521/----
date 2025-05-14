@@ -34,7 +34,7 @@
           </view>
           <text class="text-white text-2xl font-bold">{{ competition.title }}</text>
           <view class="flex-row items-center mt-1 space-x-2">
-            <text class="category-tag" :class="getTagClass(competition.category)">{{ competition.category }}</text>
+            <text class="category-tag" v-for="category in competition.categoryNames" :key="category" :class="getTagClass(category)">{{ category }}</text>
           </view>
         </view>
       </view>
@@ -110,16 +110,22 @@
         </view>
         
         <!-- 附件列表 -->
-        <view v-if="competition.attachments && competition.attachments.length > 0" class="mt-6">
+        <view v-if="documentAttachments && documentAttachments.length > 0" class="mt-6">
           <view class="font-bold text-lg text-gray-800 mb-3">相关资料</view>
-          <view v-if="competition.attachments.length === 0">无</view>
+          <view v-if="documentAttachments.length === 0" class="text-gray-500">暂无相关资料</view>
           <view class="space-y-3" v-else>
-            <view v-for="(attachment, index) in competition.attachments" :key="index" 
+            <view v-for="(attachment, index) in documentAttachments" :key="index" 
               class="flex-row items-center p-3 bg-gray-50 rounded-lg">
-              <text class="flex-1 text-sm text-gray-700">{{ attachment.fileName }}</text>
-              <view class="download-btn">
-                <SvgIcon name="xiazai" class="download-icon"></SvgIcon>
-                <text class="text-xs text-white">下载</text>
+              <view class="flex-1">
+                <text class="text-sm text-gray-700 font-medium">{{ attachment.originalFilename }}</text>
+                <view class="text-xs text-gray-500 mt-1">{{ formatFileSize(attachment.size) }}</view>
+              </view>
+              <view class="download-btn" @click="downloadAttachment(attachment)">
+                <view v-if="isDownloading && downloadingFileId === attachment.fileId" class="spinner-mini"></view>
+                <template v-else>
+                  <SvgIcon name="xiazai" class="download-icon"></SvgIcon>
+                  <text class="text-xs text-white">下载</text>
+                </template>
               </view>
             </view>
           </view>
@@ -214,7 +220,7 @@
           <view v-for="result in filteredResults" :key="result.id" class="result-card">
             <view class="result-header">
               <view class="flex-row items-center">
-                <image :src="result.teamLogo || '/static/image/default-logo.png'" class="team-logo"></image>
+                <SvgIcon name="jiuyuan" size="30" color="#000000" style="margin-right: 25rpx;"></SvgIcon>
                 <view class="ml-3">
                   <text class="font-bold text-gray-800">{{ result.teamName }}</text>
                   <view class="flex-row items-center mt-1">
@@ -287,20 +293,54 @@
         <!-- 搜索和筛选 -->
         <view class="search-filter-container">
           <view class="search-box">
-            <text class="iconfont icon-search search-icon"></text>
+            <SvgIcon name="sousuo" size="20" color="#000000" style="margin-right: 10rpx;"></SvgIcon>
             <input type="text" placeholder="搜索队伍" class="search-input" v-model="searchText" />
             <text v-if="searchText" class="iconfont icon-close-circle clear-icon" @click="clearSearch"></text>
           </view>
           <view class="filter-btn" @click="toggleFilter">
-            <text class="iconfont icon-filter filter-icon"></text>
+            <SvgIcon name="saixuanx" size="20" color="#000000" style="margin-right: 10rpx;"></SvgIcon>
             <text class="filter-text">筛选</text>
           </view>
         </view>
         
+        <!-- 筛选面板 -->
+        <view v-if="showFilterPanel" class="filter-panel">
+          <view class="filter-panel-header">
+            <text class="filter-panel-title">队伍状态筛选</text>
+            <view class="filter-panel-close" @click="toggleFilter">
+              <SvgIcon name="close" size="18" color="#666666"></SvgIcon>
+            </view>
+          </view>
+          <view class="filter-panel-body">
+            <view 
+              class="filter-option" 
+              :class="{'active': statusFilter === 'all'}" 
+              @click="applyFilter('all')">
+              <text>全部</text>
+            </view>
+            <view 
+              class="filter-option" 
+              :class="{'active': statusFilter === 'recruiting'}" 
+              @click="applyFilter('recruiting')">
+              <text>招募中</text>
+            </view>
+            <view 
+              class="filter-option" 
+              :class="{'active': statusFilter === 'full'}" 
+              @click="applyFilter('full')">
+              <text>已组满</text>
+            </view>
+          </view>
+          <view class="filter-panel-footer">
+            <view class="filter-btn-reset" @click="clearFilter">重置</view>
+            <view class="filter-btn-confirm" @click="toggleFilter">确认</view>
+          </view>
+        </view>
+        
         <!-- 队伍列表 -->
-        <view v-if="teams.length > 0" class="space-y-4">
+        <view v-if="filteredTeams.length > 0" class="space-y-4">
           <view 
-            v-for="team in teams" 
+            v-for="team in filteredTeams" 
             :key="team.id" 
             class="team-card"
             @click="viewTeamDetail(team.id)">
@@ -344,7 +384,7 @@
         
         <!-- 空状态 -->
         <view v-else-if="!teamsLoading" class="empty-state">
-          <text class="text-gray-500">暂无参赛队伍</text>
+          <text class="text-gray-500">{{ statusFilter !== 'all' ? `没有${statusFilter === 'recruiting' ? '招募中' : '已组满'}的队伍` : '暂无参赛队伍' }}</text>
         </view>
         
         <!-- 加载状态 -->
@@ -426,6 +466,12 @@ const competition = ref({
   coverImageUrl: ''
 });
 
+// 文档类型附件
+const documentAttachments = ref([]);
+// 下载状态
+const isDownloading = ref(false);
+const downloadingFileId = ref(null);
+
 // 赛程阶段数据
 const competitionStages = ref([]);
 
@@ -450,6 +496,10 @@ const teamsCurrentPage = ref(1);
 const teamsPageSize = ref(10);
 const teamsHasMore = ref(true);
 const searchText = ref('');
+// 筛选状态
+const statusFilter = ref('all'); // 'all', 'recruiting', 'full'
+// 是否显示筛选面板
+const showFilterPanel = ref(false);
 
 // 收藏状态
 const isFavorite = ref(false);
@@ -462,6 +512,31 @@ const filteredResults = computed(() => {
     return competitionResults.value;
   }
   return competitionResults.value.filter(result => result.stageId == selectedStageId.value);
+});
+
+// 筛选后的队伍列表
+const filteredTeams = computed(() => {
+  if (!teams.value || teams.value.length === 0) return [];
+  
+  let result = [...teams.value];
+  
+  // 搜索文本筛选
+  if (searchText.value.trim()) {
+    const searchLower = searchText.value.toLowerCase();
+    result = result.filter(team => 
+      team.name.toLowerCase().includes(searchLower) || 
+      (team.description && team.description.toLowerCase().includes(searchLower))
+    );
+  }
+  
+  // 状态筛选
+  if (statusFilter.value === 'recruiting') {
+    result = result.filter(team => team.status === '0');  // 招募中
+  } else if (statusFilter.value === 'full') {
+    result = result.filter(team => team.status === '1');  // 已组满
+  }
+  
+  return result;
 });
 
 // 获取竞赛详情数据
@@ -477,7 +552,7 @@ async function getCompetitionDetail(id) {
         ...competition.value,
         id: data.id,
         title: data.title,
-        category: data.categoryNames && data.categoryNames.length > 0 ? data.categoryNames[0] : '',
+        category: data.categoryNames,
         level: data.level || '国家级',
         status: getStatusText(data.status),
         statusCode: data.status,
@@ -507,6 +582,9 @@ async function getCompetitionDetail(id) {
         coverImageUrl: data.coverImageUrl || ''
       };
       
+      // 获取竞赛文档附件
+      getCompetitionDocuments(data.id);
+      
       // 获取竞赛阶段
       getCompetitionStages(data.id);
       
@@ -529,6 +607,131 @@ async function getCompetitionDetail(id) {
   } finally {
     loading.value = false;
   }
+}
+
+// 获取竞赛文档附件
+async function getCompetitionDocuments(competitionId) {
+  try {
+    const res = await api.competitions.getCompetitionAttachmentsByType(competitionId, 'document');
+    if (res && res.code === 200 && res.data) {
+      documentAttachments.value = res.data.documents || [];
+      console.log('竞赛文档附件:', documentAttachments.value);
+    } else {
+      console.warn('获取竞赛附件失败或无数据:', res);
+    }
+  } catch (error) {
+    console.error('获取竞赛附件错误:', error);
+  }
+}
+
+// 下载附件
+function downloadAttachment(attachment) {
+  if (!attachment || !attachment.url) {
+    uni.showToast({
+      title: '下载链接不存在',
+      icon: 'none'
+    });
+    return;
+  }
+
+  // 设置下载状态
+  isDownloading.value = true;
+  downloadingFileId.value = attachment.fileId;
+
+  // 在小程序环境中，使用uni.downloadFile下载文件
+  if (uni.getSystemInfoSync().platform === 'mp-weixin' || 
+      uni.getSystemInfoSync().platform === 'mp-alipay' || 
+      uni.getSystemInfoSync().platform === 'mp-baidu') {
+    uni.showLoading({
+      title: '下载中...'
+    });
+    
+    uni.downloadFile({
+      url: attachment.url,
+      success: (res) => {
+        if (res.statusCode === 200) {
+          // 保存文件到本地
+          uni.saveFile({
+            tempFilePath: res.tempFilePath,
+            success: (saveRes) => {
+              uni.hideLoading();
+              uni.showToast({
+                title: '下载成功',
+                icon: 'success'
+              });
+              
+              // 打开文件
+              uni.openDocument({
+                filePath: saveRes.savedFilePath,
+                success: () => {
+                  console.log('打开文件成功');
+                },
+                fail: (err) => {
+                  console.error('打开文件失败:', err);
+                  uni.showToast({
+                    title: '无法打开此类型文件',
+                    icon: 'none'
+                  });
+                }
+              });
+            },
+            fail: (err) => {
+              console.error('保存文件失败:', err);
+              uni.hideLoading();
+              uni.showToast({
+                title: '保存文件失败',
+                icon: 'none'
+              });
+            }
+          });
+        } else {
+          uni.hideLoading();
+          uni.showToast({
+            title: '下载失败',
+            icon: 'none'
+          });
+        }
+      },
+      fail: (err) => {
+        console.error('下载文件失败:', err);
+        uni.hideLoading();
+        uni.showToast({
+          title: '下载失败',
+          icon: 'none'
+        });
+      },
+      complete: () => {
+        // 重置下载状态
+        isDownloading.value = false;
+        downloadingFileId.value = null;
+      }
+    });
+  } else {
+    // 在H5环境中，直接打开链接
+    window.open(attachment.url, '_blank');
+    
+    // 重置下载状态
+    setTimeout(() => {
+      isDownloading.value = false;
+      downloadingFileId.value = null;
+    }, 1000); // 延迟一秒重置状态，提供反馈
+  }
+}
+
+// 格式化文件大小
+function formatFileSize(size) {
+  if (!size) return '未知大小';
+  
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let formattedSize = size;
+  let unitIndex = 0;
+  
+  while (formattedSize >= 1024 && unitIndex < units.length - 1) {
+    formattedSize /= 1024;
+    unitIndex++;
+  }
+  
+  return `${formattedSize.toFixed(2)} ${units[unitIndex]}`;
 }
 
 // 获取竞赛阶段
@@ -745,7 +948,7 @@ function getRandomColor(str) {
   const colors = [
     '#2563EB', // 蓝色
     '#10B981', // 绿色
-    '#8B5CF6', // 紫色
+    '#7B5CF6', // 紫色
     '#EC4899', // 粉色
     '#F59E0B', // 橙色
     '#EF4444'  // 红色
@@ -822,18 +1025,28 @@ onMounted(() => {
 // 根据分类返回对应的样式类
 function getTagClass(category) {
   switch(category) {
-    case '创新创业':
-      return 'orange-tag';
-    case '学科竞赛':
-      return 'green-tag';
-    case '科技竞赛':
-      return 'blue-tag';
-    case '文体竞赛':
-      return 'purple-tag';
     case '程序设计':
-      return 'cxsj-tag';
+      return 'tag-blue';       // 蓝色 - 技术相关
+    case '数学建模':
+      return 'tag-purple';     // 紫色 - 数学/分析
+    case '电子设计':
+      return 'tag-cyan';       // 青色 - 电子/工程
+    case '机器人':
+      return 'tag-teal';       // 蓝绿色 - 智能/机械
+    case '创新创业':
+      return 'tag-orange';     // 橙色 - 创业相关
+    case '商业挑战':
+      return 'tag-amber';      // 琥珀色 - 商业相关
+    case '艺术设计':
+      return 'tag-pink';       // 粉色 - 艺术相关
+    case '体育竞技':
+      return 'tag-green';      // 绿色 - 体育相关
+    case '学术科研':
+      return 'tag-indigo';     // 靛蓝色 - 学术相关
+    case '其他':
+      return 'tag-gray';       // 灰色 - 其他类别
     default:
-      return 'gray-tag';
+      return 'tag-gray';
   }
 }
 
@@ -889,14 +1102,26 @@ function goBack() {
   uni.navigateBack();
 }
 
+// 清除搜索
 function clearSearch() {
   searchText.value = '';
-  // 这里可以添加搜索逻辑
 }
 
+// 切换筛选面板
 function toggleFilter() {
-  // 这里可以添加筛选逻辑
-  console.log('打开筛选选项');
+  showFilterPanel.value = !showFilterPanel.value;
+}
+
+// 应用筛选条件
+function applyFilter(status) {
+  statusFilter.value = status;
+  showFilterPanel.value = false;
+}
+
+// 清除筛选条件
+function clearFilter() {
+  statusFilter.value = 'all';
+  showFilterPanel.value = false;
 }
 
 // 跳转到创建团队页面
@@ -1398,33 +1623,75 @@ page {
 }
 
 .category-tag {
-  padding: 8rpx 16rpx;
+  margin-right: 16rpx;
+  margin-bottom: 16rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12rpx 24rpx;
   border-radius: 8rpx;
-  font-size: 24rpx;
-}
+  font-size: 26rpx;
+  font-weight: 600;
+  
+  &.tag-blue {
+    background-color: rgba(37, 99, 235, 0.15);
+    color: #0052D9;
+    box-shadow: 0 2rpx 6rpx rgba(37, 99, 235, 0.3);
+  }
+  
+  &.tag-purple {
+    background-color: rgba(124, 58, 237, 0.15);
+    color: #6419E6;
+    box-shadow: 0 2rpx 6rpx rgba(139, 92, 246, 0.3);
+  }
+  
+  &.tag-cyan {
+    background-color: rgba(6, 182, 212, 0.15);
+    color: #07A6C6;
+    box-shadow: 0 2rpx 6rpx rgba(6, 182, 212, 0.3);
+  }
+  
+  &.tag-teal {
+    background-color: rgba(20, 184, 166, 0.15);
+    color: #0C9488;
+    box-shadow: 0 2rpx 6rpx rgba(20, 184, 166, 0.3);
+  }
+  
+  &.tag-orange {
+    background-color: rgba(249, 115, 22, 0.15);
+    color: #D35908;
+    box-shadow: 0 2rpx 6rpx rgba(249, 115, 22, 0.3);
+  }
 
-.orange-tag {
-  background-color: #fff7ed;
-  color: #ea580c;
-}
+  &.tag-amber {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #C87C00;
+    box-shadow: 0 2rpx 6rpx rgba(245, 158, 11, 0.3);
+  }
+  
+  &.tag-pink {
+    background-color: rgba(236, 72, 153, 0.15);
+    color: #D82D8B;
+    box-shadow: 0 2rpx 6rpx rgba(236, 72, 153, 0.3);
+  }
+  
+  &.tag-green {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #049669;
+    box-shadow: 0 2rpx 6rpx rgba(16, 185, 129, 0.3);
+  }
 
-.green-tag {
-  background-color: #ecfdf5;
-  color: #10b981;
-}
+  &.tag-indigo {
+    background-color: rgba(79, 70, 229, 0.15);
+    color: #3730CA;
+    box-shadow: 0 2rpx 6rpx rgba(79, 70, 229, 0.3);
+  }
 
-.blue-tag {
-  background-color: #eff6ff;
-  color: #3fbcfa;
-}
-
-.purple-tag {
-  background-color: #f5f3ff;
-  color: #8b5cf6;
-}
-.cxsj-tag {
-  background-color: #f5f3ff;
-  color: #1270db;
+  &.tag-gray {
+    background-color: rgba(107, 114, 128, 0.15);
+    color: #4B5563;
+    box-shadow: 0 2rpx 6rpx rgba(107, 114, 128, 0.3);
+  }
 }
 
 .text-xs {
@@ -1695,12 +1962,6 @@ page {
   box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.05);
 }
 
-.search-icon {
-  color: #9CA3AF;
-  font-size: 32rpx;
-  margin-right: 12rpx;
-}
-
 .search-input {
   flex: 1;
   height: 64rpx;
@@ -1721,10 +1982,10 @@ page {
   align-items: center;
   justify-content: center;
   margin-left: 16rpx;
-  padding: 12rpx 20rpx;
-  background-color: #2679CC;
+  padding: 12rpx 24rpx;
+  background-color: #1888E8;
   border-radius: 12rpx;
-  box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2rpx 8rpx rgba(24, 136, 232, 0.2);
 }
 
 .filter-icon {
@@ -1734,8 +1995,9 @@ page {
 }
 
 .filter-text {
-  color: #ffffff;
+  color: #f6f6f6;
   font-size: 28rpx;
+  font-weight: 500;
 }
 
 .mr-1 {
@@ -2098,9 +2360,9 @@ page {
 }
 
 .team-logo {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: 10rpx;
+  width: 100rpx;
+  height: 100rpx;
+
 }
 
 .award-badge {
@@ -2138,7 +2400,7 @@ page {
 
 .second-award {
   background-color: rgba(33, 150, 243, 0.15);
-  color: #2196F3;
+  color: #434f58;
 }
 
 .third-award {
@@ -2218,5 +2480,104 @@ page {
   background-color: #f0f0f0;
   color: #666;
   font-size: 22rpx;
+}
+
+.spinner-mini {
+  width: 20rpx;
+  height: 20rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  border-top-color: #ffffff;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 筛选面板 */
+.filter-panel {
+  position: absolute;
+  top: 1020rpx;
+  right: 20rpx;
+  width: 80%;
+  background-color: #ffffff;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  padding: 30rpx;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.15);
+  max-width: 600rpx;
+}
+
+.filter-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.filter-panel-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.filter-panel-close {
+  width: 50rpx;
+  height: 50rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+}
+
+.filter-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-bottom: 30rpx;
+}
+
+.filter-option {
+  font-size: 28rpx;
+  padding: 16rpx 24rpx;
+  border-radius: 8rpx;
+  background-color: #f5f7fa;
+  color: #4B5563;
+  
+  &.active {
+    background-color: rgba(24, 136, 232, 0.1);
+    color: #1888E8;
+    font-weight: 600;
+  }
+}
+
+.filter-panel-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.filter-btn-reset {
+  font-size: 28rpx;
+  padding: 12rpx 30rpx;
+  border-radius: 8rpx;
+  color: #4B5563;
+  border: 1rpx solid #e5e7eb;
+  background-color: #ffffff;
+}
+
+.filter-btn-confirm {
+  font-size: 28rpx;
+  padding: 12rpx 30rpx;
+  border-radius: 8rpx;
+  color: #ffffff;
+  background-color: #1888E8;
 }
 </style> 
