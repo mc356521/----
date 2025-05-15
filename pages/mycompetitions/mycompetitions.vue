@@ -85,7 +85,7 @@
             @click="navigateToCompetitionDetail(competition.id)"
           >
             <view class="card-header">
-              <image class="competition-image" :src="competition.imageUrl" mode="aspectFill"></image>
+              <image class="competition-image" :src="competition.coverImageUrl" mode="aspectFill"></image>
               <view class="competition-info">
                 <text class="competition-name">{{ competition.name }}</text>
                 <view class="competition-badges">
@@ -125,7 +125,7 @@
                   <view class="member-avatars">
                     <image 
                       class="member-avatar" 
-                      v-for="(member, mIndex) in competition.teamMembers.slice(0, 3)" 
+                      v-for="(member, mIndex) in competition.teamMembers.slice(0, 5)" 
                       :key="mIndex"
                       :src="member.avatar"
                     ></image>
@@ -178,7 +178,7 @@
             @click="navigateToCompetitionDetail(competition.id)"
           >
             <view class="card-header">
-              <image class="competition-image" :src="competition.imageUrl" mode="aspectFill"></image>
+              <image class="competition-image" :src="competition.coverImageUrl" mode="aspectFill"></image>
               <view class="competition-info">
                 <text class="competition-name">{{ competition.name }}</text>
                 <view class="competition-badges">
@@ -277,7 +277,7 @@
             @click="navigateToCompetitionDetail(competition.id)"
           >
             <view class="card-header">
-              <image class="competition-image" :src="competition.imageUrl" mode="aspectFill"></image>
+              <image class="competition-image" :src="competition.coverImageUrl" mode="aspectFill"></image>
               <view class="competition-info">
                 <text class="competition-name">{{ competition.name }}</text>
                 <view class="competition-badges">
@@ -303,14 +303,39 @@
                     <text>{{ competition.result || '未获奖' }}</text>
                   </view>
                 </view>
+                
+                <!-- 显示特殊奖项 -->
+                <view class="special-award-info" v-if="competition.specialAward">
+                  <SvgIcon name="star" size="16"></SvgIcon>
+                  <text>特别奖项: {{ competition.specialAward }}</text>
+                </view>
+                
+                <!-- 显示阶段名称 -->
+                <view class="stage-name-info" v-if="competition.awardStageName">
+                  <SvgIcon name="flag" size="16"></SvgIcon>
+                  <text>获奖阶段: {{ competition.awardStageName }}</text>
+                </view>
+                
+                <!-- 新增奖金信息显示 -->
+                <view class="bonus-info" v-if="competition.bonus">
+                  <SvgIcon name="dollar-sign" size="16"></SvgIcon>
+                  <text>奖金: {{ formatBonus(competition.bonus) }}元</text>
+                </view>
+                
                 <view class="certificate-info" v-if="competition.hasCertificate">
                   <SvgIcon name="award" size="16"></SvgIcon>
                   <text>已获得证书</text>
-                  <view class="view-certificate" @click.stop="viewCertificate(competition.id)">
-                    <text>查看</text>
+                  <view class="view-certificate" @click.stop="viewCertificate(competition.id)">    
                     <SvgIcon name="chevron-right" size="14"></SvgIcon>
                   </view>
+                        <!-- 查看所有阶段获奖情况 -->
+                <view class="all-stages-info" v-if="competition.stageResults && competition.stageResults.length > 0" @click.stop="viewAllStageResults(competition)">
+                  <text>查看全部阶段获奖</text>
+                  <SvgIcon name="chevron-right" size="14"></SvgIcon>
                 </view>
+                </view>
+                
+          
               </view>
               
               <view class="team-info" v-if="competition.teamName">
@@ -572,6 +597,21 @@
                 <text class="share-result-label">获得</text>
                 <text class="share-result-value">{{ shareCompetition.result || '参与奖' }}</text>
               </view>
+              <!-- 显示特殊奖项 -->
+              <view class="share-special" v-if="shareCompetition.specialAward">
+                <text class="share-special-label">特别奖项</text>
+                <text class="share-special-value">{{ shareCompetition.specialAward }}</text>
+              </view>
+              <!-- 显示获奖阶段 -->
+              <view class="share-stage" v-if="shareCompetition.awardStageName">
+                <text class="share-stage-label">阶段</text>
+                <text class="share-stage-value">{{ shareCompetition.awardStageName }}</text>
+              </view>
+              <!-- 显示奖金信息 -->
+              <view class="share-bonus" v-if="shareCompetition.bonus">
+                <text class="share-bonus-label">奖金</text>
+                <text class="share-bonus-value">{{ formatBonus(shareCompetition.bonus) }}元</text>
+              </view>
               <view class="share-team">
                 <text class="share-team-label">团队:</text>
                 <text class="share-team-value">{{ shareCompetition.teamName }}</text>
@@ -642,6 +682,89 @@
         </view>
       </view>
     </view>
+    
+    <!-- 阶段获奖情况弹窗 -->
+    <view class="stage-results-modal" v-if="showStageResultsModal" @click="closeStageResultsModal">
+      <view class="stage-results-content" @click.stop>
+        <view class="stage-results-header">
+          <text class="stage-results-title">{{ stageResultsCompetition.name }} - 阶段获奖</text>
+          <view class="close-btn" @click="closeStageResultsModal">
+            <SvgIcon name="x" size="20"></SvgIcon>
+          </view>
+        </view>
+        
+        <scroll-view scroll-y class="stage-results-list">
+          <view 
+            class="stage-result-item" 
+            v-for="(result, index) in stageResultsCompetition.stageResults" 
+            :key="index"
+          >
+            <view class="stage-result-header">
+              <text class="stage-name">{{ result.stageName || '总决赛' }}</text>
+              <view class="result-badge" :class="getResultClass(result.awardType)">
+                <text>{{ result.awardType || '未获奖' }}</text>
+              </view>
+            </view>
+            
+            <view class="stage-result-details">
+              <!-- 奖项名称 -->
+              <view class="result-award-name">
+                <SvgIcon name="award" size="14"></SvgIcon>
+                <text class="award-label">奖项名称:</text>
+                <text class="award-value">{{ result.awardType || '未获奖' }}</text>
+              </view>
+              
+              <!-- 特殊奖项名称 -->
+              <view class="result-special" v-if="getMetadataValue(result.metadata, 'award_name')">
+                <SvgIcon name="star" size="14"></SvgIcon>
+                <text>特别奖项: {{ getMetadataValue(result.metadata, 'award_name') }}</text>
+              </view>
+              
+              <!-- 颁奖日期 -->
+              <view class="result-date" v-if="result.announcedAt">
+                <SvgIcon name="calendar" size="14"></SvgIcon>
+                <text>颁奖日期: {{ formatDate(result.announcedAt) }}</text>
+              </view>
+              
+              <!-- 奖金信息 -->
+              <view class="result-bonus" v-if="parseAwardDetails(result.awardDetails).bonus">
+                <SvgIcon name="dollar-sign" size="14"></SvgIcon>
+                <text>奖金: {{ formatBonus(parseAwardDetails(result.awardDetails).bonus) }}元</text>
+              </view>
+              
+              <!-- 证书信息 -->
+              <view class="result-certificate" v-if="parseAwardDetails(result.awardDetails).certificate">
+                <SvgIcon name="award" size="14"></SvgIcon>
+                <text>证书编号: {{ parseAwardDetails(result.awardDetails).certificate }}</text>
+              </view>
+              
+              <!-- 赞助商信息 -->
+              <view class="result-sponsor" v-if="getMetadataValue(result.metadata, 'sponsor')">
+                <SvgIcon name="briefcase" size="14"></SvgIcon>
+                <text>赞助方: {{ getMetadataValue(result.metadata, 'sponsor') }}</text>
+              </view>
+              
+              <!-- 备注信息 -->
+              <view class="result-remarks" v-if="getMetadataValue(result.metadata, 'remarks')">
+                <SvgIcon name="message-circle" size="14"></SvgIcon>
+                <text>备注: {{ getMetadataValue(result.metadata, 'remarks') }}</text>
+              </view>
+            </view>
+          </view>
+          
+          <!-- 空状态 -->
+          <view class="empty-result" v-if="!stageResultsCompetition.stageResults || stageResultsCompetition.stageResults.length === 0">
+            <text>暂无阶段获奖记录</text>
+          </view>
+        </scroll-view>
+        
+        <view class="stage-results-footer">
+          <view class="close-btn-wrapper" @click="closeStageResultsModal">
+            <text>关闭</text>
+          </view>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -684,6 +807,9 @@ const shareCompetition = ref({});
 // 取消报名相关
 const showCancelConfirm = ref(false);
 const cancelCompetition = ref({});
+// 阶段获奖信息相关
+const showStageResultsModal = ref(false);
+const stageResultsCompetition = ref({});
 
 // 计算属性
 const ongoingCompetitions = computed(() => {
@@ -768,7 +894,7 @@ async function fetchCompetitionsDetails() {
           teamName: competition.teamName,
           teamMembers: [],
           status: 'unknown', // 默认状态，后续根据阶段确定
-          imageUrl: competition.imageUrl || '/static/image/competition/comp1.jpg', // 默认图片
+          coverImageUrl: competition.coverImageUrl || '/static/image/competition/comp1.jpg', // 默认图片
           level: competition.level || '未知',
           startDate: '',
           endDate: '',
@@ -870,12 +996,126 @@ async function fetchCompetitionsDetails() {
           // 如果是已完成的竞赛，获取结果
           if (competitionData.status === 'completed') {
             try {
-              const resultRes = await competitionsApi.getCompetitionResults(competition.competitionId);
+              // 使用competitionResultsApi直接获取竞赛结果数据
+              const competitionResultsApi = await import('@/api/modules/competitionResults');
+              const resultRes = await competitionResultsApi.default.getCompetitionResults(competition.competitionId);
+              console.log('获取到竞赛结果 (从 /competitionResults/competition/${competitionId}):', resultRes);
+              
               if (resultRes.code === 200 && resultRes.data) {
-                const teamResult = resultRes.data.find(result => result.teamId === competition.teamId);
-                if (teamResult) {
-                  competitionData.result = teamResult.awardLevel || '未获奖';
-                  competitionData.hasCertificate = !!teamResult.certificateUrl;
+                // 数据应该是一个数组，包含各个团队在不同阶段的获奖情况
+                if (Array.isArray(resultRes.data)) {
+                  // 筛选出当前团队的获奖记录
+                  const teamResults = resultRes.data.filter(result => result.teamId === competition.teamId);
+                  console.log('当前团队的获奖记录:', teamResults);
+                  
+                  if (teamResults.length > 0) {
+                    // 将全部阶段结果保存到竞赛数据中
+                    competitionData.stageResults = teamResults;
+                    
+                    // 按阶段排序：决赛 > 复赛 > 初赛，如果没有stageName，则按announcedAt倒序排列
+                    const sortedResults = [...teamResults].sort((a, b) => {
+                      // 如果有stageName包含"决赛"，优先显示
+                      const aIsFinal = a.stageName && a.stageName.includes('决赛');
+                      const bIsFinal = b.stageName && b.stageName.includes('决赛');
+                      
+                      if (aIsFinal && !bIsFinal) return -1;
+                      if (!aIsFinal && bIsFinal) return 1;
+                      
+                      // 如果有stageName包含"复赛"，次优先显示
+                      const aIsSemi = a.stageName && a.stageName.includes('复赛');
+                      const bIsSemi = b.stageName && b.stageName.includes('复赛');
+                      
+                      if (aIsSemi && !bIsSemi) return -1;
+                      if (!aIsSemi && bIsSemi) return 1;
+                      
+                      // 否则按照announcedAt排序，晚的在前
+                      return new Date(b.announcedAt || 0) - new Date(a.announcedAt || 0);
+                    });
+                    
+                    // 使用排序后的第一个结果作为主要显示结果
+                    const primaryResult = sortedResults[0];
+                    
+                    // 设置主要显示的获奖信息
+                    competitionData.result = primaryResult.awardType || '未获奖';
+                    competitionData.awardStageName = primaryResult.stageName;
+                    
+                    // 提取获奖详情
+                    if (primaryResult.awardDetails) {
+                      try {
+                        const awardDetails = JSON.parse(primaryResult.awardDetails);
+                        competitionData.awardDetails = awardDetails;
+                        competitionData.hasCertificate = !!awardDetails.certificate;
+                        
+                        // 添加奖金信息（如果存在）
+                        if (awardDetails.bonus) {
+                          competitionData.bonus = awardDetails.bonus;
+                        }
+                      } catch (e) {
+                        console.error('解析获奖详情失败:', e);
+                      }
+                    }
+                    
+                    // 添加metadata信息（如果有）
+                    if (primaryResult.metadata) {
+                      try {
+                        const metadata = JSON.parse(primaryResult.metadata);
+                        competitionData.awardMetadata = metadata;
+                        
+                        // 如果有特殊奖项名称，添加到结果中
+                        if (metadata.award_name) {
+                          competitionData.specialAward = metadata.award_name;
+                        }
+                      } catch (e) {
+                        console.error('解析metadata失败:', e);
+                      }
+                    }
+                    
+                    console.log('处理后的竞赛获奖数据:', {
+                      result: competitionData.result,
+                      awardStageName: competitionData.awardStageName,
+                      awardDetails: competitionData.awardDetails,
+                      hasCertificate: competitionData.hasCertificate,
+                      specialAward: competitionData.specialAward
+                    });
+                  }
+                } else if (typeof resultRes.data === 'object') {
+                  // 如果返回的是单个对象，非数组，直接检查是否匹配当前团队
+                  if (resultRes.data.teamId === competition.teamId) {
+                    competitionData.result = resultRes.data.awardType || '未获奖';
+                    competitionData.awardStageName = resultRes.data.stageName;
+                    competitionData.stageResults = [resultRes.data];
+                    
+                    // 提取获奖详情
+                    if (resultRes.data.awardDetails) {
+                      try {
+                        const awardDetails = JSON.parse(resultRes.data.awardDetails);
+                        competitionData.awardDetails = awardDetails;
+                        competitionData.hasCertificate = !!awardDetails.certificate;
+                        
+                        // 添加奖金信息（如果存在）
+                        if (awardDetails.bonus) {
+                          competitionData.bonus = awardDetails.bonus;
+                        }
+                      } catch (e) {
+                        console.error('解析获奖详情失败:', e);
+                      }
+                    }
+                    
+                    // 添加metadata信息（如果有）
+                    if (resultRes.data.metadata) {
+                      try {
+                        const metadata = JSON.parse(resultRes.data.metadata);
+                        competitionData.awardMetadata = metadata;
+                        
+                        // 如果有特殊奖项名称，添加到结果中
+                        if (metadata.award_name) {
+                          competitionData.specialAward = metadata.award_name;
+                        }
+                      } catch (e) {
+                        console.error('解析metadata失败:', e);
+                      }
+                    }
+                  }
                 }
               }
             } catch (error) {
@@ -942,6 +1182,37 @@ function getLevelClass(level) {
   };
   
   return classMap[level] || '';
+}
+
+// 格式化奖金金额
+function formatBonus(bonus) {
+  if (!bonus) return '0';
+  
+  // 将数字转换为字符串，然后添加千位分隔符
+  return bonus.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// 解析奖励详情JSON字符串
+function parseAwardDetails(awardDetailsStr) {
+  if (!awardDetailsStr) return {};
+  try {
+    return JSON.parse(awardDetailsStr);
+  } catch (e) {
+    console.error('解析奖励详情失败:', e);
+    return {};
+  }
+}
+
+// 从metadata中获取指定字段的值
+function getMetadataValue(metadataStr, key) {
+  if (!metadataStr) return null;
+  try {
+    const metadata = JSON.parse(metadataStr);
+    return metadata[key] || null;
+  } catch (e) {
+    console.error('解析metadata失败:', e);
+    return null;
+  }
 }
 
 // 获取结果样式类
@@ -1127,8 +1398,8 @@ function navigateToTeam(teamId) {
 
 // 跳转到竞赛列表页面
 function navigateToCompetitionList() {
-  uni.navigateTo({
-    url: '/pages/competition/list'
+  uni.switchTab({
+    url: '/pages/competition/index'
   });
 }
 
@@ -1241,6 +1512,16 @@ function confirmCancelRegistration() {
   }, 1500);
 }
 
+// 查看全部阶段获奖
+function viewAllStageResults(competition) {
+  stageResultsCompetition.value = competition;
+  showStageResultsModal.value = true;
+}
+
+// 关闭阶段获奖弹窗
+function closeStageResultsModal() {
+  showStageResultsModal.value = false;
+}
 
 // 页面加载时获取竞赛列表
 onMounted(() => {
@@ -1437,8 +1718,8 @@ page {
         border-bottom: 1rpx solid $border-color;
         
         .competition-image {
-          width: 120rpx;
-          height: 120rpx;
+          width: 160rpx;
+          height: 160rpx;
           border-radius: 12rpx;
           margin-right: 20rpx;
         }
@@ -1659,6 +1940,60 @@ page {
             }
           }
           
+          // 显示特殊奖项
+          .special-award-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10rpx;
+            
+            .iconfont {
+              font-size: 28rpx;
+              color: $result-first-color;
+              margin-right: 6rpx;
+            }
+            
+            text {
+              font-size: 24rpx;
+              color: $text-secondary;
+            }
+          }
+          
+          // 显示阶段名称
+          .stage-name-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10rpx;
+            
+            .iconfont {
+              font-size: 28rpx;
+              color: $result-first-color;
+              margin-right: 6rpx;
+            }
+            
+            text {
+              font-size: 24rpx;
+              color: $text-secondary;
+            }
+          }
+          
+          // 新增奖金信息显示
+          .bonus-info {
+            display: flex;
+            align-items: center;
+            
+            .iconfont {
+              font-size: 28rpx;
+              color: $result-first-color;
+              margin-right: 6rpx;
+            }
+            
+            text {
+              font-size: 24rpx;
+              color: $text-secondary;
+              flex: 1;
+            }
+          }
+          
           .certificate-info {
             display: flex;
             align-items: center;
@@ -1690,6 +2025,27 @@ page {
                 color: $primary-color;
                 margin-right: 0;
               }
+            }
+          }
+          
+          // 查看所有阶段获奖情况
+          .all-stages-info {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-top: 12rpx;
+            padding-top: 12rpx;
+            border-top: 1rpx dashed $border-color;
+            
+            text {
+              font-size: 24rpx;
+              color: $primary-color;
+              margin-right: 4rpx;
+            }
+            
+            .iconfont {
+              font-size: 24rpx;
+              color: $primary-color;
             }
           }
         }
@@ -1829,6 +2185,370 @@ page {
         text {
           font-size: 26rpx;
           color: white;
+        }
+      }
+    }
+  }
+}
+
+.share-card {
+  width: 600rpx;
+  background-color: white;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  
+  .share-card-header {
+    padding: 20rpx;
+    display: flex;
+    align-items: center;
+    background-color: $primary-color;
+    
+    .share-logo {
+      width: 60rpx;
+      height: 60rpx;
+      border-radius: 30rpx;
+      margin-right: 16rpx;
+    }
+    
+    .share-platform {
+      font-size: 28rpx;
+      font-weight: bold;
+      color: white;
+    }
+  }
+  
+  .share-card-body {
+    padding: 20rpx;
+    
+    .share-competition-name {
+      font-size: 30rpx;
+      font-weight: bold;
+      color: $text-color;
+      margin-bottom: 16rpx;
+    }
+    
+    .share-result {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16rpx;
+      
+      .share-result-label {
+        font-size: 26rpx;
+        color: $text-secondary;
+        margin-right: 10rpx;
+      }
+      
+      .share-result-value {
+        font-size: 36rpx;
+        font-weight: bold;
+        color: $result-first-color;
+      }
+    }
+    
+    // 显示特殊奖项
+    .share-special {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16rpx;
+      
+      .share-special-label {
+        font-size: 26rpx;
+        color: $text-secondary;
+        margin-right: 10rpx;
+      }
+      
+      .share-special-value {
+        font-size: 30rpx;
+        font-weight: bold;
+        color: $result-first-color;
+      }
+    }
+    
+    // 显示获奖阶段
+    .share-stage {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16rpx;
+      
+      .share-stage-label {
+        font-size: 26rpx;
+        color: $text-secondary;
+        margin-right: 10rpx;
+      }
+      
+      .share-stage-value {
+        font-size: 30rpx;
+        font-weight: bold;
+        color: $result-first-color;
+      }
+    }
+    
+    // 显示奖金信息
+    .share-bonus {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16rpx;
+      
+      .share-bonus-label {
+        font-size: 26rpx;
+        color: $text-secondary;
+        margin-right: 10rpx;
+      }
+      
+      .share-bonus-value {
+        font-size: 30rpx;
+        font-weight: bold;
+        color: $result-first-color;
+      }
+    }
+    
+    .share-team {
+      display: flex;
+      margin-bottom: 16rpx;
+      
+      .share-team-label {
+        font-size: 26rpx;
+        color: $text-secondary;
+        margin-right: 10rpx;
+      }
+      
+      .share-team-value {
+        font-size: 30rpx;
+        font-weight: bold;
+        color: $text-color;
+      }
+    }
+    
+    .share-date {
+      font-size: 26rpx;
+      color: $text-secondary;
+    }
+  }
+  
+  .share-card-footer {
+    padding: 20rpx;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    .share-qrcode {
+      width: 120rpx;
+      height: 120rpx;
+      border-radius: 12rpx;
+    }
+    
+    .share-scan-text {
+      font-size: 26rpx;
+      color: $text-secondary;
+    }
+  }
+}
+
+// 分享弹窗样式
+.share-modal {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .share-content {
+    width: 90%;
+    max-width: 650rpx;
+    background-color: white;
+    border-radius: 24rpx;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    
+    .share-header {
+      padding: 30rpx;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1rpx solid $border-color;
+      
+      .share-title {
+        font-size: 32rpx;
+        font-weight: bold;
+        color: $text-color;
+      }
+      
+      .close-btn {
+        width: 48rpx;
+        height: 48rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        
+        .iconfont {
+          font-size: 36rpx;
+          color: $text-secondary;
+        }
+      }
+    }
+    
+    // ...其他已有的样式...
+  }
+}
+
+// 阶段获奖弹窗样式
+.stage-results-modal {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .stage-results-content {
+    width: 90%;
+    max-width: 650rpx;
+    background-color: white;
+    border-radius: 24rpx;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
+    
+    .stage-results-header {
+      padding: 30rpx;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1rpx solid $border-color;
+      
+      .stage-results-title {
+        font-size: 32rpx;
+        font-weight: bold;
+        color: $text-color;
+      }
+      
+      .close-btn {
+        width: 48rpx;
+        height: 48rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        
+        .iconfont {
+          font-size: 36rpx;
+          color: $text-secondary;
+        }
+      }
+    }
+    
+    .stage-results-list {
+      padding: 20rpx 30rpx;
+      max-height: 60vh;
+      
+      .stage-result-item {
+        padding: 20rpx 0;
+        border-bottom: 1rpx solid $border-color;
+        
+        &:last-child {
+          border-bottom: none;
+        }
+        
+        .stage-result-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16rpx;
+          
+          .stage-name {
+            font-size: 30rpx;
+            font-weight: bold;
+            color: $text-color;
+          }
+          
+          .result-badge {
+            padding: 4rpx 16rpx;
+            border-radius: 20rpx;
+            
+            text {
+              font-size: 24rpx;
+              color: white;
+              font-weight: 500;
+            }
+          }
+        }
+        
+        .stage-result-details {
+          .result-date,
+          .result-bonus,
+          .result-certificate,
+          .result-sponsor,
+          .result-remarks,
+          .result-special,
+          .result-award-name {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8rpx;
+            
+            .iconfont {
+              font-size: 24rpx;
+              color: $text-secondary;
+              margin-right: 8rpx;
+            }
+            
+            text {
+              font-size: 24rpx;
+              color: $text-secondary;
+            }
+            
+            .award-label {
+              font-size: 24rpx;
+              color: $text-secondary;
+              margin-right: 8rpx;
+            }
+            
+            .award-value {
+              font-size: 26rpx;
+              font-weight: bold;
+              color: $result-first-color;
+            }
+          }
+        }
+      }
+      
+      .empty-result {
+        padding: 40rpx 0;
+        text-align: center;
+        
+        text {
+          font-size: 28rpx;
+          color: $text-muted;
+        }
+      }
+    }
+    
+    .stage-results-footer {
+      padding: 20rpx 30rpx;
+      border-top: 1rpx solid $border-color;
+      
+      .close-btn-wrapper {
+        height: 80rpx;
+        background-color: $primary-color;
+        border-radius: 40rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        
+        text {
+          font-size: 28rpx;
+          color: white;
+          font-weight: 500;
         }
       }
     }

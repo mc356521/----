@@ -55,7 +55,6 @@
         </view>
         
         <!-- 状态筛选标签 -->
-    
         <scroll-view scroll-x class="status-scroll" show-scrollbar="false">
           <view class="status-container">
             <view 
@@ -68,6 +67,19 @@
             </view>
           </view>
         </scroll-view>
+        
+        <!-- 添加排序筛选按钮 -->
+        <view class="sort-filter">
+          <view 
+            v-for="(item, index) in sortOptions" 
+            :key="index"
+            :class="['sort-btn', activeSortOption === item.value && activeSortType === item.type ? 'sort-active' : '']"
+            @click="selectSort(item.value, item.type)"
+          >
+            <text>{{ item.label }}</text>
+            <SvgIcon v-if="item.icon" :name="item.icon" size="16" />
+          </view>
+        </view>
       </view>
     </view>
 
@@ -171,8 +183,18 @@ const statusOptions = [
   { label: '已取消', value: 'canceled' }
 ];
 
+// 排序筛选选项
+const sortOptions = [
+  { label: '默认排序', value: '', type: '', icon: '' },
+  { label: '最新发布', value: 'desc', type: 'createTime', icon: 'shijian' },
+  { label: '最早发布', value: 'asc', type: 'createTime', icon: 'shijian' },
+  { label: '浏览量', value: 'true', type: 'viewCount', icon: 'liulan' }
+];
+
 const activeCategoryId = ref(0);
 const activeStatus = ref('');
+const activeSortOption = ref('');
+const activeSortType = ref('');
 const taskList = ref([]);
 const page = ref(1);
 const pageSize = ref(10);
@@ -194,8 +216,8 @@ const mainCategoryCount = 4;
 
 // 计算顶部高度
 const headerHeight = computed(() => {
-  // 基础头部高度 = 导航栏(140rpx) + 主分类栏(110rpx) + 状态筛选栏(90rpx)
-  const baseHeight = 340;
+  // 基础头部高度 = 导航栏(140rpx) + 主分类栏(110rpx) + 状态筛选栏(90rpx) + 排序筛选栏(90rpx)
+  const baseHeight = 440;
   
   // 加上安全区域高度
   let height = baseHeight + safeAreaTop.value;
@@ -288,6 +310,16 @@ async function getTaskList() {
       params.status = activeStatus.value;
     }
     
+    // 添加排序条件
+    if (activeSortType.value === 'createTime' && activeSortOption.value) {
+      params.orderByCreateTime = activeSortOption.value;
+    } else if (activeSortType.value === 'viewCount' && activeSortOption.value === 'true') {
+      params.orderByViewCount = true;
+    }
+    
+    // 输出请求参数，便于调试
+    console.log('请求参数:', JSON.stringify(params, null, 2));
+    
     const res = await request({
       url: '/tasks/list',
       method: 'GET',
@@ -368,6 +400,24 @@ function selectCategory(categoryId) {
 function selectStatus(status) {
   if (activeStatus.value === status) return;
   activeStatus.value = status;
+  page.value = 1;
+  noMore.value = false;
+  taskList.value = [];
+  getTaskList();
+}
+
+// 选择排序方式
+function selectSort(value, type) {
+  // 如果点击已选中的排序，取消选择
+  if (activeSortOption.value === value && activeSortType.value === type) {
+    activeSortOption.value = '';
+    activeSortType.value = '';
+  } else {
+    activeSortOption.value = value;
+    activeSortType.value = type;
+  }
+  
+  // 重置页码并重新加载数据
   page.value = 1;
   noMore.value = false;
   taskList.value = [];
@@ -698,6 +748,41 @@ $border-color: #eeeeee;
 
 .status-filter-active {
   background-color: $secondary-color;
+  color: #ffffff;
+}
+
+/* 排序筛选按钮 */
+.sort-filter {
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  padding: 20rpx 30rpx;
+  background-color: #ffffff;
+  border-top: 1rpx solid #f0f0f0;
+  gap: 16rpx;
+}
+
+.sort-btn {
+  display: flex;
+  align-items: center;
+  padding: 10rpx 15rpx;
+  border-radius: 24rpx;
+  font-size: 26rpx;
+  color: $text-secondary;
+  background-color: #f5f5f5;
+  transition: all 0.3s;
+  
+  text {
+    margin-right: 6rpx;
+  }
+  
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.sort-active {
+  background-color: $primary-color;
   color: #ffffff;
 }
 

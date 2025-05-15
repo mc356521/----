@@ -177,7 +177,7 @@
                 </view>
                 
                 <view class="task-location">
-                  <text class="location-icon iconfont icon-location"></text>
+                  <SvgIcon name="weizhi" size="20"></SvgIcon>
                   <text class="location-text">{{ task.location }}</text>
                 </view>
               </view>
@@ -357,7 +357,7 @@ import { ref, reactive, onMounted, computed, nextTick, onUnmounted } from 'vue';
 import tasksApi from '@/api/modules/tasks';
 import TaskParticipantsPopup from '@/components/team/TaskParticipantsPopup.vue';
 import HeaderBar from '@/components/HeaderBar.vue';
-
+import SvgIcon from '@/components/SvgIcon.vue';
 // 标签页相关
 const tabs = ['我创建的', '我参与的'];
 const activeTab = ref(0);

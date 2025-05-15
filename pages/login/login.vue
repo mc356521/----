@@ -375,6 +375,12 @@ async function handleLogin() {
       // 登录成功，保存token到本地存储
       uni.setStorageSync('token', res.token);
       
+      // 设置全局登录状态
+      const app = getApp();
+      if (app && app.globalData) {
+        app.globalData.isLoggedIn = true;
+      }
+      
       // 如果选择了"记住我"，保存登录信息
       saveLoginInfo();
       

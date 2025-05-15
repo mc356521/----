@@ -3,7 +3,8 @@ import notificationService from './utils/notification-service';
 
 export default {
 	globalData: {
-		unreadNotificationCount: 0
+		unreadNotificationCount: 0,
+		isLoggedIn: false
 	},
 	
 	onLaunch: function() {
@@ -12,14 +13,25 @@ export default {
 		
 		// 检查用户是否已登录
 		const token = uni.getStorageSync('token');
+		// 设置全局登录状态标志
+		this.globalData.isLoggedIn = !!token;
+		
 		if (!token) {
-			console.log('用户未登录，跳转到登录页面');
-			// 等待应用初始化完成后再跳转
-			setTimeout(() => {
-				uni.reLaunch({
-					url: '/pages/login/login'
-				});
-			}, 300);
+			console.log('用户未登录，准备跳转到登录页面');
+			
+			// 避免在某些特定页面（如登录页）重复跳转
+			const pages = getCurrentPages();
+			const currentPage = pages[pages.length - 1];
+			const isLoginPage = currentPage && currentPage.route && currentPage.route.includes('login');
+			
+			if (!isLoginPage) {
+				// 等待应用初始化完成后再跳转
+				setTimeout(() => {
+					uni.reLaunch({
+						url: '/pages/login/login'
+					});
+				}, 300);
+			}
 			return; // 未登录不执行后续初始化
 		}
 		

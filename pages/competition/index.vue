@@ -6,11 +6,21 @@
       title="竞赛广场"
       :categories="categories"
       :default-category="currentCategory"
-      show-filter="true"
+      :show-filter="true"
+      :show-message="true"
       @search="goToSearch"
-      @filter="goToNotification"
+      @filter="showFilterPanel"
       @category-change="selectCategory"
-    ></header-bar>
+    >
+      <template #filter-button>
+        <view class="filter-btn-container">
+          <SvgIcon name="filter" size="24" />
+          <view class="filter-badge" v-if="getAppliedFilterCount() > 0">
+            <text>{{ getAppliedFilterCount() }}</text>
+          </view>
+        </view>
+      </template>
+    </header-bar>
     
     <!-- 导航栏占位 -->
     <view class="header-placeholder" :style="{ height: headerPlaceholderHeight }"></view>
@@ -74,6 +84,7 @@
       <view class="section">
         <view class="section-header">
           <text class="section-title">最新竞赛</text>
+    
         </view>
         <view class="competition-list">
           <view 
@@ -139,6 +150,98 @@
       @tab-change="handleTabChange" 
       @publish="showPublishOptions">
     </tab-bar>
+
+    <!-- 筛选面板 -->
+    <view class="filter-panel" v-if="showFilter" @click.stop="hideFilterPanel">
+      <view class="filter-content" @click.stop>
+        <view class="filter-header">
+          <text class="filter-title">筛选条件</text>
+          <view class="filter-close" @click.stop="hideFilterPanel">
+            <SvgIcon name="close" size="24" color="#333333"></SvgIcon>
+          </view>
+        </view>
+        
+        <!-- 级别筛选 -->
+        <view class="filter-section">
+          <text class="filter-section-title">竞赛级别</text>
+          <view class="filter-options">
+            <view 
+              v-for="(level, index) in levels" 
+              :key="index"
+              class="filter-option"
+              :class="{ 'selected': selectedLevel === level.value }"
+              @click="selectLevel(level.value)"
+            >
+              <text>{{ level.label }}</text>
+            </view>
+          </view>
+        </view>
+        
+        <!-- 状态筛选 -->
+        <view class="filter-section">
+          <text class="filter-section-title">竞赛状态</text>
+          <view class="filter-options">
+            <view 
+              v-for="(status, index) in statusOptions" 
+              :key="index"
+              class="filter-option"
+              :class="{ 'selected': selectedStatus === status.value }"
+              :data-status="status.value"
+              @click="selectStatus(status.value)"
+            >
+              <text>{{ status.label }}</text>
+            </view>
+          </view>
+        </view>
+        
+        <!-- 分类筛选 -->
+        <view class="filter-section">
+          <text class="filter-section-title">竞赛分类</text>
+          <view class="filter-options">
+            <view 
+              v-for="(category, index) in categoryOptions" 
+              :key="index"
+              class="filter-option"
+              :class="{ 'selected': selectedCategoryId === category.id }"
+              @click="selectCategoryFilter(category.id)"
+            >
+              <text>{{ category.name }}</text>
+            </view>
+          </view>
+        </view>
+        
+        <!-- 排序方式 -->
+        <view class="filter-section">
+          <text class="filter-section-title">排序方式</text>
+          <view class="filter-options">
+            <view 
+              v-for="(sort, index) in sortOptions" 
+              :key="index"
+              class="filter-option"
+              :class="{ 'selected': selectedSort === sort.value }"
+              @click="selectSort(sort.value)"
+            >
+              <text>{{ sort.label }}</text>
+            </view>
+          </view>
+        </view>
+        
+        <!-- 其他选项 -->
+        <view class="filter-section">
+          <text class="filter-section-title">其他选项</text>
+          <view class="filter-switch">
+            <text>只看热门竞赛</text>
+            <switch :checked="onlyHot" @change="toggleHot" color="#3B82F6" />
+          </view>
+        </view>
+        
+        <!-- 操作按钮 -->
+        <view class="filter-actions">
+          <view class="reset-btn" @click.stop="resetFilters">重置</view>
+          <view class="apply-btn" @click.stop="applyFilters">确认筛选</view>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -177,7 +280,46 @@ export default {
       headerPlaceholderHeight: '200rpx',
       
       // 导入SVG图标
-      icons: icons
+      icons: icons,
+      
+      // 筛选面板
+      showFilter: false,
+      
+      // 筛选选项
+      levels: [
+        { label: '全部', value: '' },
+        { label: '国家级', value: '国家级' },
+        { label: '省级', value: '省级' },
+        { label: '市级', value: '市级' },
+        { label: '校级', value: '校级' }
+      ],
+      statusOptions: [
+        { label: '全部', value: '' },
+        { label: '未开始', value: '0' },
+        { label: '报名中', value: '1' },
+        { label: '进行中', value: '2' },
+        { label: '已结束', value: '3' }
+      ],
+      categoryOptions: [
+        { id: '', name: '全部' },
+        { id: 1, name: '学科竞赛' },
+        { id: 2, name: '创新创业' },
+        { id: 3, name: '科技竞赛' },
+        { id: 4, name: '文体竞赛' }
+      ],
+      sortOptions: [
+        { label: '默认排序', value: '' },
+        { label: '报名时间从早到晚', value: 'asc' },
+        { label: '报名时间从晚到早', value: 'desc' },
+        { label: '浏览量优先', value: 'view' }
+      ],
+      
+      // 选中的筛选条件
+      selectedLevel: '',
+      selectedStatus: '',
+      selectedCategoryId: '',
+      selectedSort: 'desc',
+      onlyHot: false
     }
   },
   
@@ -188,6 +330,9 @@ export default {
     this.getCompetitionList();
     // 计算HeaderBar高度
     this.updateHeaderHeight();
+    
+    // 设置默认排序方式为最新报名
+    this.selectedSort = 'desc';
   },
   
   mounted() {
@@ -290,13 +435,48 @@ export default {
         };
         
         // 添加分类筛选
-        if (this.currentCategory > 0) {
-          // 根据分类索引映射到实际的分类ID
+        if (this.selectedCategoryId) {
+          params.categoryId = this.selectedCategoryId;
+        } else if (this.currentCategory > 0) {
+          // 如果没有通过筛选面板选择分类，则使用顶部分类标签
           const categoryMapping = [null, 1, 2, 3, 4]; // 全部=null, 学科竞赛=1, 创新创业=2, 科技竞赛=3, 文体竞赛=4
           params.categoryId = categoryMapping[this.currentCategory];
         }
         
+        // 添加级别筛选
+        if (this.selectedLevel) {
+          params.level = this.selectedLevel;
+        }
+        
+        // 添加状态筛选
+        if (this.selectedStatus) {
+          params.status = this.selectedStatus;
+        }
+        
+        // 添加热门筛选
+        if (this.onlyHot) {
+          params.isHot = true;
+        }
+        
+        // 添加排序方式
+        if (this.selectedSort) {
+          if (this.selectedSort === 'view') {
+            params.orderByViewCount = true;
+          } else {
+            params.orderByRegistration = this.selectedSort;
+          }
+        }
+        
+        console.log('竞赛列表请求参数:', JSON.stringify(params, null, 2));
+        
+        // 在请求前清空列表
+        if (reset) {
+          this.competitionList = [];
+        }
+        
         const res = await api.competitions.getCompetitionsList(params);
+        
+        console.log('竞赛列表响应:', JSON.stringify(res, null, 2));
         
         if (res && res.code === 200 && res.data) {
           let competitionData = Array.isArray(res.data.list) ? res.data.list : [];
@@ -490,6 +670,99 @@ export default {
         default:
           return '查看详情';
       }
+    },
+    
+    // 显示筛选面板
+    showFilterPanel() {
+      console.log('打开筛选面板', this.showFilter);
+      this.showFilter = true;
+      console.log('筛选面板状态更新为:', this.showFilter);
+    },
+    
+    // 隐藏筛选面板
+    hideFilterPanel() {
+      console.log('关闭筛选面板', this.showFilter);
+      this.showFilter = false;
+    },
+    
+    // 选择级别
+    selectLevel(level) {
+      this.selectedLevel = level;
+    },
+    
+    // 选择状态
+    selectStatus(status) {
+      this.selectedStatus = status;
+    },
+    
+    // 选择分类
+    selectCategoryFilter(categoryId) {
+      this.selectedCategoryId = categoryId;
+    },
+    
+    // 选择排序方式
+    selectSort(sort) {
+      this.selectedSort = sort;
+    },
+    
+    // 切换热门
+    toggleHot(e) {
+      this.onlyHot = e.detail.value;
+    },
+    
+    // 重置筛选条件
+    resetFilters() {
+      this.selectedLevel = '';
+      this.selectedStatus = '';
+      this.selectedCategoryId = '';
+      this.selectedSort = 'desc';
+      this.onlyHot = false;
+      
+      // 同时刷新数据（可选）
+      // this.getCompetitionList(true);
+    },
+    
+    // 应用筛选条件
+    applyFilters() {
+      console.log('应用筛选条件:', {
+        level: this.selectedLevel,
+        status: this.selectedStatus,
+        categoryId: this.selectedCategoryId,
+        sort: this.selectedSort,
+        onlyHot: this.onlyHot
+      });
+      
+      this.hideFilterPanel();
+      
+      // 显示加载提示
+      uni.showLoading({
+        title: '筛选中...'
+      });
+      
+      // 重置页码并获取数据
+      this.currentPage = 1;
+      this.getCompetitionList(true);
+      
+      // 关闭加载提示并显示成功提示
+      setTimeout(() => {
+        uni.hideLoading();
+        uni.showToast({
+          title: '筛选成功',
+          icon: 'success',
+          duration: 1500
+        });
+      }, 1000);
+    },
+    
+    // 获取应用的筛选条件数量
+    getAppliedFilterCount() {
+      let count = 0;
+      if (this.selectedLevel) count++;
+      if (this.selectedStatus) count++;
+      if (this.selectedCategoryId) count++;
+      if (this.selectedSort) count++;
+      if (this.onlyHot) count++;
+      return count;
     }
   }
 }
@@ -573,11 +846,19 @@ page {
   
   .section-header {
     padding: 0 0 20rpx 0;
+    display: flex;
+    align-items: center;
     
     .section-title {
       font-size: 32rpx;
       font-weight: bold;
       color: $text-color;
+    }
+    
+    .filter-info {
+      font-size: 24rpx;
+      color: $primary-color;
+      margin-left: 10rpx;
     }
   }
   
@@ -859,7 +1140,7 @@ page {
           font-size: 26rpx;
           color: #4B5563;
           font-weight: 500;
-          margin-left: 16rpx;
+          margin-left: 156rpx;
         }
       }
       
@@ -927,6 +1208,192 @@ page {
   .empty-text {
     font-size: 28rpx;
     color: $text-muted;
+  }
+}
+
+// 筛选面板
+.filter-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.filter-content {
+  width: 70%;
+  height: 100%;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.3s ease-out;
+  box-shadow: -5rpx 0 15rpx rgba(0, 0, 0, 0.1);
+  overflow-y: auto; /* 允许内容滚动 */
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.filter-header {
+  padding: 30rpx;
+  border-bottom: 1rpx solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filter-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: $text-color;
+}
+
+.filter-close {
+  padding: 10rpx;
+}
+
+.filter-section {
+  padding: 20rpx 30rpx;
+  border-bottom: 1rpx solid #f3f4f6;
+}
+
+.filter-section-title {
+  font-size: 28rpx;
+  color: $text-secondary;
+  margin-bottom: 20rpx;
+  display: block;
+}
+
+.filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15rpx;
+}
+
+.filter-option {
+  padding: 12rpx 24rpx;
+  background-color: #f3f4f6;
+  border-radius: 8rpx;
+  transition: all 0.2s ease;
+  
+  text {
+    font-size: 26rpx;
+    color: $text-secondary;
+  }
+  
+  &.selected {
+    background-color: rgba($primary-color, 0.1);
+    
+    text {
+      color: $primary-color;
+      font-weight: 500;
+    }
+  }
+  
+  // 状态特定样式
+  &[data-status="0"]:not(.selected) text {
+    color: #5368BD;
+  }
+  
+  &[data-status="1"]:not(.selected) text {
+    color: #00C07F;
+  }
+  
+  &[data-status="2"]:not(.selected) text {
+    color: #1888E8;
+  }
+  
+  &[data-status="3"]:not(.selected) text {
+    color: #525B7A;
+  }
+}
+
+.filter-switch {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  
+  text {
+    font-size: 28rpx;
+    color: $text-color;
+  }
+}
+
+.filter-actions {
+  padding: 30rpx;
+  display: flex;
+  gap: 20rpx;
+  margin-top: auto;
+  border-top: 1rpx solid #e5e7eb;
+  background-color: #fff;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+.reset-btn, .apply-btn {
+  flex: 1;
+  height: 80rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.reset-btn {
+  background-color: #f3f4f6;
+  color: $text-secondary;
+  border: 1px solid #e5e7eb;
+  
+  &:active {
+    transform: scale(0.98);
+    background-color: #e5e7eb;
+  }
+}
+
+.apply-btn {
+  background-color: $primary-color;
+  color: white;
+  box-shadow: 0 4rpx 12rpx rgba(36, 122, 228, 0.3);
+  
+  &:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+}
+
+// 筛选按钮容器
+.filter-btn-container {
+  position: relative;
+  padding: 10rpx;
+}
+
+// 筛选徽章
+.filter-badge {
+  position: absolute;
+  top: -5rpx;
+  right: -5rpx;
+  background-color: #EF4444;
+  color: white;
+  font-size: 20rpx;
+  min-width: 32rpx;
+  height: 32rpx;
+  border-radius: 16rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 6rpx;
+  
+  text {
+    color: white;
   }
 }
 </style> 

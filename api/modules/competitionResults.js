@@ -132,6 +132,39 @@ const competitionResultsApi = {
         'Authorization': `Bearer ${token}`
       }
     });
+  },
+  
+  /**
+   * 获取竞赛各阶段结果
+   * @param {Number|String} competitionId - 竞赛ID
+   * @param {Number|String} teamId - 团队ID
+   * @returns {Promise} 请求结果Promise对象
+   */
+  getCompetitionStageResults(competitionId, teamId) {
+    // 检查是否有token
+    const token = getToken();
+    if (!token) {
+      uni.showToast({
+        title: '请先登录',
+        icon: 'none'
+      });
+      
+      setTimeout(() => {
+        uni.navigateTo({
+          url: '/pages/login/login'
+        });
+      }, 1500);
+      
+      return Promise.reject(new Error('未登录'));
+    }
+    
+    return request({
+      url: `/competitionResults/competition/${competitionId}/team/${teamId}/stages`,
+      method: 'GET',
+      header: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
   }
 };
 

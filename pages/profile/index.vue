@@ -27,19 +27,19 @@
         </view>
         <view class="user-stats">
           <view class="stat-item" @click="navigateTo('myCompetitions')">
-            <text class="stat-value">4</text>
+            <text class="stat-value">{{ statistics.competitionsCount }}</text>
             <text class="stat-label">参与竞赛</text>
           </view>
           <view class="stat-item" @click="navigateTo('myTeams')">
-            <text class="stat-value">2</text>
+            <text class="stat-value">{{ statistics.teamsCount }}</text>
             <text class="stat-label">我的团队</text>
           </view>
           <view class="stat-item" @click="navigateTo('myTask')">
-            <text class="stat-value">{{ userInfo.awardsHistory ? userInfo.awardsHistory.length : 0 }}</text>
+            <text class="stat-value">{{ statistics.tasksCount }}</text>
             <text class="stat-label">我的任务</text>
           </view>
           <view class="stat-item" @click="navigateTo('myAwards')">
-            <text class="stat-value ">{{ userInfo.awardsCount || 0 }}</text>
+            <text class="stat-value">{{ statistics.awardsCount }}</text>
             <text class="stat-label">我的获奖</text>
           </view>
         </view>
@@ -108,6 +108,8 @@ import TabBar from '@/components/TabBar.vue';
 import userApi from '@/api/modules/user';
 import store from '@/store';
 import SvgIcon from '@/components/SvgIcon.vue';
+import api from '@/api';
+
 // 用户信息状态
 const userInfo = ref({
   realName: '加载中...',
@@ -123,6 +125,14 @@ const userInfo = ref({
   bio: '',
   skillTags: [],
   awardsHistory: []
+});
+
+// 统计数据
+const statistics = ref({
+  competitionsCount: 0,
+  teamsCount: 0,
+  tasksCount: 0,
+  awardsCount: 0
 });
 
 // 加载状态
@@ -149,10 +159,22 @@ async function getUserProfile() {
   }
 }
 
+// 获取用户统计数据
+async function getStatistics() {
+  try {
+    const stats = await api.statistics.getAllStatistics();
+    statistics.value = stats;
+    console.log('获取到用户统计数据:', statistics.value);
+  } catch (error) {
+    console.error('获取用户统计数据失败:', error);
+  }
+}
+
 // 刷新用户信息（可以被其他页面调用）
 function refreshUserInfo() {
   console.log('刷新用户信息');
   getUserProfile();
+  getStatistics();
 }
 
 // 导航到对应页面
@@ -276,24 +298,23 @@ function showPublishOptions() {
   });
 }
 
-// 页面加载时获取用户资料
+// 页面生命周期钩子
 onMounted(() => {
   getUserProfile();
-  
-  // 监听头像更新事件
-  uni.$on('profileUpdated', () => {
-    console.log('收到profileUpdated事件，刷新用户信息');
-    refreshUserInfo();
-  });
+  getStatistics();
 });
 
-// 页面显示时检查是否需要刷新
+// onShow 钩子，当页面显示时检查是否需要刷新
 onShow(() => {
-  // 检查是否有头像更新标记
-  const avatarUpdated = uni.getStorageSync('avatar_updated');
-  if (avatarUpdated) {
-    uni.removeStorageSync('avatar_updated');
+  // 从全局状态获取是否需要刷新用户信息
+  needRefreshUserInfo.value = uni.getStorageSync('needRefreshUserProfile');
+  
+  if (needRefreshUserInfo.value) {
+    // 刷新用户信息
     refreshUserInfo();
+    // 重置标记
+    uni.removeStorageSync('needRefreshUserProfile');
+    needRefreshUserInfo.value = false;
   }
 });
 </script>

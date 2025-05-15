@@ -130,6 +130,13 @@ const responseInterceptor = (response) => {
       // 清除本地token
       setToken('');
       
+      // 更新全局登录状态
+      const app = getApp();
+      if (app && app.globalData) {
+        app.globalData.isLoggedIn = false;
+        console.log('收到401/403错误，已清除登录状态');
+      }
+      
       // 跳转到登录页
       setTimeout(() => {
         uni.navigateTo({

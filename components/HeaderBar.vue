@@ -6,14 +6,17 @@
       </view>
       <text class="section-title">{{ title }}</text>
       <view class="header-actions">
-
         <view class="action-btn" @click="onSearch" v-if="showSearch">
           <SvgIcon name="sousuo" size="25" />
         </view>
-        <view class="action-btn message-btn" @click="onFilter" v-if="showFilter">
+        <view class="action-btn" @click.stop="onFilter" v-if="showFilter">
+            <SvgIcon name="saixuanx" size="25" />
+        </view>
+        <view class="action-btn message-btn" @click="onMessage" v-if="showMessage">
           <SvgIcon name="xiaoxi" size="34" />
           <view class="badge" v-if="unreadCount > 0">{{ unreadCount > 99 ? '99+' : unreadCount }}</view>
         </view>
+   
         <slot name="actions"></slot>
       </view>
     </view>
@@ -60,6 +63,10 @@ const props = defineProps({
     default: true
   },
   showFilter: {
+    type: Boolean,
+    default: false
+  },
+  showMessage: {
     type: Boolean,
     default: true
   },
@@ -122,7 +129,7 @@ function onSearch() {
 }
 
 // 消息按钮点击事件
-function onFilter() {
+function onMessage() {
   uni.navigateTo({
     url: '/pages/Xiaoxi/Xiaoxi'
   });
@@ -213,6 +220,11 @@ function getUnreadMessageCount() {
 // AI推荐按钮点击事件
 function onAiRecommend() {
   emit('ai-recommend');
+}
+
+// 筛选按钮点击事件
+function onFilter() {
+  emit('filter');
 }
 
 // 对外暴露高度属性
