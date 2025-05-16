@@ -27,7 +27,7 @@
 
       <!-- 竞赛封面 -->
       <view class="relative">
-        <image class="cover-image" :src="competition.image" mode="aspectFill"></image>
+        <image class="cover-image" :src="handleImagePath(competition.image)" mode="aspectFill"></image>
         <view class="cover-overlay">
           <view :class="getStatusBadgeClass(competition.status)">
             {{ competition.status }}
@@ -137,7 +137,7 @@
           <view class="related-grid">
             <view v-for="(relatedComp, index) in relatedCompetitions" :key="index" class="related-card">
               <view class="related-image-container">
-                <image :src="relatedComp.image" class="related-image"></image>
+                <image :src="handleImagePath(relatedComp.image)" class="related-image"></image>
               </view>
               <view class="p-3">
                 <text class="font-bold text-sm text-gray-800">{{ relatedComp.title }}</text>
@@ -238,7 +238,7 @@
               <image 
                 v-for="(avatar, index) in result.memberAvatars" 
                 :key="index" 
-                :src="avatar || '/static/images/default-avatar.png'" 
+                :src="handleImagePath(avatar || '/static/images/default-avatar.png')" 
                 class="member-avatar">
               </image>
               <view v-if="result.memberCount > result.memberAvatars.length" class="more-members">
@@ -249,7 +249,7 @@
             <view class="result-content">
               <view class="result-detail-item">
                 <text class="result-label">比赛阶段:</text>
-                <text class="result-value">{{ getStageNameById(result.stageId) }}</text>
+                <text class="result-value">{{ result.stageName}}</text>
               </view>
               
               <view class="result-detail-item" v-if="result.announcedAt">
@@ -372,7 +372,7 @@
                 <image 
                   v-for="(avatar, idx) in team.avatars" 
                   :key="idx" 
-                  :src="avatar || '/static/images/default-avatar.png'" 
+                  :src="handleImagePath(avatar || '/static/images/default-avatar.png')" 
                   class="member-avatar">
                 </image>
                 <view v-if="team.remainingCount > 0" class="member-avatar-more">+{{ team.remainingCount }}</view>
@@ -420,9 +420,12 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import api from '@/api';
 import { icons } from '@/static/svg/icons.js';
 import SvgIcon from '@/components/SvgIcon.vue';
+// 导入路径处理函数
+import { handleImagePath } from '@/utils/pathHandler.js';
 
 // 竞赛ID和加载状态
 const competitionId = ref(null);
@@ -1022,6 +1025,14 @@ onMounted(() => {
   }
 });
 
+// 添加页面显示时的生命周期函数
+onShow(() => {
+  // 检查当前标签是否为队伍标签，如果是，则刷新队伍列表
+  if (currentTab.value === 'teams') {
+    getCompetitionTeams(true);
+  }
+});
+
 // 根据分类返回对应的样式类
 function getTagClass(category) {
   switch(category) {
@@ -1126,9 +1137,39 @@ function clearFilter() {
 
 // 跳转到创建团队页面
 function createTeam() {
+  // 不同平台环境的事件处理
+  
+  // #ifdef APP-PLUS || MP
+  // APP或小程序环境
   uni.navigateTo({
-    url: `/pages/team/create?competitionId=${competition.value.id}&competitionName=${encodeURIComponent(competition.value.title)}`
+    url: `/pages/team/create?competitionId=${competition.value.id}&competitionName=${encodeURIComponent(competition.value.title)}`,
+    events: {
+      // 监听页面返回事件
+      createTeamSuccess: () => {
+        console.log('收到createTeamSuccess事件 - APP/MP环境');
+        // 刷新队伍列表
+        currentTab.value = 'teams';
+        getCompetitionTeams(true);
+      }
+    }
   });
+  // #endif
+  
+  // #ifdef H5
+  // H5环境
+  uni.navigateTo({
+    url: `/pages/team/create?competitionId=${competition.value.id}&competitionName=${encodeURIComponent(competition.value.title)}`,
+    success: (res) => {
+      // 监听页面关闭事件
+      res.eventChannel.on('createTeamSuccess', () => {
+        console.log('收到createTeamSuccess事件 - H5环境');
+        // 刷新队伍列表
+        currentTab.value = 'teams';
+        getCompetitionTeams(true);
+      });
+    }
+  });
+  // #endif
 }
 
 // 处理行动按钮点击
@@ -1399,13 +1440,7 @@ async function getCompetitionResults(competitionId) {
       competitionResults.value = processedResults;
       console.log('最终处理的比赛结果数据:', competitionResults.value);
       
-      // 如果没有数据，显示提示
-      if (competitionResults.value.length === 0) {
-        uni.showToast({
-          title: '暂无比赛结果数据',
-          icon: 'none'
-        });
-      }
+
     } else {
       console.warn('获取比赛结果失败或无数据:', res);
       uni.showToast({

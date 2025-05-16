@@ -6,11 +6,7 @@
 	    :showSearch="false" 
 	    :showFilter="false"
 	  >
-	    <template #actions>
-	      <view class="action-btn" @click="navigateToCreateTeam">
-	        <SvgIcon name="plus" size="24" />
-	      </view>
-	    </template>
+
 	  </HeaderBar>
 	  
 	  <!-- 内容区域 -->
@@ -60,7 +56,7 @@
 		<!-- 搜索框 -->
 		<view class="search-container">
 		  <view class="search-box">
-			<SvgIcon name="search" size="16" class="search-icon"></SvgIcon>
+		
 			<input 
 			  type="text" 
 			  class="search-input" 
@@ -69,7 +65,7 @@
 			  @input="handleSearch"
 			/>
 			<view class="clear-btn" v-if="searchKeyword" @click="clearSearch">
-			  <SvgIcon name="x" size="16"></SvgIcon>
+			
 			</view>
 		  </view>
 		</view>
@@ -95,24 +91,24 @@
                   <text>{{ team.roleType === 'leader' ? '队长' : '队员' }}</text>
                 </view>
                 <view class="team-members">
-                  <SvgIcon name="users" size="14"></SvgIcon>
+         
                   <text>{{ team.memberCount }}人</text>
                 </view>
                 <view class="team-created">
-                  <SvgIcon name="calendar" size="14"></SvgIcon>
+              
                   <text>{{ formatDate(team.publishDate) }}创建</text>
                 </view>
               </view>
               
               <view class="my-role" v-if="team.roleName">
-                <SvgIcon name="user-check" size="14"></SvgIcon>
+               
                 <text>我的角色: {{ team.roleName }}</text>
               </view>
 			</view>
 			
 			<view class="team-body">
 			  <view class="team-description" v-if="team.description">
-				<text>{{ team.description }}</text>
+				<text>{{ team.description.slice(0, 98) }}......</text>
 			  </view>
 			  
 			  <view class="team-competitions" v-if="team.competitionId">
@@ -124,6 +120,7 @@
 				  <view class="competition-item">
 					<view class="competition-status"></view>
 					<text class="competition-name">{{ team.competitionName }}</text>
+					<image class="competition-image" :src="handleImagePath(team.competitionCoverImageUrl)"></image>
 				  </view>
 				</view>
 			  </view>
@@ -156,7 +153,7 @@
 				  v-if="team.roleType === 'leader'"
 				  @click.stop="showManageTeamModal(team)"
 				>
-				  <SvgIcon name="settings" size="16"></SvgIcon>
+				
 				  <text>管理团队</text>
 				</view>
 				<view 
@@ -164,7 +161,7 @@
 				  v-else-if="team.status === '0'"
 				  @click.stop="navigateToTeamDetail(team.id)"
 				>
-				  <SvgIcon name="info" size="16"></SvgIcon>
+			
 				  <text>查看详情</text>
 				</view>
 				<view 
@@ -172,8 +169,16 @@
 				  v-else
 				  @click.stop="navigateToTeamDetail(team.id)"
 				>
-				  <SvgIcon name="message-square" size="16"></SvgIcon>
+			
 				  <text>团队交流</text>
+				</view>
+				
+				<view 
+				  class="action-btn secondary" 
+				  @click.stop="navigateToTeamSpace(team.id)"
+				>
+	
+				  <text>团队空间</text>
 				</view>
 				
 				<view 
@@ -181,7 +186,7 @@
 				  v-if="team.roleType === 'leader' && team.status !== '2'"
 				  @click.stop="showDismissConfirm(team)"
 				>
-				  <SvgIcon name="trash-2" size="16"></SvgIcon>
+				
 				  <text>解散团队</text>
 				</view>
 				<view 
@@ -189,7 +194,7 @@
 				  v-else-if="team.roleType !== 'leader' && team.status !== '2'"
 				  @click.stop="showLeaveConfirm(team)"
 				>
-				  <SvgIcon name="log-out" size="16"></SvgIcon>
+	
 				  <text>退出团队</text>
 				</view>
 				<view 
@@ -197,7 +202,7 @@
 				  v-else
 				  @click.stop="deleteTeamRecord(team.id)"
 				>
-				  <SvgIcon name="trash" size="16"></SvgIcon>
+		
 				  <text>删除记录</text>
 				</view>
 			  </view>
@@ -263,7 +268,7 @@
 	  
 	  <!-- 创建团队浮动按钮 -->
 	  <view class="float-action-btn" @click="navigateToCreateTeam">
-		<SvgIcon name="chuangjiantubiao" size="24" color="#ffffff"></SvgIcon>
+        <SvgIcon name="chuangjiantubiao" size="24" color="#ffffff"></SvgIcon>
 	  </view>
 	  
 	  <!-- 团队管理模态框 -->
@@ -597,6 +602,7 @@ import HeaderBar from '@/components/HeaderBar.vue';
 import { getToken } from '@/utils/request';
 import teamApi from '@/api/modules/team';
 import teamRoleApi from '@/api/modules/teamRole';
+import { handleImagePath } from '@/utils/pathHandler.js';
 
 // 加载状态
 const loading = ref(true);
@@ -1553,6 +1559,23 @@ async function submitTeamInfo() {
     uni.hideLoading();
   }
 }
+
+// 跳转到团队空间
+function navigateToTeamSpace(id) {
+  // 查找当前团队
+  const team = myTeams.value.find(team => team.id === id);
+  if (!team) {
+    uni.navigateTo({
+      url: `/pages/myTeam/teamSpace?id=${id}`
+    });
+    return;
+  }
+  
+  // 传递团队名称和状态
+  uni.navigateTo({
+    url: `/pages/myTeam/teamSpace?id=${id}&name=${encodeURIComponent(team.name)}&status=${team.status}&statusText=${encodeURIComponent(team.statusText)}`
+  });
+}
 </script>
 
 <style lang="scss">
@@ -1882,6 +1905,11 @@ page {
 				font-size: 28rpx;
 				color: #333333;
 				font-weight: 500;
+			  }
+			  .competition-image {
+				width: 100rpx;
+				height: 100rpx;
+				margin-left: 10rpx;
 			  }
 			}
 		  }

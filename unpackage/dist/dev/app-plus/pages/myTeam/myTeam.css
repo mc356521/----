@@ -410,6 +410,11 @@ to {
   color: #333333;
   font-weight: 500;
 }
+.team-list .team-card .team-body .team-competitions .competitions-list .competition-item .competition-image {
+  width: 3.125rem;
+  height: 3.125rem;
+  margin-left: 0.3125rem;
+}
 .team-list .team-card .team-body .team-members-preview {
   margin-bottom: 0.625rem;
 }

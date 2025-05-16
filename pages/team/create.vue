@@ -484,11 +484,11 @@ const form = reactive({
   competitionId: '',
   teamName: '',
   researchDirection: '',
-  description: '',
+  description: '我们是一支充满激情与创造力的队伍',
   recruitDeadline: '',
-  email: '',
-  wechat: '',
-  qq: '',
+  email: '1234567890@qq.com',
+  wechat: '1234567890',
+  qq: '1234567890',
   teachers: [],
   roles: []
 });
@@ -519,6 +519,36 @@ const skillInputs = reactive({});
 
 // 搜索关键字
 const teacherSearchKey = ref('');
+
+// 获取页面通信通道
+const getOpenerEventChannel = () => {
+  try {
+    const pages = getCurrentPages();
+    const currentPage = pages[pages.length - 1];
+    
+    // APP环境下
+    // #ifdef APP-PLUS || APP-NVUE
+    return currentPage.$getOpenerEventChannel ? currentPage.$getOpenerEventChannel() : null;
+    // #endif
+    
+    // 小程序环境下
+    // #ifdef MP-WEIXIN || MP-ALIPAY || MP-BAIDU || MP-TOUTIAO || MP-QQ
+    return currentPage.getOpenerEventChannel ? currentPage.getOpenerEventChannel() : null;
+    // #endif
+    
+    // H5环境下
+    // #ifdef H5
+    return currentPage.$scope && currentPage.$scope.getOpenerEventChannel ? 
+      currentPage.$scope.getOpenerEventChannel() : null;
+    // #endif
+    
+    // 默认情况
+    return null;
+  } catch (error) {
+    console.error('获取EventChannel失败:', error);
+    return null;
+  }
+};
 
 // 计算属性：获取选中竞赛的名称
 const selectedCompetitionName = computed(() => {
@@ -875,14 +905,36 @@ async function submitTeam() {
     uni.hideLoading();
     
     if (res.code === 200) {
-    uni.showToast({
-      title: '创建成功',
-      icon: 'success'
-    });
-    
-    setTimeout(() => {
-      uni.navigateBack();
-    }, 1500);
+      uni.showToast({
+        title: '创建成功',
+        icon: 'success'
+      });
+      
+      try {
+        // 使用EventChannel通知竞赛详情页刷新队伍列表
+        const eventChannel = getOpenerEventChannel();
+        console.log('获取到eventChannel:', eventChannel);
+        
+        if (eventChannel) {
+          // #ifdef APP-PLUS || MP
+          eventChannel.emit('createTeamSuccess', { teamId: res.data.id });
+          console.log('已发送createTeamSuccess事件 - APP/MP环境');
+          // #endif
+          
+          // #ifdef H5
+          eventChannel.emit('createTeamSuccess', { teamId: res.data.id });
+          console.log('已发送createTeamSuccess事件 - H5环境');
+          // #endif
+        } else {
+          console.log('未获取到eventChannel，将依靠onShow生命周期刷新列表');
+        }
+      } catch (eventError) {
+        console.error('发送事件失败:', eventError);
+      }
+      
+      setTimeout(() => {
+        uni.navigateBack();
+      }, 1500);
     } else {
       showToast(res.message || '创建失败');
     }

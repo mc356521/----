@@ -252,7 +252,7 @@ async function getTeamList(refresh = false) {
     
     console.log('请求参数:', JSON.stringify(params, null, 2));
     const res = await teamApi.getTeamList(params);
-    console.log('响应结果:', JSON.stringify(res, null, 2));
+
     
     if (res.code === 200 && res.data) {
       if (refresh) {
@@ -674,9 +674,9 @@ page {
   align-items: center;
   padding: 20rpx 0;
   text-align: center;
-  color: $text-muted;
+    color: $text-muted;
   font-size: 26rpx;
-}
+  }
 
 // 筛选面板
 .filter-panel {

@@ -248,6 +248,15 @@
 				"navigationStyle": "custom",
 				"enablePullDownRefresh": true
 			}
+		},
+		{
+			"path" : "pages/myTeam/teamSpace",
+			"style" : 
+			{
+				"navigationBarTitleText" : "团队空间",
+				"navigationStyle": "custom",
+				"enablePullDownRefresh": true
+			}
 		}
 	],
 	"globalStyle": {

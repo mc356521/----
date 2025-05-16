@@ -4,7 +4,7 @@
     <view class="sticky-header">
       <view class="nav-bar">
         <view class="back-btn" @click="goBack">
-          <image :src="icons.back" class="icon-btn"></image>
+           <SvgIcon name="back" />
         </view>
         <text class="page-title">发布竞赛</text>
         <view class="draft-btn" @click="saveDraft">草稿箱</view>
@@ -57,8 +57,8 @@
               v-for="(item, index) in categoryOptions" 
               :key="index"
               class="category-item"
-              :class="{ 'category-active': form.categoryId === item.id }"
-              @click="form.categoryId = item.id"
+              :class="{ 'category-active': form.categoryIds.includes(item.id) }"
+              @click="toggleCategory(item.id)"
             >
               <text class="category-icon" :class="item.icon"></text>
               <text>{{ item.label }}</text>
@@ -308,16 +308,16 @@
           <view class="contact-grid">
             <view class="contact-row">
               <view class="contact-input">
-                <text class="contact-icon iconfont icon-user"></text>
+                <SvgIcon name="lianxiren" />
                 <input type="text" v-model="form.name" placeholder="联系人" />
               </view>
               <view class="contact-input">
-                <text class="contact-icon iconfont icon-qq"></text>
+                <SvgIcon name="qqtubiao" />
                 <input type="text" v-model="form.contactQQ" placeholder="QQ群" />
               </view>
             </view>
             <view class="contact-input contact-email">
-              <text class="contact-icon iconfont icon-email"></text>
+              <SvgIcon name="youxiang" />
               <input type="text" v-model="form.contactEmail" placeholder="联系邮箱" />
             </view>
           </view>
@@ -335,7 +335,12 @@
               <text class="upload-text">点击上传或拖拽图片至此处</text>
               <text class="upload-tip">建议尺寸：800x400，文件大小不超过2MB</text>
             </view>
-            <image v-else :src="form.coverUrl" mode="aspectFill" class="cover-image"></image>
+            <view v-else class="upload-success">
+              <text class="upload-icon iconfont icon-success"></text>
+              <text class="upload-text">图片已上传</text>
+              <text class="upload-filename">{{ form.coverFile?.name || '图片.jpg' }}</text>
+              <text class="upload-tip">点击可重新选择</text>
+            </view>
           </view>
         </view>
         
@@ -368,7 +373,10 @@
           <text class="section-title">竞赛预览</text>
           
           <view class="preview-card">
-            <image v-if="form.coverUrl" :src="form.coverUrl" mode="aspectFill" class="preview-cover"></image>
+            <view v-if="form.coverUrl" class="preview-cover-placeholder">
+              <text class="iconfont icon-success"></text>
+              <text>竞赛封面已上传</text>
+            </view>
             <view class="preview-placeholder" v-else>
               <text class="iconfont icon-image"></text>
               <text>无封面图片</text>
@@ -379,7 +387,9 @@
               
               <view class="preview-badges">
                 <view class="preview-badge level">{{ form.level || '未设置级别' }}</view>
-                <view class="preview-badge category">{{ getCategoryName() }}</view>
+                <view v-for="(categoryName, index) in getSelectedCategoryNames()" :key="index" class="preview-badge category">
+                  {{ categoryName }}
+                </view>
               </view>
               
               <view class="preview-info-item">
@@ -576,8 +586,9 @@
 import { ref, reactive, onMounted } from 'vue';
 import competitionsApi from '@/api/modules/competitions';
 import userApi from '@/api/modules/user';
-import { icons } from '@/static/svg/icons.js';
 import config from '@/config/env/dev';
+import SvgIcon from '@/components/SvgIcon.vue';
+import { handleImagePath } from '@/utils/pathHandler.js';
 
 // 步骤指示器
 const steps = ['基本信息', '比赛阶段', '联系附件', '预览发布'];
@@ -592,20 +603,20 @@ const isPopupOpen = ref(false);
 // 表单数据
 const form = reactive({
   title: '',
-  categoryId: null,
+  categoryIds: [],
   level: '',
-  shortDescription: '',
-  description: '',
-  requirements: '',
+  shortDescription: '这是竞赛简介相关信息',
+  description: '这是竞赛介绍相关信息',
+  requirements: '这是参赛要求相关信息',
   registrationStart: '',
   registrationEnd: '',
   teamMin: '',
   teamMax: '',
   isHot: false,
-  websiteUrl: '',
-  name: '',
-  contactQQ: '',
-  contactEmail: '',
+  websiteUrl: 'https://www.jingsai.com',
+  name: '某老师',
+  contactQQ: '1234567890',
+  contactEmail: '1234567890@qq.com',
   coverUrl: '',
   coverFile: null,
   attachments: [],
@@ -688,7 +699,7 @@ function validateCurrentStep() {
         showError('请输入竞赛标题');
         return false;
       }
-      if (!form.categoryId) {
+      if (form.categoryIds.length === 0) {
         showError('请选择竞赛分类');
         return false;
       }
@@ -791,8 +802,19 @@ function setDefaultCategories() {
 
 // 获取分类名称
 function getCategoryName() {
-  const category = categoryOptions.value.find(item => item.id === form.categoryId);
-  return category ? category.label : '未设置分类';
+  if (!form.categoryIds || form.categoryIds.length === 0) {
+    return '未设置分类';
+  }
+  
+  const selectedCategories = categoryOptions.value.filter(item => 
+    form.categoryIds.includes(item.id)
+  );
+  
+  if (selectedCategories.length === 0) {
+    return '未设置分类';
+  }
+  
+  return selectedCategories.map(cat => cat.label).join('、');
 }
 
 // 检查是否有管理员权限
@@ -998,13 +1020,13 @@ function validateStageForm() {
 
 // 重置阶段表单
 function resetStageForm() {
-  stageForm.stageName = '';
+  stageForm.stageName = '初赛';
   stageForm.startDate = '';
   stageForm.startTime = '09:00';
   stageForm.endDate = '';
   stageForm.endTime = '18:00';
-  stageForm.description = '';
-  stageForm.location = '';
+  stageForm.description = '这是初赛阶段描述';
+  stageForm.location = '这是初赛阶段地点';
 }
 
 // 合并日期和时间
@@ -1116,14 +1138,32 @@ function saveDraft() {
 
 // 上传封面
 function uploadCover() {
+  console.log('尝试选择图片');
   uni.chooseImage({
     count: 1,
     sizeType: ['original', 'compressed'],
     sourceType: ['album', 'camera'],
     success: (res) => {
-      // 保存临时文件路径用于预览和后续上传
+      console.log('选择图片成功', res);
       form.coverUrl = res.tempFilePaths[0];
-      form.coverFile = res.tempFiles[0]; // 保存文件对象用于后续上传
+      form.coverFile = res.tempFiles[0];
+      
+      // 显示成功提示
+      uni.showToast({
+        title: '图片上传成功',
+        icon: 'success',
+        duration: 1500
+      });
+    },
+    fail: (err) => {
+      console.log('选择图片失败, ', err);
+      // 只有当错误不是用户取消时才显示错误提示
+      if (err.errMsg !== 'chooseImage:fail cancel' && err.errMsg !== 'chooseImage:fail User cancelled') {
+        uni.showToast({
+          title: '选择图片失败',
+          icon: 'none'
+        });
+      }
     }
   });
 }
@@ -1192,7 +1232,7 @@ function validateForm() {
     return false;
   }
   
-  if (!form.categoryId) {
+  if (form.categoryIds.length === 0) {
     showError('请选择竞赛分类');
     return false;
   }
@@ -1258,7 +1298,7 @@ async function saveCompetition(status) {
   // 准备竞赛数据
   const competitionData = {
     title: form.title,
-    categoryId: form.categoryId,
+    categoryIds: form.categoryIds,
     level: form.level,
     shortDescription: form.shortDescription,
     description: form.description,
@@ -1409,6 +1449,32 @@ async function saveCompetition(status) {
   } finally {
     uni.hideLoading();
   }
+}
+
+// 切换分类选择
+function toggleCategory(id) {
+  if (form.categoryIds.includes(id)) {
+    form.categoryIds = form.categoryIds.filter(i => i !== id);
+  } else {
+    form.categoryIds.push(id);
+  }
+}
+
+// 获取选中的分类名称列表
+function getSelectedCategoryNames() {
+  if (!form.categoryIds || form.categoryIds.length === 0) {
+    return ['未设置分类'];
+  }
+  
+  const selectedCategories = categoryOptions.value.filter(item => 
+    form.categoryIds.includes(item.id)
+  );
+  
+  if (selectedCategories.length === 0) {
+    return ['未设置分类'];
+  }
+  
+  return selectedCategories.map(cat => cat.label);
 }
 </script>
 
@@ -2138,6 +2204,50 @@ page {
   align-items: center;
 }
 
+.upload-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20rpx 0;
+}
+
+.upload-success .upload-icon {
+  font-size: 60rpx;
+  color: #10B981;
+  margin-bottom: 16rpx;
+}
+
+.upload-success .upload-text {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #10B981;
+  margin-bottom: 8rpx;
+}
+
+.upload-filename {
+  font-size: 28rpx;
+  color: #4b5563;
+  margin-bottom: 8rpx;
+}
+
+.preview-cover-placeholder {
+  width: 100%;
+  height: 320rpx;
+  background-color: #EBF7F2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #10B981;
+  font-size: 32rpx;
+  font-weight: 500;
+}
+
+.preview-cover-placeholder .iconfont {
+  font-size: 60rpx;
+  margin-bottom: 16rpx;
+}
+
 .upload-icon {
   font-size: 60rpx;
   color: #9ca3af;
@@ -2153,12 +2263,6 @@ page {
 .upload-tip {
   font-size: 24rpx;
   color: #9ca3af;
-}
-
-.cover-image {
-  width: 100%;
-  height: 320rpx;
-  border-radius: 8rpx;
 }
 
 /* 文件列表 */

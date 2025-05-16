@@ -3,8 +3,8 @@
     <!-- 顶部导航栏 -->
     <view class="header">
       <view class="navbar">
-        <view class="back-btn" @click="goBack">
-          <text class="iconfont icon-back"></text>
+        <view @click="goBack">
+          <SvgIcon name="back" size="25" />
         </view>
         <view class="title">发布任务</view>
         <view class="right-btns">
@@ -243,7 +243,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue';
 import { getTaskCategories, getRewardTypes, createTask } from '@/api/modules/tasks';
-
+import SvgIcon from '@/components/SvgIcon.vue';
 // 表单数据
 const formData = reactive({
   title: '',

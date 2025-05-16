@@ -25,12 +25,12 @@ export default {
 			const isLoginPage = currentPage && currentPage.route && currentPage.route.includes('login');
 			
 			if (!isLoginPage) {
-				// 等待应用初始化完成后再跳转
-				setTimeout(() => {
-					uni.reLaunch({
-						url: '/pages/login/login'
-					});
-				}, 300);
+			// 等待应用初始化完成后再跳转
+			setTimeout(() => {
+				uni.reLaunch({
+					url: '/pages/login/login'
+				});
+			}, 300);
 			}
 			return; // 未登录不执行后续初始化
 		}

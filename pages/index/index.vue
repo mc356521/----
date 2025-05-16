@@ -32,7 +32,7 @@
           </swiper-item>
           <swiper-item>
             <view class="swiper-item">
-              <image src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800" mode="aspectFill"></image>
+              <image src="/static/image/Lianxi/mc/tiaozhanbeo2.jpeg" mode="aspectFill"></image>
               <view class="swiper-overlay">
                 <text class="swiper-title">挑战杯创业计划大赛</text>
                 <view class="swiper-date">
@@ -44,7 +44,7 @@
           </swiper-item>
           <swiper-item>
             <view class="swiper-item">
-              <image src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800" mode="aspectFill"></image>
+              <image src="/static/image/Lianxi/mc/chuangqingchun.jpeg" mode="aspectFill"></image>
               <view class="swiper-overlay">
                 <text class="swiper-title">创青春创业大赛</text>
                 <view class="swiper-date">
@@ -102,7 +102,7 @@
           <view class="competition-item card-hover animate__animated animate__fadeInUp" style="animation-delay: 0.1s" @click="viewDetail('competition', competition.id)" v-for="competition in competitionsList" :key="competition.id">
             <view class="competition-flex">
               <view class="competition-image-container">
-                <image class="competition-image" :src="competition.coverImageUrl || 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800'" mode="aspectFill"></image>
+                <image class="competition-image" :src="handleImagePath(competition.coverImageUrl)"></image>
               </view>
               <view class="competition-content">
                 <view class="flex-between">
@@ -222,6 +222,7 @@ import api from '@/api';
 import store from '@/store';
 import { icons } from '@/static/svg/icons.js';
 import SvgIcon from '@/components/SvgIcon.vue';
+import { handleImagePath } from '@/utils/pathHandler.js';
 // HeaderBar引用
 const headerBarRef = ref(null);
 

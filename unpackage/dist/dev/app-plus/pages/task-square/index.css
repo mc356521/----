@@ -340,6 +340,37 @@
   color: #ffffff;
 }
 
+/* 排序筛选按钮 */
+.sort-filter {
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  padding: 0.625rem 0.9375rem;
+  background-color: #ffffff;
+  border-top: 0.03125rem solid #f0f0f0;
+  gap: 0.5rem;
+}
+.sort-btn {
+  display: flex;
+  align-items: center;
+  padding: 0.3125rem 0.46875rem;
+  border-radius: 0.75rem;
+  font-size: 0.8125rem;
+  color: #666666;
+  background-color: #f5f5f5;
+  transition: all 0.3s;
+}
+.sort-btn uni-text {
+  margin-right: 0.1875rem;
+}
+.sort-btn:active {
+  opacity: 0.8;
+}
+.sort-active {
+  background-color: #4A90E2;
+  color: #ffffff;
+}
+
 /* 任务列表 */
 .tasks-scroll {
   flex: 1;

@@ -292,8 +292,8 @@ to {
   border-bottom: 0.03125rem solid #F3F4F6;
 }
 .competition-section .competition-list .competition-card .card-header .competition-image {
-  width: 3.75rem;
-  height: 3.75rem;
+  width: 5rem;
+  height: 5rem;
   border-radius: 0.375rem;
   margin-right: 0.625rem;
 }
@@ -465,6 +465,48 @@ to {
 .competition-section .competition-list .competition-card .card-body .result-info .result-header .result-badge.result-none, .competition-section .competition-list .competition-card .card-body .result-info .result-header .result-badge.result-other {
   background-color: #9CA3AF;
 }
+.competition-section .competition-list .competition-card .card-body .result-info .special-award-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.3125rem;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .special-award-info .iconfont {
+  font-size: 0.875rem;
+  color: #F59E0B;
+  margin-right: 0.1875rem;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .special-award-info uni-text {
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .stage-name-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.3125rem;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .stage-name-info .iconfont {
+  font-size: 0.875rem;
+  color: #F59E0B;
+  margin-right: 0.1875rem;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .stage-name-info uni-text {
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .bonus-info {
+  display: flex;
+  align-items: center;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .bonus-info .iconfont {
+  font-size: 0.875rem;
+  color: #F59E0B;
+  margin-right: 0.1875rem;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .bonus-info uni-text {
+  font-size: 0.75rem;
+  color: #6B7280;
+  flex: 1;
+}
 .competition-section .competition-list .competition-card .card-body .result-info .certificate-info {
   display: flex;
   align-items: center;
@@ -492,6 +534,23 @@ to {
   font-size: 0.75rem;
   color: #3B82F6;
   margin-right: 0;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .all-stages-info {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 0.375rem;
+  padding-top: 0.375rem;
+  border-top: 0.03125rem dashed #F3F4F6;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .all-stages-info uni-text {
+  font-size: 0.75rem;
+  color: #3B82F6;
+  margin-right: 0.125rem;
+}
+.competition-section .competition-list .competition-card .card-body .result-info .all-stages-info .iconfont {
+  font-size: 0.75rem;
+  color: #3B82F6;
 }
 .competition-section .competition-list .competition-card .card-body .team-info {
   margin-bottom: 0.625rem;
@@ -604,4 +663,329 @@ to {
 .competition-section .competition-list .empty-state .action-btn uni-text {
   font-size: 0.8125rem;
   color: white;
+}
+.share-card {
+  width: 18.75rem;
+  background-color: white;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.1);
+}
+.share-card .share-card-header {
+  padding: 0.625rem;
+  display: flex;
+  align-items: center;
+  background-color: #3B82F6;
+}
+.share-card .share-card-header .share-logo {
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: 0.9375rem;
+  margin-right: 0.5rem;
+}
+.share-card .share-card-header .share-platform {
+  font-size: 0.875rem;
+  font-weight: bold;
+  color: white;
+}
+.share-card .share-card-body {
+  padding: 0.625rem;
+}
+.share-card .share-card-body .share-competition-name {
+  font-size: 0.9375rem;
+  font-weight: bold;
+  color: #333333;
+  margin-bottom: 0.5rem;
+}
+.share-card .share-card-body .share-result {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.share-card .share-card-body .share-result .share-result-label {
+  font-size: 0.8125rem;
+  color: #6B7280;
+  margin-right: 0.3125rem;
+}
+.share-card .share-card-body .share-result .share-result-value {
+  font-size: 1.125rem;
+  font-weight: bold;
+  color: #F59E0B;
+}
+.share-card .share-card-body .share-special {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.share-card .share-card-body .share-special .share-special-label {
+  font-size: 0.8125rem;
+  color: #6B7280;
+  margin-right: 0.3125rem;
+}
+.share-card .share-card-body .share-special .share-special-value {
+  font-size: 0.9375rem;
+  font-weight: bold;
+  color: #F59E0B;
+}
+.share-card .share-card-body .share-stage {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.share-card .share-card-body .share-stage .share-stage-label {
+  font-size: 0.8125rem;
+  color: #6B7280;
+  margin-right: 0.3125rem;
+}
+.share-card .share-card-body .share-stage .share-stage-value {
+  font-size: 0.9375rem;
+  font-weight: bold;
+  color: #F59E0B;
+}
+.share-card .share-card-body .share-bonus {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.share-card .share-card-body .share-bonus .share-bonus-label {
+  font-size: 0.8125rem;
+  color: #6B7280;
+  margin-right: 0.3125rem;
+}
+.share-card .share-card-body .share-bonus .share-bonus-value {
+  font-size: 0.9375rem;
+  font-weight: bold;
+  color: #F59E0B;
+}
+.share-card .share-card-body .share-team {
+  display: flex;
+  margin-bottom: 0.5rem;
+}
+.share-card .share-card-body .share-team .share-team-label {
+  font-size: 0.8125rem;
+  color: #6B7280;
+  margin-right: 0.3125rem;
+}
+.share-card .share-card-body .share-team .share-team-value {
+  font-size: 0.9375rem;
+  font-weight: bold;
+  color: #333333;
+}
+.share-card .share-card-body .share-date {
+  font-size: 0.8125rem;
+  color: #6B7280;
+}
+.share-card .share-card-footer {
+  padding: 0.625rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.share-card .share-card-footer .share-qrcode {
+  width: 3.75rem;
+  height: 3.75rem;
+  border-radius: 0.375rem;
+}
+.share-card .share-card-footer .share-scan-text {
+  font-size: 0.8125rem;
+  color: #6B7280;
+}
+.share-modal {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.share-modal .share-content {
+  width: 90%;
+  max-width: 20.3125rem;
+  background-color: white;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.share-modal .share-content .share-header {
+  padding: 0.9375rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 0.03125rem solid #F3F4F6;
+}
+.share-modal .share-content .share-header .share-title {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #333333;
+}
+.share-modal .share-content .share-header .close-btn {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.share-modal .share-content .share-header .close-btn .iconfont {
+  font-size: 1.125rem;
+  color: #6B7280;
+}
+.stage-results-modal {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stage-results-modal .stage-results-content {
+  width: 90%;
+  max-width: 20.3125rem;
+  background-color: white;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+}
+.stage-results-modal .stage-results-content .stage-results-header {
+  padding: 0.9375rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 0.03125rem solid #F3F4F6;
+}
+.stage-results-modal .stage-results-content .stage-results-header .stage-results-title {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #333333;
+}
+.stage-results-modal .stage-results-content .stage-results-header .close-btn {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stage-results-modal .stage-results-content .stage-results-header .close-btn .iconfont {
+  font-size: 1.125rem;
+  color: #6B7280;
+}
+.stage-results-modal .stage-results-content .stage-results-list {
+  padding: 0.625rem 0.9375rem;
+  max-height: 60vh;
+}
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item {
+  padding: 0.625rem 0;
+  border-bottom: 0.03125rem solid #F3F4F6;
+}
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item:last-child {
+  border-bottom: none;
+}
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-header .stage-name {
+  font-size: 0.9375rem;
+  font-weight: bold;
+  color: #333333;
+}
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-header .result-badge {
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.625rem;
+}
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-header .result-badge uni-text {
+  font-size: 0.75rem;
+  color: white;
+  font-weight: 500;
+}
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-date,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-bonus,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-certificate,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-sponsor,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-remarks,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-special,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-award-name {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-date .iconfont,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-bonus .iconfont,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-certificate .iconfont,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-sponsor .iconfont,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-remarks .iconfont,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-special .iconfont,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-award-name .iconfont {
+  font-size: 0.75rem;
+  color: #6B7280;
+  margin-right: 0.25rem;
+}
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-date uni-text,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-bonus uni-text,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-certificate uni-text,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-sponsor uni-text,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-remarks uni-text,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-special uni-text,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-award-name uni-text {
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-date .award-label,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-bonus .award-label,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-certificate .award-label,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-sponsor .award-label,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-remarks .award-label,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-special .award-label,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-award-name .award-label {
+  font-size: 0.75rem;
+  color: #6B7280;
+  margin-right: 0.25rem;
+}
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-date .award-value,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-bonus .award-value,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-certificate .award-value,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-sponsor .award-value,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-remarks .award-value,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-special .award-value,
+.stage-results-modal .stage-results-content .stage-results-list .stage-result-item .stage-result-details .result-award-name .award-value {
+  font-size: 0.8125rem;
+  font-weight: bold;
+  color: #F59E0B;
+}
+.stage-results-modal .stage-results-content .stage-results-list .empty-result {
+  padding: 1.25rem 0;
+  text-align: center;
+}
+.stage-results-modal .stage-results-content .stage-results-list .empty-result uni-text {
+  font-size: 0.875rem;
+  color: #9CA3AF;
+}
+.stage-results-modal .stage-results-content .stage-results-footer {
+  padding: 0.625rem 0.9375rem;
+  border-top: 0.03125rem solid #F3F4F6;
+}
+.stage-results-modal .stage-results-content .stage-results-footer .close-btn-wrapper {
+  height: 2.5rem;
+  background-color: #3B82F6;
+  border-radius: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stage-results-modal .stage-results-content .stage-results-footer .close-btn-wrapper uni-text {
+  font-size: 0.875rem;
+  color: white;
+  font-weight: 500;
 }

@@ -16,4 +16,4 @@ export default {
   version: '1.0.0',
   // 环境名称
   env: 'development'
-}; 
+}; 	
