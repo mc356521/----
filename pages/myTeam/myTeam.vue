@@ -1571,9 +1571,9 @@ function navigateToTeamSpace(id) {
     return;
   }
   
-  // 传递团队名称和状态
+  // 传递团队名称、状态和成员数量
   uni.navigateTo({
-    url: `/pages/myTeam/teamSpace?id=${id}&name=${encodeURIComponent(team.name)}&status=${team.status}&statusText=${encodeURIComponent(team.statusText)}`
+    url: `/pages/myTeam/teamSpace?id=${id}&name=${encodeURIComponent(team.name)}&status=${team.status}&statusText=${encodeURIComponent(team.statusText)}&memberCount=${team.memberCount || 0}`
   });
 }
 </script>

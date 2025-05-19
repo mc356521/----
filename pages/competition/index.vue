@@ -333,6 +333,19 @@ export default {
     
     // 设置默认排序方式为最新报名
     this.selectedSort = 'desc';
+    
+    // 监听竞赛列表刷新事件
+    uni.$on('refreshCompetitionList', this.onRefresh);
+  },
+  
+  onShow() {
+    // 页面每次显示时都检查是否需要刷新
+    this.updateHeaderHeight();
+  },
+  
+  onUnload() {
+    // 移除事件监听，避免内存泄漏
+    uni.$off('refreshCompetitionList', this.onRefresh);
   },
   
   mounted() {

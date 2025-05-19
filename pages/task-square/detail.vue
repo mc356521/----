@@ -115,7 +115,16 @@
         <text>{{ isFavorite ? '已收藏' : '收藏' }}</text>
       </view>
       
+      <!-- 如果是发布者，显示编辑按钮；否则显示申请按钮 -->
       <button 
+        v-if="isCreator" 
+        class="edit-btn" 
+        @click="editTask"
+      >
+        分享任务
+      </button>
+      <button 
+        v-else
         class="apply-btn" 
         :class="{ 'disabled-btn': isApplyDisabled }" 
         :disabled="isApplyDisabled"
@@ -174,6 +183,34 @@ const taskDetail = ref({
   location: ''
 });
 
+// 判断当前用户是否为发布者
+const isCreator = ref(false);
+
+// 判断当前用户是否已申请或不能申请
+const isApplyDisabled = computed(() => {
+  // 如果是发布者自己，禁用申请按钮
+  if (isCreator.value) {
+    return true;
+  }
+  
+  // 如果已申请，则禁用申请按钮
+  if (isAlreadyApplied.value) {
+    return true;
+  }
+  
+  // 如果任务状态不是招募中，则禁用申请按钮
+  if (taskDetail.value.status !== 'recruiting') {
+    return true;
+  }
+  
+  // 如果已达到最大参与人数，禁用申请按钮
+  if (taskDetail.value.currentParticipants >= taskDetail.value.maxParticipants) {
+    return true;
+  }
+  
+  return false;
+});
+
 // 处理联系方式
 const contactInfo = computed(() => {
   if (!taskDetail.value.contactInfo) return null;
@@ -199,26 +236,6 @@ const validContacts = computed(() => {
   return Object.entries(contactInfo.value)
     .filter(([key, value]) => value && value.toString().trim() !== '')
     .map(([key, value]) => ({ key, value }));
-});
-
-// 判断当前用户是否已申请或不能申请
-const isApplyDisabled = computed(() => {
-  // 如果已申请，则禁用申请按钮
-  if (isAlreadyApplied.value) {
-    return true;
-  }
-  
-  // 如果任务状态不是招募中，则禁用申请按钮
-  if (taskDetail.value.status !== 'recruiting') {
-    return true;
-  }
-  
-  // 如果已达到最大参与人数，禁用申请按钮
-  if (taskDetail.value.currentParticipants >= taskDetail.value.maxParticipants) {
-    return true;
-  }
-  
-  return false;
 });
 
 // 获取奖励类型对应的图标
@@ -379,6 +396,9 @@ async function getTaskDetail(id) {
       // 检查用户是否已申请
       checkIfAlreadyApplied(id);
       
+      // 检查当前用户是否为发布者
+      checkIfCreator();
+      
       // 更新页面标题
       if (taskDetail.value.title) {
         uni.setNavigationBarTitle({
@@ -401,8 +421,6 @@ async function getTaskDetail(id) {
     uni.hideLoading();
   }
 }
-
-
 
 // 格式化日期
 function formatDeadline(dateStr) {
@@ -567,6 +585,11 @@ function copyContactInfo(value) {
 
 // 获取申请按钮文本
 function getApplyButtonText() {
+  // 如果是发布者自己，显示"我的任务"
+  if (isCreator.value) {
+    return '我的任务';
+  }
+
   if (isAlreadyApplied.value) {
     return '已申请';
   }
@@ -587,8 +610,6 @@ function getApplyButtonText() {
   }
   return '立即申请';
 }
-
-
 
 // 收藏/取消收藏
 async function toggleFavorite() {
@@ -784,6 +805,39 @@ function openParticipantsPopup() {
       }
     });
   }
+}
+
+// 检查用户是否为发布者
+async function checkIfCreator() {
+  try {
+    // 使用API获取当前用户信息
+    const res = await request({
+      url: '/users/info',
+      method: 'GET'
+    });
+    
+    if (res.code === 200 && res.data && res.data.userId && taskDetail.value && taskDetail.value.creatorId) {
+      // 比较当前用户ID和任务发布者ID
+      isCreator.value = res.data.userId === taskDetail.value.creatorId;
+      console.log('当前用户ID:', res.data.userId, '发布者ID:', taskDetail.value.creatorId, '是否为发布者:', isCreator.value);
+    } else {
+      // 如果无法获取用户信息或任务发布者信息，则默认为非发布者
+      isCreator.value = false;
+      console.log('无法获取用户信息或任务发布者信息');
+    }
+  } catch (error) {
+    console.error('检查发布者状态失败:', error);
+    isCreator.value = false;
+  }
+}
+
+// 编辑任务
+function editTask() {
+  if (!taskId.value) return;
+  
+  uni.navigateTo({
+    url: `/pages/task-square/edit?id=${taskId.value}`
+  });
 }
 </script>
 
@@ -1084,6 +1138,19 @@ $border-color: #eeeeee;
     &.disabled-btn {
       background-color: rgba($text-light, 0.5);
     }
+  }
+  
+  .edit-btn {
+    flex: 1;
+    height: 88rpx;
+    background-color: $secondary-color;
+    color: #fff;
+    font-size: 32rpx;
+    font-weight: bold;
+    border-radius: 16rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 

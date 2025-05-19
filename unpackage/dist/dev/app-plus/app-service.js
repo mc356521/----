@@ -4283,19 +4283,65 @@ if (uni.restoreGlobal) {
     clearState,
     resetAiRecommendState
   };
+  function isOssOrCdnUrl(url) {
+    if (!url)
+      return false;
+    return url.includes("oss-") || url.includes("cdn") || url.includes("aliyuncs.com");
+  }
   function handleImagePath(path) {
-    if (!path)
-      return "";
-    if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("blob:")) {
+    if (!path) {
+      return "/static/image/default.png";
+    }
+    if (path.startsWith("http://") || path.startsWith("https://") || isOssOrCdnUrl(path)) {
       return path;
     }
-    if (path.startsWith("/static/")) {
+    if (path.startsWith("/")) {
       return path.substring(1);
     }
-    if (!path.startsWith("/") && !path.startsWith("static/")) {
-      return "/static/" + path;
-    }
     return path;
+  }
+  function getPageParams() {
+    const sysInfo = uni.getSystemInfoSync();
+    const platform2 = sysInfo.platform;
+    let query = {};
+    try {
+      if (platform2 === "web" || platform2 === "h5") {
+        const queryString = window.location.search.substring(1);
+        const pairs = queryString.split("&");
+        for (let i = 0; i < pairs.length; i++) {
+          const pair = pairs[i].split("=");
+          if (pair.length === 2) {
+            query[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || "");
+          }
+        }
+      } else {
+        const pages = getCurrentPages();
+        const currentPage = pages[pages.length - 1];
+        if (currentPage && currentPage.options) {
+          query = { ...currentPage.options };
+        } else if (currentPage && currentPage.$page && currentPage.$page.fullPath) {
+          const fullPath = currentPage.$page.fullPath;
+          const queryIndex = fullPath.indexOf("?");
+          if (queryIndex > -1) {
+            const queryPart = fullPath.substring(queryIndex + 1);
+            const queryParams = queryPart.split("&");
+            for (let param of queryParams) {
+              const [key, value] = param.split("=");
+              if (key && value) {
+                query[key] = decodeURIComponent(value);
+              }
+            }
+          }
+        } else if (currentPage && currentPage.route && currentPage.__displayReporter) {
+          query = currentPage.__displayReporter.query || {};
+        } else if (currentPage && currentPage.$mp && currentPage.$mp.query) {
+          query = { ...currentPage.$mp.query };
+        }
+      }
+    } catch (error) {
+      formatAppLog("error", "at utils/pathHandler.js:104", "获取页面参数出错:", error);
+    }
+    return query;
   }
   const _imports_1$1 = "/static/image/Lianxi/mc/tiaozhanbeo2.jpeg";
   const _imports_2$1 = "/static/image/Lianxi/mc/chuangqingchun.jpeg";
@@ -8781,6 +8827,22 @@ if (uni.restoreGlobal) {
         viewCount: 0,
         location: ""
       });
+      const isCreator = vue.ref(false);
+      const isApplyDisabled = vue.computed(() => {
+        if (isCreator.value) {
+          return true;
+        }
+        if (isAlreadyApplied.value) {
+          return true;
+        }
+        if (taskDetail.value.status !== "recruiting") {
+          return true;
+        }
+        if (taskDetail.value.currentParticipants >= taskDetail.value.maxParticipants) {
+          return true;
+        }
+        return false;
+      });
       const contactInfo = vue.computed(() => {
         if (!taskDetail.value.contactInfo)
           return null;
@@ -8793,7 +8855,7 @@ if (uni.restoreGlobal) {
           }
           return contactData;
         } catch (e) {
-          formatAppLog("error", "at pages/task-square/detail.vue:190", "解析联系方式失败:", e);
+          formatAppLog("error", "at pages/task-square/detail.vue:227", "解析联系方式失败:", e);
           return null;
         }
       });
@@ -8801,18 +8863,6 @@ if (uni.restoreGlobal) {
         if (!contactInfo.value)
           return [];
         return Object.entries(contactInfo.value).filter(([key, value]) => value && value.toString().trim() !== "").map(([key, value]) => ({ key, value }));
-      });
-      const isApplyDisabled = vue.computed(() => {
-        if (isAlreadyApplied.value) {
-          return true;
-        }
-        if (taskDetail.value.status !== "recruiting") {
-          return true;
-        }
-        if (taskDetail.value.currentParticipants >= taskDetail.value.maxParticipants) {
-          return true;
-        }
-        return false;
       });
       function getRewardIcon(type) {
         switch (type) {
@@ -8902,7 +8952,7 @@ if (uni.restoreGlobal) {
             }, 1500);
           }
         } catch (error) {
-          formatAppLog("error", "at pages/task-square/detail.vue:337", "获取任务ID出错:", error);
+          formatAppLog("error", "at pages/task-square/detail.vue:354", "获取任务ID出错:", error);
           uni.showToast({
             title: "加载任务详情失败",
             icon: "none"
@@ -8936,20 +8986,21 @@ if (uni.restoreGlobal) {
           if (res.code === 200 && res.data) {
             taskDetail.value = res.data;
             checkIfAlreadyApplied(id);
+            checkIfCreator();
             if (taskDetail.value.title) {
               uni.setNavigationBarTitle({
                 title: "任务详情"
               });
             }
           } else {
-            formatAppLog("error", "at pages/task-square/detail.vue:389", "获取任务详情失败:", res);
+            formatAppLog("error", "at pages/task-square/detail.vue:409", "获取任务详情失败:", res);
             uni.showToast({
               title: "获取任务详情失败",
               icon: "none"
             });
           }
         } catch (error) {
-          formatAppLog("error", "at pages/task-square/detail.vue:398", "获取任务详情异常:", error);
+          formatAppLog("error", "at pages/task-square/detail.vue:418", "获取任务详情异常:", error);
         } finally {
           uni.hideLoading();
         }
@@ -9091,6 +9142,9 @@ if (uni.restoreGlobal) {
         });
       }
       function getApplyButtonText() {
+        if (isCreator.value) {
+          return "我的任务";
+        }
         if (isAlreadyApplied.value) {
           return "已申请";
         }
@@ -9121,7 +9175,7 @@ if (uni.restoreGlobal) {
             isAlreadyApplied.value = response.data.participated || false;
           }
         } catch (error) {
-          formatAppLog("error", "at pages/task-square/detail.vue:622", "检查申请状态失败:", error);
+          formatAppLog("error", "at pages/task-square/detail.vue:643", "检查申请状态失败:", error);
           isAlreadyApplied.value = false;
         }
       }
@@ -9165,7 +9219,7 @@ if (uni.restoreGlobal) {
                 }
               } catch (error) {
                 uni.hideLoading();
-                formatAppLog("error", "at pages/task-square/detail.vue:676", "申请任务失败:", error);
+                formatAppLog("error", "at pages/task-square/detail.vue:697", "申请任务失败:", error);
                 uni.showToast({
                   title: "申请失败，请稍后重试",
                   icon: "none"
@@ -9239,7 +9293,7 @@ if (uni.restoreGlobal) {
           }
         } catch (error) {
           uni.hideLoading();
-          formatAppLog("error", "at pages/task-square/detail.vue:765", "更新任务状态失败:", error);
+          formatAppLog("error", "at pages/task-square/detail.vue:786", "更新任务状态失败:", error);
           uni.showToast({
             title: "网络异常，请稍后重试",
             icon: "none"
@@ -9256,7 +9310,32 @@ if (uni.restoreGlobal) {
           });
         }
       }
-      const __returned__ = { defaultAvatar, taskId, isFavorite, viewCounted, favoriteCount, isAlreadyApplied, participantsPopup, taskDetail, contactInfo, validContacts, isApplyDisabled, getRewardIcon, getRewardIconColor, getContactIcon, getTaskIdAndLoadDetail, getTaskDetail: getTaskDetail2, formatDeadline, formatTimeAgo, getStatusText, getStatusClass, getRewardTypeText, getRewardClass, getContactTypeText, copyContactInfo, getApplyButtonText, toggleFavorite, checkIfAlreadyApplied, applyTask: applyTask2, updateTaskStatus: updateTaskStatus2, doUpdateTaskStatus, openParticipantsPopup, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, reactive: vue.reactive, nextTick: vue.nextTick, get request() {
+      async function checkIfCreator() {
+        try {
+          const res = await request({
+            url: "/users/info",
+            method: "GET"
+          });
+          if (res.code === 200 && res.data && res.data.userId && taskDetail.value && taskDetail.value.creatorId) {
+            isCreator.value = res.data.userId === taskDetail.value.creatorId;
+            formatAppLog("log", "at pages/task-square/detail.vue:822", "当前用户ID:", res.data.userId, "发布者ID:", taskDetail.value.creatorId, "是否为发布者:", isCreator.value);
+          } else {
+            isCreator.value = false;
+            formatAppLog("log", "at pages/task-square/detail.vue:826", "无法获取用户信息或任务发布者信息");
+          }
+        } catch (error) {
+          formatAppLog("error", "at pages/task-square/detail.vue:829", "检查发布者状态失败:", error);
+          isCreator.value = false;
+        }
+      }
+      function editTask() {
+        if (!taskId.value)
+          return;
+        uni.navigateTo({
+          url: `/pages/task-square/edit?id=${taskId.value}`
+        });
+      }
+      const __returned__ = { defaultAvatar, taskId, isFavorite, viewCounted, favoriteCount, isAlreadyApplied, participantsPopup, taskDetail, isCreator, isApplyDisabled, contactInfo, validContacts, getRewardIcon, getRewardIconColor, getContactIcon, getTaskIdAndLoadDetail, getTaskDetail: getTaskDetail2, formatDeadline, formatTimeAgo, getStatusText, getStatusClass, getRewardTypeText, getRewardClass, getContactTypeText, copyContactInfo, getApplyButtonText, toggleFavorite, checkIfAlreadyApplied, applyTask: applyTask2, updateTaskStatus: updateTaskStatus2, doUpdateTaskStatus, openParticipantsPopup, checkIfCreator, editTask, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, reactive: vue.reactive, nextTick: vue.nextTick, get request() {
         return request;
       }, get api() {
         return api;
@@ -9529,11 +9608,17 @@ if (uni.restoreGlobal) {
             /* TEXT */
           )
         ]),
-        vue.createElementVNode("button", {
+        vue.createCommentVNode(" 如果是发布者，显示编辑按钮；否则显示申请按钮 "),
+        $setup.isCreator ? (vue.openBlock(), vue.createElementBlock("button", {
+          key: 0,
+          class: "edit-btn",
+          onClick: $setup.editTask
+        }, " 分享任务 ")) : (vue.openBlock(), vue.createElementBlock("button", {
+          key: 1,
           class: vue.normalizeClass(["apply-btn", { "disabled-btn": $setup.isApplyDisabled }]),
           disabled: $setup.isApplyDisabled,
           onClick: $setup.applyTask
-        }, vue.toDisplayString($setup.getApplyButtonText()), 11, ["disabled"])
+        }, vue.toDisplayString($setup.getApplyButtonText()), 11, ["disabled"]))
       ]),
       vue.createCommentVNode(" 任务参与者弹窗 "),
       vue.createVNode($setup["TaskParticipantsPopup"], {
@@ -15452,14 +15537,16 @@ if (uni.restoreGlobal) {
     },
     // 页面生命周期函数
     onLoad(option) {
-      formatAppLog("log", "at pages/team/detail.vue:198", "队伍详情页面参数:", option);
-      if (option && option.id) {
-        this.teamId = option.id;
+      formatAppLog("log", "at pages/team/detail.vue:200", "队伍详情页面参数:", option);
+      const query = getPageParams();
+      const id = query.id || option.id;
+      if (id) {
+        this.teamId = id;
         this.getUserInfo();
         this.getTeamDetail();
       } else {
         uni.showToast({
-          title: "队伍ID不能为空",
+          title: "无法获取团队ID",
           icon: "none"
         });
         setTimeout(() => {
@@ -15491,7 +15578,7 @@ if (uni.restoreGlobal) {
             this.hasApplied = res.data === true;
           }
         } catch (error) {
-          formatAppLog("error", "at pages/team/detail.vue:241", "检查团队状态失败", error);
+          formatAppLog("error", "at pages/team/detail.vue:247", "检查团队状态失败", error);
         }
       },
       getStatusClass(status) {
@@ -15599,7 +15686,7 @@ if (uni.restoreGlobal) {
                   });
                 }
               } catch (error) {
-                formatAppLog("error", "at pages/team/detail.vue:355", "申请失败", error);
+                formatAppLog("error", "at pages/team/detail.vue:361", "申请失败", error);
                 uni.showToast({
                   title: "网络异常，请稍后重试",
                   icon: "none"
@@ -15688,7 +15775,7 @@ if (uni.restoreGlobal) {
                   });
                 }
               } catch (error) {
-                formatAppLog("error", "at pages/team/detail.vue:454", "解散队伍失败", error);
+                formatAppLog("error", "at pages/team/detail.vue:460", "解散队伍失败", error);
                 uni.showToast({
                   title: "网络异常，请稍后重试",
                   icon: "none"
@@ -15722,7 +15809,7 @@ if (uni.restoreGlobal) {
                   });
                 }
               } catch (error) {
-                formatAppLog("error", "at pages/team/detail.vue:489", "退出队伍失败", error);
+                formatAppLog("error", "at pages/team/detail.vue:495", "退出队伍失败", error);
                 uni.showToast({
                   title: "网络异常，请稍后重试",
                   icon: "none"
@@ -15745,12 +15832,12 @@ if (uni.restoreGlobal) {
               this.isTeamMember = isMember;
               this.isTeamLeader = isLeader;
             }
-            formatAppLog("log", "at pages/team/detail.vue:517", "获取到队伍成员:", this.teamMembers);
+            formatAppLog("log", "at pages/team/detail.vue:523", "获取到队伍成员:", this.teamMembers);
           } else {
-            formatAppLog("log", "at pages/team/detail.vue:519", "获取队伍成员失败:", res == null ? void 0 : res.message);
+            formatAppLog("log", "at pages/team/detail.vue:525", "获取队伍成员失败:", res == null ? void 0 : res.message);
           }
         } catch (error) {
-          formatAppLog("error", "at pages/team/detail.vue:522", "获取队伍成员出错", error);
+          formatAppLog("error", "at pages/team/detail.vue:528", "获取队伍成员出错", error);
         }
       },
       // 获取队伍详情数据
@@ -15760,7 +15847,7 @@ if (uni.restoreGlobal) {
           const res = await teamApi.getTeamDetail(this.teamId);
           if (res && res.code === 200 && res.data) {
             this.teamInfo = res.data;
-            formatAppLog("log", "at pages/team/detail.vue:533", "获取到队伍详情:", this.teamInfo);
+            formatAppLog("log", "at pages/team/detail.vue:539", "获取到队伍详情:", this.teamInfo);
             if (this.userInfo && this.userInfo.userId && this.teamInfo.leaderId === this.userInfo.userId) {
               this.isTeamLeader = true;
               this.isTeamMember = true;
@@ -15772,10 +15859,10 @@ if (uni.restoreGlobal) {
               title: (res == null ? void 0 : res.message) || "获取队伍详情失败",
               icon: "none"
             });
-            formatAppLog("log", "at pages/team/detail.vue:551", "获取队伍详情失败:", res);
+            formatAppLog("log", "at pages/team/detail.vue:557", "获取队伍详情失败:", res);
           }
         } catch (error) {
-          formatAppLog("error", "at pages/team/detail.vue:554", "获取队伍详情出错", error);
+          formatAppLog("error", "at pages/team/detail.vue:560", "获取队伍详情出错", error);
           uni.showToast({
             title: "网络异常，请稍后重试",
             icon: "none"
@@ -16549,7 +16636,7 @@ if (uni.restoreGlobal) {
       vue.createCommentVNode(" 顶部导航栏 "),
       vue.createVNode($setup["HeaderBar"], {
         ref: "headerBarRef",
-        title: "组队广场",
+        title: "队伍广场",
         categories: $setup.categories,
         "default-category": $setup.currentCategory,
         "show-filter": true,
@@ -16810,11 +16897,12 @@ if (uni.restoreGlobal) {
         competitionId: "",
         teamName: "",
         researchDirection: "",
-        description: "",
-        recruitDeadline: "",
-        email: "",
-        wechat: "",
-        qq: "",
+        description: "我们是一支充满激情与创造力的队伍",
+        recruitDeadline: Date.now() + 5 * 24 * 60 * 60 * 1e3,
+        // 默认截止时间为5天后
+        email: "1234567890@qq.com",
+        wechat: "1234567890",
+        qq: "1234567890",
         teachers: [],
         roles: []
       });
@@ -16835,6 +16923,17 @@ if (uni.restoreGlobal) {
       const filteredSkillTags = vue.ref([]);
       const skillInputs = vue.reactive({});
       const teacherSearchKey = vue.ref("");
+      const getOpenerEventChannel = () => {
+        try {
+          const pages = getCurrentPages();
+          const currentPage = pages[pages.length - 1];
+          return currentPage.$getOpenerEventChannel ? currentPage.$getOpenerEventChannel() : null;
+          return null;
+        } catch (error) {
+          formatAppLog("error", "at pages/team/create.vue:548", "获取EventChannel失败:", error);
+          return null;
+        }
+      };
       const selectedCompetitionName = vue.computed(() => {
         const competition = competitionList.value.find((item) => item.id === form.competitionId);
         return competition ? competition.title : "";
@@ -16869,14 +16968,14 @@ if (uni.restoreGlobal) {
               }
             });
             competitionCategories.value = Array.from(categories.values());
-            formatAppLog("log", "at pages/team/create.vue:575", "API请求结果:", res.data);
-            formatAppLog("log", "at pages/team/create.vue:576", "处理后的竞赛列表:", competitionList.value);
-            formatAppLog("log", "at pages/team/create.vue:577", "当前选中竞赛ID:", selectedId);
+            formatAppLog("log", "at pages/team/create.vue:605", "API请求结果:", res.data);
+            formatAppLog("log", "at pages/team/create.vue:606", "处理后的竞赛列表:", competitionList.value);
+            formatAppLog("log", "at pages/team/create.vue:607", "当前选中竞赛ID:", selectedId);
           } else {
             showToast("获取竞赛列表失败");
           }
         } catch (error) {
-          formatAppLog("error", "at pages/team/create.vue:582", "获取竞赛列表失败:", error);
+          formatAppLog("error", "at pages/team/create.vue:612", "获取竞赛列表失败:", error);
           showToast("获取竞赛列表失败");
         } finally {
           uni.hideLoading();
@@ -16909,7 +17008,7 @@ if (uni.restoreGlobal) {
             showToast("获取教师列表失败");
           }
         } catch (error) {
-          formatAppLog("error", "at pages/team/create.vue:624", "获取教师列表失败:", error);
+          formatAppLog("error", "at pages/team/create.vue:654", "获取教师列表失败:", error);
           showToast("获取教师列表失败");
         } finally {
           uni.hideLoading();
@@ -17084,15 +17183,27 @@ if (uni.restoreGlobal) {
               skillRequirements: role.skills || []
             }))
           };
-          formatAppLog("log", "at pages/team/create.vue:870", "提交数据:", apiData);
+          formatAppLog("log", "at pages/team/create.vue:900", "提交数据:", apiData);
           const res = await teamApi.createTeam(apiData);
-          formatAppLog("log", "at pages/team/create.vue:874", res);
+          formatAppLog("log", "at pages/team/create.vue:904", res);
           uni.hideLoading();
           if (res.code === 200) {
             uni.showToast({
               title: "创建成功",
               icon: "success"
             });
+            try {
+              const eventChannel = getOpenerEventChannel();
+              formatAppLog("log", "at pages/team/create.vue:916", "获取到eventChannel:", eventChannel);
+              if (eventChannel) {
+                eventChannel.emit("createTeamSuccess", { teamId: res.data.id });
+                formatAppLog("log", "at pages/team/create.vue:921", "已发送createTeamSuccess事件 - APP/MP环境");
+              } else {
+                formatAppLog("log", "at pages/team/create.vue:929", "未获取到eventChannel，将依靠onShow生命周期刷新列表");
+              }
+            } catch (eventError) {
+              formatAppLog("error", "at pages/team/create.vue:932", "发送事件失败:", eventError);
+            }
             setTimeout(() => {
               uni.navigateBack();
             }, 1500);
@@ -17100,7 +17211,7 @@ if (uni.restoreGlobal) {
             showToast(res.message || "创建失败");
           }
         } catch (error) {
-          formatAppLog("error", "at pages/team/create.vue:890", "创建团队失败:", error);
+          formatAppLog("error", "at pages/team/create.vue:942", "创建团队失败:", error);
           uni.hideLoading();
           showToast("创建失败，请稍后重试");
         }
@@ -17111,12 +17222,12 @@ if (uni.restoreGlobal) {
         if (page.$page && page.$page.options) {
           const { competitionId, competitionName } = page.$page.options;
           if (competitionId) {
-            formatAppLog("log", "at pages/team/create.vue:906", "从URL获取到竞赛ID:", competitionId);
-            formatAppLog("log", "at pages/team/create.vue:907", "从URL获取到竞赛名称:", competitionName);
+            formatAppLog("log", "at pages/team/create.vue:958", "从URL获取到竞赛ID:", competitionId);
+            formatAppLog("log", "at pages/team/create.vue:959", "从URL获取到竞赛名称:", competitionName);
             form.competitionId = competitionId;
             if (competitionName) {
               const decodedName = decodeURIComponent(competitionName);
-              formatAppLog("log", "at pages/team/create.vue:916", "解码后的竞赛名称:", decodedName);
+              formatAppLog("log", "at pages/team/create.vue:968", "解码后的竞赛名称:", decodedName);
               const tempCompetition = {
                 id: competitionId,
                 title: decodedName,
@@ -17125,8 +17236,8 @@ if (uni.restoreGlobal) {
               };
               competitionList.value.push(tempCompetition);
               filteredCompetitionList.value = [...competitionList.value];
-              formatAppLog("log", "at pages/team/create.vue:929", "已添加临时竞赛对象:", tempCompetition);
-              formatAppLog("log", "at pages/team/create.vue:930", "当前竞赛列表:", competitionList.value);
+              formatAppLog("log", "at pages/team/create.vue:981", "已添加临时竞赛对象:", tempCompetition);
+              formatAppLog("log", "at pages/team/create.vue:982", "当前竞赛列表:", competitionList.value);
             }
           }
         }
@@ -17134,7 +17245,7 @@ if (uni.restoreGlobal) {
         await getTeachersList();
         await getSkillTags();
         await vue.nextTick();
-        formatAppLog("log", "at pages/team/create.vue:942", "竞赛选择组件:", competitionPopup.value);
+        formatAppLog("log", "at pages/team/create.vue:994", "竞赛选择组件:", competitionPopup.value);
       });
       function getCategoryClass(categoryId) {
         switch (categoryId) {
@@ -17205,13 +17316,13 @@ if (uni.restoreGlobal) {
               });
             });
             filteredSkillTags.value = allTags;
-            formatAppLog("log", "at pages/team/create.vue:1047", "所有技能标签:", allTags);
-            formatAppLog("log", "at pages/team/create.vue:1048", "分类:", categories);
+            formatAppLog("log", "at pages/team/create.vue:1099", "所有技能标签:", allTags);
+            formatAppLog("log", "at pages/team/create.vue:1100", "分类:", categories);
           } else {
             showToast("获取技能标签失败");
           }
         } catch (error) {
-          formatAppLog("error", "at pages/team/create.vue:1053", "获取技能标签失败:", error);
+          formatAppLog("error", "at pages/team/create.vue:1105", "获取技能标签失败:", error);
           showToast("获取技能标签失败");
         } finally {
           uni.hideLoading();
@@ -17220,8 +17331,8 @@ if (uni.restoreGlobal) {
       function filterSkillsByCategory(category) {
         selectedSkillCategory.value = category;
         skillSearchKey.value = "";
-        formatAppLog("log", "at pages/team/create.vue:1065", "筛选分类:", category);
-        formatAppLog("log", "at pages/team/create.vue:1066", "所有技能标签数据:", skillTags.value);
+        formatAppLog("log", "at pages/team/create.vue:1117", "筛选分类:", category);
+        formatAppLog("log", "at pages/team/create.vue:1118", "所有技能标签数据:", skillTags.value);
         if (category === "全部") {
           const allTags = [];
           Object.entries(skillTags.value).forEach(([cat, tags]) => {
@@ -17240,7 +17351,7 @@ if (uni.restoreGlobal) {
             category
           }));
         }
-        formatAppLog("log", "at pages/team/create.vue:1089", "筛选后的技能标签:", filteredSkillTags.value);
+        formatAppLog("log", "at pages/team/create.vue:1141", "筛选后的技能标签:", filteredSkillTags.value);
       }
       function confirmSkillSelection() {
         closeSkillModal();
@@ -17270,7 +17381,7 @@ if (uni.restoreGlobal) {
         }
       }
       function searchSkills() {
-        formatAppLog("log", "at pages/team/create.vue:1133", "搜索技能:", skillSearchKey.value);
+        formatAppLog("log", "at pages/team/create.vue:1185", "搜索技能:", skillSearchKey.value);
         if (!skillSearchKey.value.trim()) {
           filterSkillsByCategory(selectedSkillCategory.value);
           return;
@@ -17296,7 +17407,7 @@ if (uni.restoreGlobal) {
         filteredSkillTags.value = baseList.filter(
           (item) => item.tagName.toLowerCase().includes(keyword) || item.description && item.description.toLowerCase().includes(keyword)
         );
-        formatAppLog("log", "at pages/team/create.vue:1171", "搜索结果:", filteredSkillTags.value);
+        formatAppLog("log", "at pages/team/create.vue:1223", "搜索结果:", filteredSkillTags.value);
       }
       function clearSkillSearch() {
         skillSearchKey.value = "";
@@ -17308,7 +17419,7 @@ if (uni.restoreGlobal) {
         const role = form.roles[currentRoleIndex.value];
         return role.skills ? role.skills.length : 0;
       }
-      const __returned__ = { competitionPopup, teacherPopup, skillPopup, baseUrl, form, competitionList, filteredCompetitionList, competitionCategories, selectedCategoryId, teacherList, filteredTeacherList, teacherMajors, selectedMajorId, currentTeacherIndex, skillTags, skillCategories, selectedSkillCategory, currentRoleIndex, skillSearchKey, filteredSkillTags, skillInputs, teacherSearchKey, selectedCompetitionName, getCompetitionsBasicInfo, getTeachersList, filterCompetitionsByCategory, filterTeachersByMajor, goBack, showCompetitionModal, closeCompetitionModal, selectCompetition, confirmCompetitionSelection, showTeacherModal, closeTeacherModal, selectTeacher, confirmTeacherSelection, formatDate, padZero, addTeacher, removeTeacher, addRole, removeRole, addSkill, removeSkill, validateForm, showToast, submitTeam, getCategoryClass, isTeacherAlreadySelected, searchTeachers, clearTeacherSearch, showSkillModal, closeSkillModal, getSkillTags, filterSkillsByCategory, confirmSkillSelection, isSkillSelected, isSkillAlreadySelected, toggleSkillSelection, searchSkills, clearSkillSearch, getSelectedSkillsCount, ref: vue.ref, reactive: vue.reactive, computed: vue.computed, onMounted: vue.onMounted, nextTick: vue.nextTick, get teamApi() {
+      const __returned__ = { competitionPopup, teacherPopup, skillPopup, baseUrl, form, competitionList, filteredCompetitionList, competitionCategories, selectedCategoryId, teacherList, filteredTeacherList, teacherMajors, selectedMajorId, currentTeacherIndex, skillTags, skillCategories, selectedSkillCategory, currentRoleIndex, skillSearchKey, filteredSkillTags, skillInputs, teacherSearchKey, getOpenerEventChannel, selectedCompetitionName, getCompetitionsBasicInfo, getTeachersList, filterCompetitionsByCategory, filterTeachersByMajor, goBack, showCompetitionModal, closeCompetitionModal, selectCompetition, confirmCompetitionSelection, showTeacherModal, closeTeacherModal, selectTeacher, confirmTeacherSelection, formatDate, padZero, addTeacher, removeTeacher, addRole, removeRole, addSkill, removeSkill, validateForm, showToast, submitTeam, getCategoryClass, isTeacherAlreadySelected, searchTeachers, clearTeacherSearch, showSkillModal, closeSkillModal, getSkillTags, filterSkillsByCategory, confirmSkillSelection, isSkillSelected, isSkillAlreadySelected, toggleSkillSelection, searchSkills, clearSkillSearch, getSelectedSkillsCount, ref: vue.ref, reactive: vue.reactive, computed: vue.computed, onMounted: vue.onMounted, nextTick: vue.nextTick, get teamApi() {
         return teamApi;
       }, get competitionsApi() {
         return competitionsApi;
@@ -18707,6 +18818,13 @@ if (uni.restoreGlobal) {
       this.getCompetitionList();
       this.updateHeaderHeight();
       this.selectedSort = "desc";
+      uni.$on("refreshCompetitionList", this.onRefresh);
+    },
+    onShow() {
+      this.updateHeaderHeight();
+    },
+    onUnload() {
+      uni.$off("refreshCompetitionList", this.onRefresh);
     },
     mounted() {
       setTimeout(() => {
@@ -18756,7 +18874,7 @@ if (uni.restoreGlobal) {
                     competition.teamCount = teamCountRes.data.teamCount;
                   }
                 } catch (error) {
-                  formatAppLog("error", "at pages/competition/index.vue:397", `获取热门竞赛 ${competition.id} 的团队数量失败:`, error);
+                  formatAppLog("error", "at pages/competition/index.vue:410", `获取热门竞赛 ${competition.id} 的团队数量失败:`, error);
                   competition.teamCount = 0;
                 }
                 return competition;
@@ -18765,7 +18883,7 @@ if (uni.restoreGlobal) {
             this.hotCompetitions = hotCompetitionsData;
           }
         } catch (error) {
-          formatAppLog("error", "at pages/competition/index.vue:407", "获取热门竞赛失败:", error);
+          formatAppLog("error", "at pages/competition/index.vue:420", "获取热门竞赛失败:", error);
           uni.showToast({
             title: "获取热门竞赛失败",
             icon: "none"
@@ -18811,12 +18929,12 @@ if (uni.restoreGlobal) {
               params.orderByRegistration = this.selectedSort;
             }
           }
-          formatAppLog("log", "at pages/competition/index.vue:470", "竞赛列表请求参数:", JSON.stringify(params, null, 2));
+          formatAppLog("log", "at pages/competition/index.vue:483", "竞赛列表请求参数:", JSON.stringify(params, null, 2));
           if (reset) {
             this.competitionList = [];
           }
           const res = await api.competitions.getCompetitionsList(params);
-          formatAppLog("log", "at pages/competition/index.vue:479", "竞赛列表响应:", JSON.stringify(res, null, 2));
+          formatAppLog("log", "at pages/competition/index.vue:492", "竞赛列表响应:", JSON.stringify(res, null, 2));
           if (res && res.code === 200 && res.data) {
             let competitionData = Array.isArray(res.data.list) ? res.data.list : [];
             if (competitionData.length > 0) {
@@ -18827,7 +18945,7 @@ if (uni.restoreGlobal) {
                     competition.teamCount = teamCountRes.data.teamCount;
                   }
                 } catch (error) {
-                  formatAppLog("error", "at pages/competition/index.vue:493", `获取竞赛 ${competition.id} 的团队数量失败:`, error);
+                  formatAppLog("error", "at pages/competition/index.vue:506", `获取竞赛 ${competition.id} 的团队数量失败:`, error);
                   competition.teamCount = 0;
                 }
                 return competition;
@@ -18847,7 +18965,7 @@ if (uni.restoreGlobal) {
             }
           }
         } catch (error) {
-          formatAppLog("error", "at pages/competition/index.vue:518", "获取竞赛列表失败:", error);
+          formatAppLog("error", "at pages/competition/index.vue:531", "获取竞赛列表失败:", error);
           uni.showToast({
             title: "获取竞赛列表失败",
             icon: "none"
@@ -18995,13 +19113,13 @@ if (uni.restoreGlobal) {
       },
       // 显示筛选面板
       showFilterPanel() {
-        formatAppLog("log", "at pages/competition/index.vue:677", "打开筛选面板", this.showFilter);
+        formatAppLog("log", "at pages/competition/index.vue:690", "打开筛选面板", this.showFilter);
         this.showFilter = true;
-        formatAppLog("log", "at pages/competition/index.vue:679", "筛选面板状态更新为:", this.showFilter);
+        formatAppLog("log", "at pages/competition/index.vue:692", "筛选面板状态更新为:", this.showFilter);
       },
       // 隐藏筛选面板
       hideFilterPanel() {
-        formatAppLog("log", "at pages/competition/index.vue:684", "关闭筛选面板", this.showFilter);
+        formatAppLog("log", "at pages/competition/index.vue:697", "关闭筛选面板", this.showFilter);
         this.showFilter = false;
       },
       // 选择级别
@@ -19034,7 +19152,7 @@ if (uni.restoreGlobal) {
       },
       // 应用筛选条件
       applyFilters() {
-        formatAppLog("log", "at pages/competition/index.vue:727", "应用筛选条件:", {
+        formatAppLog("log", "at pages/competition/index.vue:740", "应用筛选条件:", {
           level: this.selectedLevel,
           status: this.selectedStatus,
           categoryId: this.selectedCategoryId,
@@ -19595,8 +19713,10 @@ if (uni.restoreGlobal) {
         shortDescription: "这是竞赛简介相关信息",
         description: "这是竞赛介绍相关信息",
         requirements: "这是参赛要求相关信息",
-        registrationStart: "",
-        registrationEnd: "",
+        registrationStart: "2025-07-01",
+        // 默认为7月1日
+        registrationEnd: "2025-07-31",
+        // 默认为7月31日
         teamMin: "",
         teamMax: "",
         isHot: false,
@@ -19916,10 +20036,12 @@ if (uni.restoreGlobal) {
         return true;
       }
       function resetStageForm() {
+        const defaultStartDate = "2025-08-01";
+        const defaultEndDate = "2025-08-15";
         stageForm.stageName = "初赛";
-        stageForm.startDate = "";
+        stageForm.startDate = defaultStartDate;
         stageForm.startTime = "09:00";
-        stageForm.endDate = "";
+        stageForm.endDate = defaultEndDate;
         stageForm.endTime = "18:00";
         stageForm.description = "这是初赛阶段描述";
         stageForm.location = "这是初赛阶段地点";
@@ -20003,13 +20125,13 @@ if (uni.restoreGlobal) {
         saveCompetition(0);
       }
       function uploadCover() {
-        formatAppLog("log", "at pages/competition/create.vue:1141", "尝试选择图片");
+        formatAppLog("log", "at pages/competition/create.vue:1145", "尝试选择图片");
         uni.chooseImage({
           count: 1,
           sizeType: ["original", "compressed"],
           sourceType: ["album", "camera"],
           success: (res) => {
-            formatAppLog("log", "at pages/competition/create.vue:1147", "选择图片成功", res);
+            formatAppLog("log", "at pages/competition/create.vue:1151", "选择图片成功", res);
             form.coverUrl = res.tempFilePaths[0];
             form.coverFile = res.tempFiles[0];
             uni.showToast({
@@ -20019,7 +20141,7 @@ if (uni.restoreGlobal) {
             });
           },
           fail: (err) => {
-            formatAppLog("log", "at pages/competition/create.vue:1159", "选择图片失败, ", err);
+            formatAppLog("log", "at pages/competition/create.vue:1163", "选择图片失败, ", err);
             if (err.errMsg !== "chooseImage:fail cancel" && err.errMsg !== "chooseImage:fail User cancelled") {
               uni.showToast({
                 title: "选择图片失败",
@@ -20135,45 +20257,88 @@ if (uni.restoreGlobal) {
           title: status === 0 ? "保存中..." : "发布中..."
         });
         try {
-          const formData = new FormData();
-          formData.append("competitionData", JSON.stringify(competitionData));
-          if (form.coverFile) {
-            formData.append("coverImage", form.coverFile);
-          }
-          form.attachments.forEach((attachment, index) => {
-            if (attachment.file) {
-              formData.append("attachmentFiles", attachment.file);
-            }
-          });
           const token = uni.getStorageSync("token");
-          const res = await new Promise((resolve, reject) => {
-            uni.uploadFile({
-              url: `${config.baseUrl}/competitions/with-files`,
-              files: form.attachments.map((item) => ({
-                name: "attachmentFiles",
-                file: item.file
-              })),
-              filePath: form.coverUrl,
-              name: "coverImage",
-              formData: {
-                "competitionData": JSON.stringify(competitionData)
-              },
-              header: {
-                "Authorization": "Bearer " + token
-              },
-              success: (uploadRes) => {
-                let result;
-                try {
-                  result = JSON.parse(uploadRes.data);
-                } catch (e) {
-                  result = { code: -1, message: "返回数据解析失败" };
+          let res;
+          res = await new Promise((resolve, reject) => {
+            if (form.attachments && form.attachments.length > 0) {
+              uni.uploadFile({
+                url: `${config.baseUrl}/competitions/with-files`,
+                filePath: form.coverUrl,
+                // 封面图片路径
+                name: "coverImage",
+                formData: {
+                  "competitionData": JSON.stringify(competitionData)
+                },
+                header: {
+                  "Authorization": "Bearer " + token
+                },
+                success: async (uploadRes) => {
+                  let result;
+                  try {
+                    result = JSON.parse(uploadRes.data);
+                    if (result.code === 200 && result.data && result.data.id) {
+                      const competitionId = result.data.id;
+                      try {
+                        for (let i = 0; i < form.attachments.length; i++) {
+                          const attachment = form.attachments[i];
+                          if (attachment.path) {
+                            await uni.uploadFile({
+                              url: `${config.baseUrl}/competitions/${competitionId}/attachments`,
+                              filePath: attachment.path,
+                              name: "attachmentFile",
+                              header: {
+                                "Authorization": "Bearer " + token
+                              }
+                            });
+                            formatAppLog("log", "at pages/competition/create.vue:1408", `附件 ${i + 1}/${form.attachments.length} 上传成功`);
+                          }
+                        }
+                        formatAppLog("log", "at pages/competition/create.vue:1411", "所有附件上传完成");
+                      } catch (attachmentError) {
+                        formatAppLog("error", "at pages/competition/create.vue:1413", "附件上传失败:", attachmentError);
+                        uni.showToast({
+                          title: "竞赛已创建，但附件上传失败",
+                          icon: "none",
+                          duration: 3e3
+                        });
+                      }
+                    }
+                    resolve(result);
+                  } catch (e) {
+                    result = { code: -1, message: "返回数据解析失败" };
+                    resolve(result);
+                  }
+                },
+                fail: (err) => {
+                  reject(err);
                 }
-                resolve(result);
-              },
-              fail: (err) => {
-                reject(err);
-              }
-            });
+              });
+            } else {
+              uni.uploadFile({
+                url: `${config.baseUrl}/competitions/with-files`,
+                filePath: form.coverUrl,
+                // 封面图片路径
+                name: "coverImage",
+                formData: {
+                  "competitionData": JSON.stringify(competitionData)
+                },
+                header: {
+                  "Authorization": "Bearer " + token
+                },
+                success: (uploadRes) => {
+                  let result;
+                  try {
+                    result = JSON.parse(uploadRes.data);
+                  } catch (e) {
+                    result = { code: -1, message: "返回数据解析失败" };
+                  }
+                  resolve(result);
+                },
+                fail: (err) => {
+                  reject(err);
+                }
+              });
+            }
           });
           if (res.code === 200) {
             const competitionId = res.data.id;
@@ -20196,11 +20361,11 @@ if (uni.restoreGlobal) {
                     metadata
                   };
                 });
-                formatAppLog("log", "at pages/competition/create.vue:1406", "格式化后的阶段数据:", formattedStages);
+                formatAppLog("log", "at pages/competition/create.vue:1490", "格式化后的阶段数据:", formattedStages);
                 await competitionsApi.createCompetitionStages(formattedStages, competitionId);
-                formatAppLog("log", "at pages/competition/create.vue:1411", "比赛阶段创建成功");
+                formatAppLog("log", "at pages/competition/create.vue:1495", "比赛阶段创建成功");
               } catch (stageError) {
-                formatAppLog("error", "at pages/competition/create.vue:1413", "比赛阶段创建失败:", stageError);
+                formatAppLog("error", "at pages/competition/create.vue:1497", "比赛阶段创建失败:", stageError);
                 uni.showToast({
                   title: "竞赛已创建，但阶段创建失败",
                   icon: "none",
@@ -20212,6 +20377,7 @@ if (uni.restoreGlobal) {
                 return;
               }
             }
+            uni.$emit("refreshCompetitionList");
             uni.showToast({
               title: status === 0 ? "保存成功" : "发布成功",
               icon: "success"
@@ -20226,7 +20392,7 @@ if (uni.restoreGlobal) {
             });
           }
         } catch (error) {
-          formatAppLog("error", "at pages/competition/create.vue:1444", "操作失败:", error);
+          formatAppLog("error", "at pages/competition/create.vue:1531", "操作失败:", error);
           uni.showToast({
             title: "操作失败，请重试",
             icon: "none"
@@ -20254,7 +20420,13 @@ if (uni.restoreGlobal) {
         }
         return selectedCategories.map((cat) => cat.label);
       }
-      const __returned__ = { steps, currentStep, stagePopup, isEditingStage, editingStageIndex, isPopupOpen, form, stageForm, stageStatusOptions, categoryOptions, levelOptions, nextStep, prevStep, goToStep, validateCurrentStep, loadCategories, getIconForCategory, setDefaultCategories, getCategoryName, checkAdminRole, redirectNoPermission, goBack, addStage, editStage, removeStage, cancelStage, confirmStage, validateStageForm, resetStageForm, combineDateTime, formatDate, formatTimeOnly, formatDateTime, getStageStatusClass, getStageStatusText, calculateStageStatus, getStageLocation, saveDraft, uploadCover, uploadAttachment, removeFile, publishCompetition, validateForm, showError, saveCompetition, toggleCategory, getSelectedCategoryNames, ref: vue.ref, reactive: vue.reactive, onMounted: vue.onMounted, get competitionsApi() {
+      function formatDateYYYYMMDD(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+      const __returned__ = { steps, currentStep, stagePopup, isEditingStage, editingStageIndex, isPopupOpen, form, stageForm, stageStatusOptions, categoryOptions, levelOptions, nextStep, prevStep, goToStep, validateCurrentStep, loadCategories, getIconForCategory, setDefaultCategories, getCategoryName, checkAdminRole, redirectNoPermission, goBack, addStage, editStage, removeStage, cancelStage, confirmStage, validateStageForm, resetStageForm, combineDateTime, formatDate, formatTimeOnly, formatDateTime, getStageStatusClass, getStageStatusText, calculateStageStatus, getStageLocation, saveDraft, uploadCover, uploadAttachment, removeFile, publishCompetition, validateForm, showError, saveCompetition, toggleCategory, getSelectedCategoryNames, formatDateYYYYMMDD, ref: vue.ref, reactive: vue.reactive, onMounted: vue.onMounted, get competitionsApi() {
         return competitionsApi;
       }, get userApi() {
         return userApi;
@@ -21400,7 +21572,7 @@ if (uni.restoreGlobal) {
             getCompetitionDocuments(data.id);
             getCompetitionStages(data.id);
             getCompetitionResults(data.id);
-            formatAppLog("log", "at pages/competition/detail.vue:596", "竞赛详情数据:", competition.value);
+            formatAppLog("log", "at pages/competition/detail.vue:597", "竞赛详情数据:", competition.value);
           } else {
             uni.showToast({
               title: "获取竞赛详情失败",
@@ -21408,7 +21580,7 @@ if (uni.restoreGlobal) {
             });
           }
         } catch (error) {
-          formatAppLog("error", "at pages/competition/detail.vue:604", "获取竞赛详情错误:", error);
+          formatAppLog("error", "at pages/competition/detail.vue:605", "获取竞赛详情错误:", error);
           uni.showToast({
             title: "获取竞赛详情失败",
             icon: "none"
@@ -21422,12 +21594,12 @@ if (uni.restoreGlobal) {
           const res = await api.competitions.getCompetitionAttachmentsByType(competitionId2, "document");
           if (res && res.code === 200 && res.data) {
             documentAttachments.value = res.data.documents || [];
-            formatAppLog("log", "at pages/competition/detail.vue:620", "竞赛文档附件:", documentAttachments.value);
+            formatAppLog("log", "at pages/competition/detail.vue:621", "竞赛文档附件:", documentAttachments.value);
           } else {
-            formatAppLog("warn", "at pages/competition/detail.vue:622", "获取竞赛附件失败或无数据:", res);
+            formatAppLog("warn", "at pages/competition/detail.vue:623", "获取竞赛附件失败或无数据:", res);
           }
         } catch (error) {
-          formatAppLog("error", "at pages/competition/detail.vue:625", "获取竞赛附件错误:", error);
+          formatAppLog("error", "at pages/competition/detail.vue:626", "获取竞赛附件错误:", error);
         }
       }
       function downloadAttachment(attachment) {
@@ -21459,10 +21631,10 @@ if (uni.restoreGlobal) {
                     uni.openDocument({
                       filePath: saveRes.savedFilePath,
                       success: () => {
-                        formatAppLog("log", "at pages/competition/detail.vue:669", "打开文件成功");
+                        formatAppLog("log", "at pages/competition/detail.vue:670", "打开文件成功");
                       },
                       fail: (err) => {
-                        formatAppLog("error", "at pages/competition/detail.vue:672", "打开文件失败:", err);
+                        formatAppLog("error", "at pages/competition/detail.vue:673", "打开文件失败:", err);
                         uni.showToast({
                           title: "无法打开此类型文件",
                           icon: "none"
@@ -21471,7 +21643,7 @@ if (uni.restoreGlobal) {
                     });
                   },
                   fail: (err) => {
-                    formatAppLog("error", "at pages/competition/detail.vue:681", "保存文件失败:", err);
+                    formatAppLog("error", "at pages/competition/detail.vue:682", "保存文件失败:", err);
                     uni.hideLoading();
                     uni.showToast({
                       title: "保存文件失败",
@@ -21488,7 +21660,7 @@ if (uni.restoreGlobal) {
               }
             },
             fail: (err) => {
-              formatAppLog("error", "at pages/competition/detail.vue:698", "下载文件失败:", err);
+              formatAppLog("error", "at pages/competition/detail.vue:699", "下载文件失败:", err);
               uni.hideLoading();
               uni.showToast({
                 title: "下载失败",
@@ -21531,7 +21703,7 @@ if (uni.restoreGlobal) {
                   const metadata = JSON.parse(stage.metadata);
                   location = metadata.location || "";
                 } catch (e) {
-                  formatAppLog("error", "at pages/competition/detail.vue:753", "解析元数据失败:", e);
+                  formatAppLog("error", "at pages/competition/detail.vue:754", "解析元数据失败:", e);
                 }
               }
               let active = false;
@@ -21571,12 +21743,12 @@ if (uni.restoreGlobal) {
               return aTime - bTime;
             });
             competitionStages.value = stagesData;
-            formatAppLog("log", "at pages/competition/detail.vue:800", "竞赛阶段数据:", competitionStages.value);
+            formatAppLog("log", "at pages/competition/detail.vue:801", "竞赛阶段数据:", competitionStages.value);
           } else {
-            formatAppLog("warn", "at pages/competition/detail.vue:802", "获取竞赛阶段失败或无数据:", res);
+            formatAppLog("warn", "at pages/competition/detail.vue:803", "获取竞赛阶段失败或无数据:", res);
           }
         } catch (error) {
-          formatAppLog("error", "at pages/competition/detail.vue:805", "获取竞赛阶段错误:", error);
+          formatAppLog("error", "at pages/competition/detail.vue:806", "获取竞赛阶段错误:", error);
         }
       }
       function getStatusText(status) {
@@ -21687,7 +21859,7 @@ if (uni.restoreGlobal) {
             }
           }
         } catch (error) {
-          formatAppLog("error", "at pages/competition/detail.vue:937", "获取竞赛队伍列表失败:", error);
+          formatAppLog("error", "at pages/competition/detail.vue:938", "获取竞赛队伍列表失败:", error);
           uni.showToast({
             title: "获取队伍列表失败",
             icon: "none"
@@ -21759,6 +21931,11 @@ if (uni.restoreGlobal) {
           }
         } else {
           uni.hideLoading();
+        }
+      });
+      onShow(() => {
+        if (currentTab.value === "teams") {
+          getCompetitionTeams(true);
         }
       });
       function getTagClass(category) {
@@ -21845,7 +22022,15 @@ if (uni.restoreGlobal) {
       }
       function createTeam() {
         uni.navigateTo({
-          url: `/pages/team/create?competitionId=${competition.value.id}&competitionName=${encodeURIComponent(competition.value.title)}`
+          url: `/pages/team/create?competitionId=${competition.value.id}&competitionName=${encodeURIComponent(competition.value.title)}`,
+          events: {
+            // 监听页面返回事件
+            createTeamSuccess: () => {
+              formatAppLog("log", "at pages/competition/detail.vue:1149", "收到createTeamSuccess事件 - APP/MP环境");
+              currentTab.value = "teams";
+              getCompetitionTeams(true);
+            }
+          }
         });
       }
       function handleActionButton() {
@@ -21906,12 +22091,12 @@ if (uni.restoreGlobal) {
       }
       async function getCompetitionResults(competitionId2) {
         try {
-          formatAppLog("log", "at pages/competition/detail.vue:1205", "开始获取比赛结果数据，竞赛ID:", competitionId2);
+          formatAppLog("log", "at pages/competition/detail.vue:1244", "开始获取比赛结果数据，竞赛ID:", competitionId2);
           const res = await api.competitionResults.getCompetitionResults(competitionId2);
-          formatAppLog("log", "at pages/competition/detail.vue:1207", "获取到比赛结果响应:", res);
+          formatAppLog("log", "at pages/competition/detail.vue:1246", "获取到比赛结果响应:", res);
           if (res && res.code === 200 && res.data) {
             const resultsData = Array.isArray(res.data) ? res.data : [res.data];
-            formatAppLog("log", "at pages/competition/detail.vue:1212", "处理比赛结果数据:", resultsData);
+            formatAppLog("log", "at pages/competition/detail.vue:1251", "处理比赛结果数据:", resultsData);
             const processedResults = await Promise.all(resultsData.map(async (result) => {
               let awardDetails = {};
               let metadata = {};
@@ -21923,16 +22108,16 @@ if (uni.restoreGlobal) {
                   metadata = typeof result.metadata === "string" ? JSON.parse(result.metadata) : result.metadata;
                 }
               } catch (e) {
-                formatAppLog("error", "at pages/competition/detail.vue:1233", "解析JSON数据失败:", e);
+                formatAppLog("error", "at pages/competition/detail.vue:1272", "解析JSON数据失败:", e);
               }
               let teamName = "未知队伍";
               let teamLogo = "";
               let teamMembers = 0;
               let memberAvatars = [];
               try {
-                formatAppLog("log", "at pages/competition/detail.vue:1244", "开始获取队伍信息，队伍ID:", result.teamId);
+                formatAppLog("log", "at pages/competition/detail.vue:1283", "开始获取队伍信息，队伍ID:", result.teamId);
                 const teamRes = await api.competitionResults.getTeamDetail(result.teamId);
-                formatAppLog("log", "at pages/competition/detail.vue:1246", "获取到队伍响应:", teamRes);
+                formatAppLog("log", "at pages/competition/detail.vue:1285", "获取到队伍响应:", teamRes);
                 if (teamRes && teamRes.code === 200 && teamRes.data) {
                   teamName = teamRes.data.name || "未知队伍";
                   teamLogo = teamRes.data.logo || "";
@@ -21941,7 +22126,7 @@ if (uni.restoreGlobal) {
                       return total + (role.currentCount || 0);
                     }, 0);
                     teamMembers += 1;
-                    formatAppLog("log", "at pages/competition/detail.vue:1263", "从roles计算的团队成员数量(包含队长):", teamMembers);
+                    formatAppLog("log", "at pages/competition/detail.vue:1302", "从roles计算的团队成员数量(包含队长):", teamMembers);
                   } else if (teamRes.data.memberCount !== void 0 && teamRes.data.memberCount !== null) {
                     teamMembers = teamRes.data.memberCount;
                     if (teamRes.data.leaderId && !teamRes.data.isLeaderCountedInMemberCount) {
@@ -21961,7 +22146,7 @@ if (uni.restoreGlobal) {
                   }
                   try {
                     const membersRes = await api.competitionResults.getTeamMembers(result.teamId);
-                    formatAppLog("log", "at pages/competition/detail.vue:1288", "获取团队成员响应:", membersRes);
+                    formatAppLog("log", "at pages/competition/detail.vue:1327", "获取团队成员响应:", membersRes);
                     if (membersRes && membersRes.code === 200 && membersRes.data) {
                       const members = membersRes.data;
                       if (Array.isArray(members)) {
@@ -21978,17 +22163,17 @@ if (uni.restoreGlobal) {
                           memberAvatars = memberAvatars.filter((avatar) => avatar !== leaderMember.userAvatarUrl);
                           memberAvatars.unshift(leaderMember.userAvatarUrl);
                         }
-                        formatAppLog("log", "at pages/competition/detail.vue:1316", "从团队成员接口获取的头像:", memberAvatars);
+                        formatAppLog("log", "at pages/competition/detail.vue:1355", "从团队成员接口获取的头像:", memberAvatars);
                       }
                     }
                   } catch (memberError) {
-                    formatAppLog("error", "at pages/competition/detail.vue:1320", "获取团队成员失败:", memberError);
+                    formatAppLog("error", "at pages/competition/detail.vue:1359", "获取团队成员失败:", memberError);
                   }
                   if (memberAvatars.length === 0) {
-                    formatAppLog("log", "at pages/competition/detail.vue:1325", "检查队伍详情数据结构:", teamRes.data);
+                    formatAppLog("log", "at pages/competition/detail.vue:1364", "检查队伍详情数据结构:", teamRes.data);
                     if (teamRes.data.data && Array.isArray(teamRes.data.data)) {
                       const memberData = teamRes.data.data;
-                      formatAppLog("log", "at pages/competition/detail.vue:1330", "发现队员data数组:", memberData);
+                      formatAppLog("log", "at pages/competition/detail.vue:1369", "发现队员data数组:", memberData);
                       memberData.forEach((member) => {
                         if (member.avatar) {
                           memberAvatars.push(member.avatar);
@@ -21998,7 +22183,7 @@ if (uni.restoreGlobal) {
                           memberAvatars.push(member.userAvatar);
                         }
                       });
-                      formatAppLog("log", "at pages/competition/detail.vue:1343", "从data数组提取的队员头像:", memberAvatars);
+                      formatAppLog("log", "at pages/competition/detail.vue:1382", "从data数组提取的队员头像:", memberAvatars);
                     }
                     if (teamRes.data.memberAvatars) {
                       if (typeof teamRes.data.memberAvatars === "string") {
@@ -22024,10 +22209,10 @@ if (uni.restoreGlobal) {
                     }
                   }
                   memberAvatars = [...new Set(memberAvatars)].filter(Boolean);
-                  formatAppLog("log", "at pages/competition/detail.vue:1382", "最终处理后的成员头像列表:", memberAvatars);
+                  formatAppLog("log", "at pages/competition/detail.vue:1421", "最终处理后的成员头像列表:", memberAvatars);
                 }
               } catch (e) {
-                formatAppLog("error", "at pages/competition/detail.vue:1385", "获取队伍信息失败:", e);
+                formatAppLog("error", "at pages/competition/detail.vue:1424", "获取队伍信息失败:", e);
               }
               return {
                 ...result,
@@ -22043,16 +22228,16 @@ if (uni.restoreGlobal) {
               };
             }));
             competitionResults2.value = processedResults;
-            formatAppLog("log", "at pages/competition/detail.vue:1402", "最终处理的比赛结果数据:", competitionResults2.value);
+            formatAppLog("log", "at pages/competition/detail.vue:1441", "最终处理的比赛结果数据:", competitionResults2.value);
           } else {
-            formatAppLog("warn", "at pages/competition/detail.vue:1406", "获取比赛结果失败或无数据:", res);
+            formatAppLog("warn", "at pages/competition/detail.vue:1445", "获取比赛结果失败或无数据:", res);
             uni.showToast({
               title: "暂无比赛结果",
               icon: "none"
             });
           }
         } catch (error) {
-          formatAppLog("error", "at pages/competition/detail.vue:1413", "获取比赛结果错误:", error);
+          formatAppLog("error", "at pages/competition/detail.vue:1452", "获取比赛结果错误:", error);
           uni.showToast({
             title: "获取比赛结果失败",
             icon: "none"
@@ -22066,7 +22251,7 @@ if (uni.restoreGlobal) {
           const date = new Date(dateString);
           return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
         } catch (e) {
-          formatAppLog("error", "at pages/competition/detail.vue:1429", "日期格式化失败:", e);
+          formatAppLog("error", "at pages/competition/detail.vue:1468", "日期格式化失败:", e);
           return "日期格式有误";
         }
       }
@@ -22099,7 +22284,9 @@ if (uni.restoreGlobal) {
       function filterResultsByStage(stageId) {
         selectedStageId.value = stageId;
       }
-      const __returned__ = { competitionId, loading, currentTab, competition, documentAttachments, isDownloading, downloadingFileId, competitionStages, relatedCompetitions, teams, teamsLoading, teamsCurrentPage, teamsPageSize, teamsHasMore, searchText, statusFilter, showFilterPanel, isFavorite, selectedStageId, competitionResults: competitionResults2, filteredResults, filteredTeams, getCompetitionDetail, getCompetitionDocuments, downloadAttachment, formatFileSize, getCompetitionStages, getStatusText, formatDatePeriod, getCompetitionTeams, getRandomColor, loadMoreTeams, switchTab, viewTeamDetail, getTagClass, getStatusBadgeClass, getActionButtonText, getRegistrationDeadline, goBack, clearSearch, toggleFilter, applyFilter, clearFilter, createTeam, handleActionButton, toggleFavorite, shareCompetition, getCompetitionResults, formatDate, getStageNameById, getAwardClass, filterResultsByStage, ref: vue.ref, onMounted: vue.onMounted, computed: vue.computed, get api() {
+      const __returned__ = { competitionId, loading, currentTab, competition, documentAttachments, isDownloading, downloadingFileId, competitionStages, relatedCompetitions, teams, teamsLoading, teamsCurrentPage, teamsPageSize, teamsHasMore, searchText, statusFilter, showFilterPanel, isFavorite, selectedStageId, competitionResults: competitionResults2, filteredResults, filteredTeams, getCompetitionDetail, getCompetitionDocuments, downloadAttachment, formatFileSize, getCompetitionStages, getStatusText, formatDatePeriod, getCompetitionTeams, getRandomColor, loadMoreTeams, switchTab, viewTeamDetail, getTagClass, getStatusBadgeClass, getActionButtonText, getRegistrationDeadline, goBack, clearSearch, toggleFilter, applyFilter, clearFilter, createTeam, handleActionButton, toggleFavorite, shareCompetition, getCompetitionResults, formatDate, getStageNameById, getAwardClass, filterResultsByStage, ref: vue.ref, onMounted: vue.onMounted, computed: vue.computed, get onShow() {
+        return onShow;
+      }, get api() {
         return api;
       }, get icons() {
         return icons;
@@ -22740,7 +22927,7 @@ if (uni.restoreGlobal) {
                         vue.createElementVNode(
                           "text",
                           { class: "result-value" },
-                          vue.toDisplayString($setup.getStageNameById(result.stageId)),
+                          vue.toDisplayString(result.stageName),
                           1
                           /* TEXT */
                         )
@@ -35946,7 +36133,7 @@ ${item.reviewNotes ? `审核反馈：${item.reviewNotes}` : ""}`,
           return;
         }
         uni.navigateTo({
-          url: `/pages/myTeam/teamSpace?id=${id}&name=${encodeURIComponent(team.name)}&status=${team.status}&statusText=${encodeURIComponent(team.statusText)}`
+          url: `/pages/myTeam/teamSpace?id=${id}&name=${encodeURIComponent(team.name)}&status=${team.status}&statusText=${encodeURIComponent(team.statusText)}&memberCount=${team.memberCount || 0}`
         });
       }
       const __returned__ = { loading, refreshing, activeTab, searchKeyword, myTeams, showDismissModal, dismissTeam, showLeaveModal, leaveTeam, showManageModal, managingTeam, manageActiveTab, teamMembers, loadingMembers, showRemoveMemberModal, removeMember, teamRoles, loadingRoles, currentEditRole, showRoleFormModal, showDeleteRoleModal, roleFormMode, roleForm, skillInputValue, loadingTeamInfo, teamInfoForm, filteredTeams, getMyTeams, refreshTeams, setActiveTab, handleSearch, clearSearch, getTeamInitials, formatDate, getStatusClass, getStatusText, getCompetitionStatusClass, getEmptyStateText, navigateToTeamDetail, navigateToManageTeam, navigateToCreateTeam, showDismissConfirm, closeDismissModal, confirmDismissTeam, showLeaveConfirm, closeLeaveModal, confirmLeaveTeam, deleteTeamRecord, showManageTeamModal, closeManageModal, setManageTab, getTeamMembers, getTeamRoles: getTeamRoles2, refreshTeamRoles, openAddRoleForm, openEditRoleForm, closeRoleForm, addSkillTag, removeSkillTag, submitRoleForm, showDeleteRoleConfirm, closeDeleteRoleModal, confirmDeleteRole, showRemoveMemberConfirm, closeRemoveMemberModal, confirmRemoveMember, initTeamInfoForm, handleDateChange, submitTeamInfo, navigateToTeamSpace, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, SvgIcon, HeaderBar, get getToken() {
@@ -41502,8 +41689,7 @@ ${item.reviewNotes ? `审核反馈：${item.reviewNotes}` : ""}`,
       const showEmojiPickerPopup = vue.ref(false);
       const emojiList = vue.ref(["😊", "😂", "😍", "🤔", "😎", "👍", "❤️", "🎉", "🔥", "👏", "😁", "🙏", "🌟", "💯", "🤝", "🚀"]);
       vue.onMounted(() => {
-        getOpenerEventChannel();
-        const query = uni.getSystemInfoSync().platform === "devtools" ? getCurrentPageQuery() : getCurrentPageQuery();
+        const query = getPageParams();
         if (query.id) {
           teamInfo.value.id = query.id;
         }
@@ -41545,6 +41731,9 @@ ${item.reviewNotes ? `审核反馈：${item.reviewNotes}` : ""}`,
               teamInfo.value.statusText = "未知状态";
           }
         }
+        if (query.memberCount) {
+          teamInfo.value.memberCount = parseInt(query.memberCount) || 0;
+        }
         setTimeout(() => {
           if (!teamInfo.value.name) {
             teamInfo.value.name = "登录模块开发小组";
@@ -41556,16 +41745,6 @@ ${item.reviewNotes ? `审核反馈：${item.reviewNotes}` : ""}`,
           loading.value = false;
         }, 1e3);
       });
-      function getCurrentPageQuery() {
-        const pages = getCurrentPages();
-        const currentPage = pages[pages.length - 1];
-        return currentPage.options || {};
-      }
-      function getOpenerEventChannel() {
-        const pages = getCurrentPages();
-        const currentPage = pages[pages.length - 1];
-        return currentPage.getOpenerEventChannel && currentPage.getOpenerEventChannel();
-      }
       function navigateBack() {
         uni.navigateBack({});
       }
@@ -41793,7 +41972,11 @@ ${res.address}`
           icon: "none"
         });
       }
-      const __returned__ = { loading, refreshing, teamInfo, activeTab, currentUserId, messages: messages2, teamChatRef, showMoreActionsPopup, showEmojiPickerPopup, emojiList, getCurrentPageQuery, getOpenerEventChannel, navigateBack, refreshTeamSpace, getTeamInitials, getStatusClass, switchTab, getTabTitle, handleCreateAnnouncement, handleFileUpload, handleCreateTask, handleSendMessage, handleLoadMoreMessages, showMoreActions, hideMoreActions, showEmojiPicker, hideEmojiPicker, insertEmoji, handleImageUpload, handleVideoCall, handleVoiceCall, handleLocation, handleVoiceMessage, handlePoll, handleSchedule, handleCreateEvent, handleViewEvent, handleEditEvent, handleDeleteEvent, handleInviteMember, handleContactMember, handleViewMemberProfile, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, nextTick: vue.nextTick, SvgIcon, TeamAnnouncement, TeamFiles, TeamTasks, TeamChat, TeamCalendar, TeamMembers };
+      const __returned__ = { loading, refreshing, teamInfo, activeTab, currentUserId, messages: messages2, teamChatRef, showMoreActionsPopup, showEmojiPickerPopup, emojiList, navigateBack, refreshTeamSpace, getTeamInitials, getStatusClass, switchTab, getTabTitle, handleCreateAnnouncement, handleFileUpload, handleCreateTask, handleSendMessage, handleLoadMoreMessages, showMoreActions, hideMoreActions, showEmojiPicker, hideEmojiPicker, insertEmoji, handleImageUpload, handleVideoCall, handleVoiceCall, handleLocation, handleVoiceMessage, handlePoll, handleSchedule, handleCreateEvent, handleViewEvent, handleEditEvent, handleDeleteEvent, handleInviteMember, handleContactMember, handleViewMemberProfile, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, nextTick: vue.nextTick, SvgIcon, TeamAnnouncement, TeamFiles, TeamTasks, TeamChat, TeamCalendar, TeamMembers, get getPageParams() {
+        return getPageParams;
+      }, get handleImagePath() {
+        return handleImagePath;
+      } };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
     }

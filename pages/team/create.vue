@@ -485,7 +485,7 @@ const form = reactive({
   teamName: '',
   researchDirection: '',
   description: '我们是一支充满激情与创造力的队伍',
-  recruitDeadline: '',
+  recruitDeadline: Date.now() + 5*24*60*60*1000, // 默认截止时间为5天后
   email: '1234567890@qq.com',
   wechat: '1234567890',
   qq: '1234567890',
@@ -905,10 +905,10 @@ async function submitTeam() {
     uni.hideLoading();
     
     if (res.code === 200) {
-      uni.showToast({
-        title: '创建成功',
-        icon: 'success'
-      });
+    uni.showToast({
+      title: '创建成功',
+      icon: 'success'
+    });
       
       try {
         // 使用EventChannel通知竞赛详情页刷新队伍列表
@@ -931,10 +931,10 @@ async function submitTeam() {
       } catch (eventError) {
         console.error('发送事件失败:', eventError);
       }
-      
-      setTimeout(() => {
-        uni.navigateBack();
-      }, 1500);
+    
+    setTimeout(() => {
+      uni.navigateBack();
+    }, 1500);
     } else {
       showToast(res.message || '创建失败');
     }

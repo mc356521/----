@@ -608,8 +608,8 @@ const form = reactive({
   shortDescription: '这是竞赛简介相关信息',
   description: '这是竞赛介绍相关信息',
   requirements: '这是参赛要求相关信息',
-  registrationStart: '',
-  registrationEnd: '',
+  registrationStart: '2025-07-01', // 默认为7月1日
+  registrationEnd: '2025-07-31', // 默认为7月31日
   teamMin: '',
   teamMax: '',
   isHot: false,
@@ -864,7 +864,7 @@ function goBack() {
 // 阶段相关方法
 // 添加阶段
 function addStage() {
-  // 重置表单
+  // 重置表单并设置默认值
   resetStageForm();
   isEditingStage.value = false;
   
@@ -1020,10 +1020,14 @@ function validateStageForm() {
 
 // 重置阶段表单
 function resetStageForm() {
+  // 使用固定的7月日期
+  const defaultStartDate = '2025-08-01'; // 7月1日
+  const defaultEndDate = '2025-08-15'; // 7月15日
+  
   stageForm.stageName = '初赛';
-  stageForm.startDate = '';
+  stageForm.startDate = defaultStartDate;
   stageForm.startTime = '09:00';
-  stageForm.endDate = '';
+  stageForm.endDate = defaultEndDate;
   stageForm.endTime = '18:00';
   stageForm.description = '这是初赛阶段描述';
   stageForm.location = '这是初赛阶段地点';
@@ -1323,7 +1327,15 @@ async function saveCompetition(status) {
   });
   
   try {
-    // 使用FormData上传文件和数据
+    // 获取token
+    const token = uni.getStorageSync('token');
+    
+    // 定义响应变量
+    let res;
+    
+    // 根据不同平台使用不同的上传方式
+    // #ifdef H5
+    // H5环境使用FormData方式上传
     const formData = new FormData();
     
     // 添加竞赛数据
@@ -1341,40 +1353,112 @@ async function saveCompetition(status) {
       }
     });
     
-    // 获取token
-    const token = uni.getStorageSync('token');
-    
-    // 发送请求
-    const res = await new Promise((resolve, reject) => {
-      uni.uploadFile({
-        url: `${config.baseUrl}/competitions/with-files`, 
-        files: form.attachments.map(item => ({ 
-          name: 'attachmentFiles',
-          file: item.file 
-        })),
-        filePath: form.coverUrl,
-        name: 'coverImage',
-        formData: {
-          'competitionData': JSON.stringify(competitionData)
-        },
-        header: {
-          'Authorization': 'Bearer ' + token
-        },
-        success: (uploadRes) => {
-          // uploadFile返回的是字符串，需要解析成JSON
-          let result;
-          try {
-            result = JSON.parse(uploadRes.data);
-          } catch (e) {
-            result = { code: -1, message: '返回数据解析失败' };
-          }
-          resolve(result);
-        },
-        fail: (err) => {
-          reject(err);
-        }
-      });
+    // 使用fetch API发送请求
+    const response = await fetch(`${config.baseUrl}/competitions/with-files`, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token
+      },
+      body: formData
     });
+    
+    res = await response.json();
+    // #endif
+    
+    // #ifdef APP-PLUS || MP
+    // APP环境或小程序使用uni.uploadFile方式上传
+    res = await new Promise((resolve, reject) => {
+      // 如果有附件，需要处理多文件上传
+      if (form.attachments && form.attachments.length > 0) {
+        // 在APP环境中，需要分多次上传
+        // 先上传封面和竞赛信息
+        uni.uploadFile({
+          url: `${config.baseUrl}/competitions/with-files`, 
+          filePath: form.coverUrl, // 封面图片路径
+          name: 'coverImage',
+          formData: {
+            'competitionData': JSON.stringify(competitionData)
+          },
+          header: {
+            'Authorization': 'Bearer ' + token
+          },
+          success: async (uploadRes) => {
+            // 处理第一次上传的结果
+            let result;
+            try {
+              result = JSON.parse(uploadRes.data);
+              
+              // 如果第一次上传成功，并且有附件，则继续上传附件
+              if (result.code === 200 && result.data && result.data.id) {
+                const competitionId = result.data.id;
+                
+                // 逐个上传附件
+                try {
+                  for (let i = 0; i < form.attachments.length; i++) {
+                    const attachment = form.attachments[i];
+                    if (attachment.path) {
+                      await uni.uploadFile({
+                        url: `${config.baseUrl}/competitions/${competitionId}/attachments`,
+                        filePath: attachment.path,
+                        name: 'attachmentFile',
+                        header: {
+                          'Authorization': 'Bearer ' + token
+                        }
+                      });
+                      console.log(`附件 ${i+1}/${form.attachments.length} 上传成功`);
+                    }
+                  }
+                  console.log('所有附件上传完成');
+                } catch (attachmentError) {
+                  console.error('附件上传失败:', attachmentError);
+                  // 即使附件上传失败，也返回第一次上传的结果
+                  uni.showToast({
+                    title: '竞赛已创建，但附件上传失败',
+                    icon: 'none',
+                    duration: 3000
+                  });
+                }
+              }
+              
+              resolve(result);
+            } catch (e) {
+              result = { code: -1, message: '返回数据解析失败' };
+              resolve(result);
+            }
+          },
+          fail: (err) => {
+            reject(err);
+          }
+        });
+      } else {
+        // 没有附件，只上传封面和竞赛信息
+        uni.uploadFile({
+          url: `${config.baseUrl}/competitions/with-files`, 
+          filePath: form.coverUrl, // 封面图片路径
+          name: 'coverImage',
+          formData: {
+            'competitionData': JSON.stringify(competitionData)
+          },
+          header: {
+            'Authorization': 'Bearer ' + token
+          },
+          success: (uploadRes) => {
+            // uploadFile返回的是字符串，需要解析成JSON
+            let result;
+            try {
+              result = JSON.parse(uploadRes.data);
+            } catch (e) {
+              result = { code: -1, message: '返回数据解析失败' };
+            }
+            resolve(result);
+          },
+          fail: (err) => {
+            reject(err);
+          }
+        });
+      }
+    });
+    // #endif
 
     // 处理响应
     if (res.code === 200) {
@@ -1426,6 +1510,9 @@ async function saveCompetition(status) {
         }
       }
       
+      // 发送竞赛刷新事件
+      uni.$emit('refreshCompetitionList');
+      
       uni.showToast({
         title: status === 0 ? '保存成功' : '发布成功',
         icon: 'success'
@@ -1475,6 +1562,14 @@ function getSelectedCategoryNames() {
   }
   
   return selectedCategories.map(cat => cat.label);
+}
+
+// 格式化日期为YYYY-MM-DD格式
+function formatDateYYYYMMDD(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 </script>
 

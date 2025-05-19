@@ -243,6 +243,7 @@ import TeamTasks from '@/components/team/TeamTasks.vue';
 import TeamChat from '@/components/team/TeamChat.vue';
 import TeamCalendar from '@/components/team/TeamCalendar.vue';
 import TeamMembers from '@/components/team/TeamMembers.vue';
+import { getPageParams, handleImagePath } from '@/utils/pathHandler.js';
 
 // 数据定义
 const loading = ref(true);
@@ -265,11 +266,8 @@ const emojiList = ref(['😊', '😂', '😍', '🤔', '😎', '👍', '❤️',
 
 // 生命周期钩子
 onMounted(() => {
-  // 获取页面参数
-  const eventChannel = getOpenerEventChannel();
-  const query = uni.getSystemInfoSync().platform === 'devtools' 
-    ? getCurrentPageQuery() 
-    : getCurrentPageQuery();
+  // 获取页面参数 - 使用新的工具函数
+  const query = getPageParams();
   
   // 设置团队ID
   if (query.id) {
@@ -304,6 +302,11 @@ onMounted(() => {
     }
   }
   
+  // 设置成员数量
+  if (query.memberCount) {
+    teamInfo.value.memberCount = parseInt(query.memberCount) || 0;
+  }
+  
   // 模拟加载数据
     setTimeout(() => {
     // 如果没有团队信息，则设置默认值
@@ -318,20 +321,6 @@ onMounted(() => {
     loading.value = false;
   }, 1000);
 });
-
-// 获取当前页面的查询参数
-function getCurrentPageQuery() {
-  const pages = getCurrentPages();
-  const currentPage = pages[pages.length - 1];
-  return currentPage.options || {};
-}
-
-// 获取eventChannel
-function getOpenerEventChannel() {
-  const pages = getCurrentPages();
-  const currentPage = pages[pages.length - 1];
-  return currentPage.getOpenerEventChannel && currentPage.getOpenerEventChannel();
-}
 
 // 方法定义
 // 团队导航和切换

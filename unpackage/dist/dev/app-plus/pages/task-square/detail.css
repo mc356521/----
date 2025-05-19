@@ -1245,6 +1245,18 @@
 .bottom-actions .apply-btn.disabled-btn {
   background-color: rgba(153, 153, 153, 0.5);
 }
+.bottom-actions .edit-btn {
+  flex: 1;
+  height: 2.75rem;
+  background-color: #7ED321;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /* 任务状态标签样式 */
 .status-recruiting {

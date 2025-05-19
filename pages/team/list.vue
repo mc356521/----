@@ -3,7 +3,7 @@
     <!-- 顶部导航栏 -->
     <header-bar
       ref="headerBarRef"
-      title="组队广场"
+      title="队伍广场"
       :categories="categories"
       :default-category="currentCategory"
       :show-filter="true"

@@ -164,6 +164,8 @@
 
 <script>
 import teamApi from '@/api/modules/team';
+import { getToken } from '@/utils/request';
+import { getPageParams, handleImagePath } from '@/utils/pathHandler.js';
 import SvgIcon from '@/components/SvgIcon.vue';
 
 export default {
@@ -196,13 +198,17 @@ export default {
   // 页面生命周期函数
   onLoad(option) {
     console.log('队伍详情页面参数:', option);
-    if (option && option.id) {
-      this.teamId = option.id;
+    // 使用工具函数获取页面参数
+    const query = getPageParams();
+    const id = query.id || option.id;
+    
+    if (id) {
+      this.teamId = id;
       this.getUserInfo();
       this.getTeamDetail();
     } else {
       uni.showToast({
-        title: '队伍ID不能为空',
+        title: '无法获取团队ID',
         icon: 'none'
       });
       setTimeout(() => {
