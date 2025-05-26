@@ -120,35 +120,123 @@
       
       <!-- 聊天输入框 -->
       <view class="chat-input-area">
-        <view class="input-container">
-          <textarea 
-            class="chat-input" 
-            v-model="messageInput" 
-            placeholder="输入消息..." 
-            confirm-type="send"
-            :cursor-spacing="20"
-            :disable-default-padding="true"
-            :show-confirm-bar="false"
-            :auto-height="true"
-            @confirm="sendMessage"
-            @focus="onInputFocus"
-          ></textarea>
-          <view class="input-actions">
-            <view class="action-btn text-btn" @click="toggleQuickReplies">
-              <text class="action-text">快捷</text>
+        <form @submit.prevent="sendMessage" class="input-form">
+          <view class="input-container">
+            <textarea 
+              class="chat-input" 
+              v-model="messageInput" 
+              placeholder="输入消息..." 
+              confirm-type="send"
+              :cursor-spacing="20"
+              :disable-default-padding="true"
+              :show-confirm-bar="false"
+              :auto-height="true"
+              @confirm="sendMessage"
+              @focus="onInputFocus"
+            ></textarea>
+            <view class="input-actions">
+              <view class="action-btn text-btn" @click="toggleQuickReplies">
+                <text class="action-text">快捷</text>
+              </view>
+              <view class="action-btn text-btn" @click="chooseImage">
+                <text class="action-text">图片</text>
+              </view>
+              <view class="action-btn text-btn" @click="showEmojiPicker">
+                <text class="action-text">表情</text>
+              </view>
+              <view class="action-btn text-btn" @click="showMoreActions">
+                <text class="action-text">更多</text>
+              </view>
+              <button class="action-btn send-btn" @click.stop="sendMessage" form-type="submit">
+                <text class="action-text send-text">发送</text>
+              </button>
             </view>
-            <view class="action-btn text-btn" @click="chooseImage">
-              <text class="action-text">图片</text>
+          </view>
+        </form>
+      </view>
+    </view>
+    
+    <!-- 更多操作弹出层（备用实现，以防uni-popup不可用） -->
+    <view class="custom-popup more-actions-popup" v-show="showCustomMoreActionsPopup">
+      <view class="popup-mask" @click="hideMoreActions"></view>
+      <view class="popup-content">
+        <view class="popup-header">
+          <text class="popup-title">更多操作</text>
+          <view class="popup-close" @click="hideMoreActions">
+            <text>关闭</text>
+          </view>
+        </view>
+        <view class="actions-grid">
+          <view class="action-grid-item" @click="handleFileUpload">
+            <view class="action-icon file-action">
+              <text class="action-icon-text">文件</text>
             </view>
-            <view class="action-btn text-btn" @click="showEmojiPicker">
-              <text class="action-text">表情</text>
+            <text class="action-label">文件</text>
+          </view>
+          <view class="action-grid-item" @click="handleImageUpload">
+            <view class="action-icon image-action">
+              <text class="action-icon-text">图片</text>
             </view>
-            <view class="action-btn text-btn" @click="showMoreActions">
-              <text class="action-text">更多</text>
+            <text class="action-label">图片</text>
+          </view>
+          <view class="action-grid-item" @click="handleVideoCall">
+            <view class="action-icon video-action">
+              <text class="action-icon-text">视频</text>
             </view>
-            <view class="action-btn send-btn" @click="sendMessage">
-              <text class="action-text">发送</text>
+            <text class="action-label">视频通话</text>
+          </view>
+          <view class="action-grid-item" @click="handleVoiceCall">
+            <view class="action-icon voice-action">
+              <text class="action-icon-text">语音</text>
             </view>
+            <text class="action-label">语音通话</text>
+          </view>
+          <view class="action-grid-item" @click="handleLocation">
+            <view class="action-icon location-action">
+              <text class="action-icon-text">位置</text>
+            </view>
+            <text class="action-label">位置</text>
+          </view>
+          <view class="action-grid-item" @click="handleVoiceMessage">
+            <view class="action-icon audio-action">
+              <text class="action-icon-text">音频</text>
+            </view>
+            <text class="action-label">语音消息</text>
+          </view>
+          <view class="action-grid-item" @click="handlePoll">
+            <view class="action-icon poll-action">
+              <text class="action-icon-text">投票</text>
+            </view>
+            <text class="action-label">投票</text>
+          </view>
+          <view class="action-grid-item" @click="handleSchedule">
+            <view class="action-icon schedule-action">
+              <text class="action-icon-text">日程</text>
+            </view>
+            <text class="action-label">日程</text>
+          </view>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 表情选择器弹出层（备用实现，以防uni-popup不可用） -->
+    <view class="custom-popup emoji-picker" v-show="showCustomEmojiPickerPopup">
+      <view class="popup-mask" @click="hideEmojiPicker"></view>
+      <view class="emoji-container">
+        <view class="emoji-header">
+          <text>常用表情</text>
+          <view class="emoji-close" @click="hideEmojiPicker">
+            <text>关闭</text>
+          </view>
+        </view>
+        <view class="emoji-grid">
+          <view 
+            class="emoji-item" 
+            v-for="(emoji, index) in emojiList" 
+            :key="index"
+            @click="insertEmoji(emoji)"
+          >
+            <text>{{ emoji }}</text>
           </view>
         </view>
       </view>
@@ -158,6 +246,17 @@
 
 <script setup>
 import { ref, computed, nextTick, defineProps, defineEmits, onMounted } from 'vue';
+
+// 导入uni-popup组件
+let uniPopupAvailable = false;
+try {
+  // 尝试导入uniapp的uni-popup组件
+  const uniPopup = uni.requireNativePlugin('uni-popup');
+  uniPopupAvailable = true;
+} catch (e) {
+  console.error('导入uni-popup组件失败:', e);
+  uniPopupAvailable = false;
+}
 
 const props = defineProps({
   teamId: {
@@ -179,6 +278,9 @@ const isTyping = ref(false);
 const typingUser = ref('');
 const showQuickReplies = ref(false);
 const showScrollBottom = ref(false);
+const moreActionsPopup = ref(null);
+const emojiPickerPopup = ref(null);
+const emojiList = ref(['😊', '😂', '😍', '🤔', '😎', '👍', '❤️', '🎉', '🔥', '👏', '😁', '🙏', '🌟', '💯', '🤝', '🚀']);
 const quickReplies = ref([
   '好的，我明白了',
   '稍等，我确认一下',
@@ -187,6 +289,10 @@ const quickReplies = ref([
   '很好的想法！',
   '我们可以讨论一下具体细节'
 ]);
+
+// 备用状态，用于自定义弹出层
+const showCustomMoreActionsPopup = ref(false);
+const showCustomEmojiPickerPopup = ref(false);
 
 // 计算属性
 const sortedMessages = computed(() => {
@@ -200,6 +306,8 @@ const sortedMessages = computed(() => {
 
 // 生命周期钩子
 onMounted(() => {
+  console.log('TeamChat组件已加载');
+  console.log('uni-popup组件可用状态:', uniPopupAvailable);
   loadMessages();
 });
 
@@ -475,12 +583,130 @@ function formatMessageTime(date) {
   return `${hours}:${minutes}`;
 }
 
-function showEmojiPicker() {
-  emit('showEmojiPicker');
+function showMoreActions() {
+  console.log('显示更多操作弹出层');
+  if (uniPopupAvailable && moreActionsPopup.value) {
+    nextTick(() => {
+      moreActionsPopup.value.open();
+    });
+  } else {
+    showCustomMoreActionsPopup.value = true;
+  }
 }
 
-function showMoreActions() {
-  emit('showMoreActions');
+function hideMoreActions() {
+  console.log('隐藏更多操作弹出层');
+  if (uniPopupAvailable && moreActionsPopup.value) {
+    nextTick(() => {
+      moreActionsPopup.value.close();
+    });
+  } else {
+    showCustomMoreActionsPopup.value = false;
+  }
+}
+
+function showEmojiPicker() {
+  console.log('显示表情选择器');
+  if (uniPopupAvailable && emojiPickerPopup.value) {
+    nextTick(() => {
+      emojiPickerPopup.value.open();
+    });
+  } else {
+    showCustomEmojiPickerPopup.value = true;
+  }
+}
+
+function hideEmojiPicker() {
+  console.log('隐藏表情选择器');
+  if (uniPopupAvailable && emojiPickerPopup.value) {
+    nextTick(() => {
+      emojiPickerPopup.value.close();
+    });
+  } else {
+    showCustomEmojiPickerPopup.value = false;
+  }
+}
+
+function insertEmoji(emoji) {
+  // 向聊天输入框插入表情
+  messageInput.value += emoji;
+  hideEmojiPicker();
+}
+
+// 更多操作相关方法
+function handleFileUpload() {
+  uni.showToast({
+    title: '文件上传功能开发中',
+    icon: 'none'
+  });
+  hideMoreActions();
+}
+
+function handleImageUpload() {
+  uni.chooseImage({
+    count: 1,
+    success: (res) => {
+      const tempFilePath = res.tempFilePaths[0];
+      
+      emit('send', {
+        type: 'image',
+        content: tempFilePath
+      });
+    }
+  });
+  hideMoreActions();
+}
+
+function handleVideoCall() {
+  uni.showToast({
+    title: '视频通话功能开发中',
+    icon: 'none'
+  });
+  hideMoreActions();
+}
+
+function handleVoiceCall() {
+  uni.showToast({
+    title: '语音通话功能开发中',
+    icon: 'none'
+  });
+  hideMoreActions();
+}
+
+function handleLocation() {
+  uni.chooseLocation({
+    success: (res) => {
+      emit('send', {
+        type: 'text',
+        content: `[位置] ${res.name}\n${res.address}`
+      });
+    }
+  });
+  hideMoreActions();
+}
+
+function handleVoiceMessage() {
+  uni.showToast({
+    title: '语音消息功能开发中',
+    icon: 'none'
+  });
+  hideMoreActions();
+}
+
+function handlePoll() {
+  uni.showToast({
+    title: '投票功能开发中',
+    icon: 'none'
+  });
+  hideMoreActions();
+}
+
+function handleSchedule() {
+  uni.showToast({
+    title: '日程功能开发中',
+    icon: 'none'
+  });
+  hideMoreActions();
 }
 
 function toggleQuickReplies() {
@@ -847,6 +1073,9 @@ defineExpose({
 .chat-input-area {
   padding: 20rpx 30rpx;
   background-color: #ffffff;
+  box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
+  position: relative;
+  z-index: 10;
 }
 
 .input-container {
@@ -863,44 +1092,66 @@ defineExpose({
   border-radius: 10rpx;
   font-size: 28rpx;
   margin-bottom: 20rpx;
+  border: 1rpx solid #e0e0e0;
 }
 
 .input-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: 10rpx;
 }
 
 .action-btn {
-  height: 60rpx;
+  min-width: 80rpx;
+  height: 70rpx;
   display: flex;
   justify-content: center;
   align-items: center;
   color: #666666;
-  border-radius: 30rpx;
+  border-radius: 35rpx;
+  margin: 0 5rpx;
 }
 
 .text-btn {
   background-color: #f0f0f0;
   transition: all 0.2s ease;
-}
-
-.text-btn:active {
-  background-color: #e0e0e0;
+  padding: 0 20rpx;
 }
 
 .action-text {
-  font-size: 24rpx;
+  font-size: 28rpx;
+  font-weight: 500;
 }
 
 .send-btn {
   background-color: #3498db;
   color: #ffffff;
   padding: 0 30rpx;
+  min-width: 120rpx;
+  border: none;
+  outline: none;
+  font-size: inherit;
+  line-height: inherit;
+  border-radius: 35rpx;
+  height: 70rpx;
+  box-shadow: 0 2rpx 8rpx rgba(52, 152, 219, 0.3);
+  transition: all 0.2s ease;
 }
 
-.send-btn .action-text {
+.send-btn:active {
+  transform: scale(0.95);
+  background-color: #2980b9;
+}
+
+.send-btn .send-text {
   color: #ffffff;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+
+.input-form {
+  width: 100%;
 }
 
 .scroll-to-bottom {
@@ -922,5 +1173,157 @@ defineExpose({
 .scroll-to-bottom-icon {
   font-size: 40rpx;
   font-weight: bold;
+}
+
+/* 自定义弹出层 */
+.custom-popup {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.popup-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 999998;
+}
+
+.popup-content {
+  position: relative;
+  background-color: #ffffff;
+  border-top-left-radius: 24rpx;
+  border-top-right-radius: 24rpx;
+  padding: 40rpx 30rpx;
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 999999;
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10rpx 0 20rpx;
+  font-size: 30rpx;
+  color: #333;
+  font-weight: 500;
+  border-bottom: 1rpx solid #f0f0f0;
+  margin-bottom: 20rpx;
+}
+
+.popup-title {
+  font-size: 30rpx;
+  font-weight: 500;
+}
+
+.popup-close {
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #666;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.popup-close:active {
+  background-color: #e0e0e0;
+}
+
+.actions-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.action-grid-item {
+  width: 25%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30rpx 0;
+}
+
+.action-icon {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 20rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 16rpx;
+  box-shadow: 0 6rpx 12rpx rgba(0, 0, 0, 0.15);
+}
+
+.action-icon-text {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 0 1rpx 3rpx rgba(0, 0, 0, 0.3);
+}
+
+.action-label {
+  font-size: 28rpx;
+  color: #333333;
+  font-weight: 500;
+}
+
+.file-action {
+  background-color: #4caf50;
+}
+
+.image-action {
+  background-color: #2196f3;
+}
+
+.video-action {
+  background-color: #f44336;
+}
+
+.voice-action {
+  background-color: #ff9800;
+}
+
+.location-action {
+  background-color: #009688;
+}
+
+.audio-action {
+  background-color: #9c27b0;
+}
+
+.poll-action {
+  background-color: #795548;
+}
+
+.schedule-action {
+  background-color: #607d8b;
+}
+
+/* 覆盖旧的样式 */
+.more-actions-popup,
+.emoji-picker {
+  display: flex;
+}
+
+.emoji-container {
+  position: relative;
+  background-color: #ffffff;
+  border-top-left-radius: 24rpx;
+  border-top-right-radius: 24rpx;
+  padding: 30rpx;
+  height: 500rpx;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.1);
+  z-index: 999999;
 }
 </style> 
