@@ -70,6 +70,7 @@
               </view>
               <text class="module-title">任务看板</text>
             </view>
+			
           </view>
           <view class="module-row">
             <view class="module-item" @click="switchTab('chat')">
@@ -90,6 +91,12 @@
               </view>
               <text class="module-title">成员管理</text>
             </view>
+			<view class="module-item" @click="switchTab('members')">
+			  <view class="module-icon members">
+			    <text class="module-icon-text">成员</text>
+			  </view>
+			  <text class="module-title">会议中心</text>
+			</view>
           </view>
         </view>
         
