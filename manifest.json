@@ -16,7 +16,9 @@
             "autoclose" : true,
             "delay" : 0
         },
-        "modules" : {},
+        "modules" : {
+            "Record" : {}
+        },
         /* 模块配置 */
         "distribute" : {
             /* 应用发布信息 */
@@ -78,6 +80,22 @@
                         "spotlight@2x" : "unpackage/res/icons/80x80.png",
                         "spotlight@3x" : "unpackage/res/icons/120x120.png"
                     }
+                }
+            }
+        },
+        "nativePlugins" : {
+            "TencentCloud-TUIRoomEngine" : {
+                "__plugin_info__" : {
+                    "name" : "【官方】腾讯云多人会议插件 TencentCloud-TUIRoomEngine",
+                    "description" : "TencentCloud-TUIRoomEngine 是腾讯云官方推出的多人会议插件。提供房间管理、音视频控制、屏幕共享、成员管理、麦位管理等能力。",
+                    "platforms" : "Android,iOS",
+                    "url" : "https://ext.dcloud.net.cn/plugin?id=18466",
+                    "android_package_name" : "",
+                    "ios_bundle_id" : "",
+                    "isCloud" : true,
+                    "bought" : 1,
+                    "pid" : "18466",
+                    "parameters" : {}
                 }
             }
         }

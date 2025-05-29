@@ -1,302 +1,304 @@
 {
-	"pages": [
-		{
-			"path": "pages/login/login",
-			"style": {
-				"navigationBarTitleText": "登录",
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/index/index",
-			"style": {
-				"navigationBarTitleText": "校园任务与组队平台",
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/project/project-showcase",
-			"style": {
-				"navigationBarTitleText": "项目展示",
-				"navigationStyle": "custom",
-				"enablePullDownRefresh": true
-			}
-		},
-		{
-			"path": "pages/project/detail",
-			"style": {
-				"navigationBarTitleText": "项目详情",
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/task-square/index",
-			"style": {
-				"navigationStyle": "custom",
-				"navigationBarTitleText": "任务广场",
-				"enablePullDownRefresh": true,
-				"onReachBottomDistance": 50
-			}
-		},
-		{
-			"path": "pages/task-square/detail",
-			"style": {
-				"navigationStyle": "custom",
-				"navigationBarTitleText": "任务详情",
-				"enablePullDownRefresh": false
-			}
-		},
-		{
-			"path": "pages/task-square/create",
-			"style": {
-				"navigationStyle": "custom",
-				"navigationBarTitleText": "发布任务",
-				"enablePullDownRefresh": false
-			}
-		},
-		{
-			"path": "pages/team/detail",
-			"style": {
-				"navigationStyle": "custom",
-				"navigationBarTitleText": "队伍详情",
-				"enablePullDownRefresh": true
-			}
-		},
-		{
-			"path": "pages/team/list",
-			"style": {
-				"navigationStyle": "custom",
-				"navigationBarTitleText": "组队广场",
-				"enablePullDownRefresh": true
-			}
-		},
-		{
-			"path": "pages/team/create",
-			"style": {
-				"navigationStyle": "custom",
-				"navigationBarTitleText": "创建团队",
-				"enablePullDownRefresh": false
-			}
-		},
-		{
-			"path": "pages/team/recommended",
-			"style": {
-				"navigationStyle": "custom",
-				"navigationBarTitleText": "AI智能推荐",
-				"enablePullDownRefresh": false
-			}
-		},
-		{
-			"path": "pages/competition/index",
-			"style": {
-				"navigationStyle": "custom",
-				"navigationBarTitleText": "竞赛广场",
-				"enablePullDownRefresh": true,
-				"onReachBottomDistance": 50
-			}
-		},
-		{
-			"path": "pages/competition/create",
-			"style": {
-				"navigationStyle": "custom",
-				"navigationBarTitleText": "创建竞赛",
-				"enablePullDownRefresh": false
-			}
-		},
-		{
-			"path": "pages/competition/detail",
-			"style": {
-				"navigationStyle": "custom",
-				"navigationBarTitleText": "竞赛详情",
-				"enablePullDownRefresh": false
-			}
-		},
-		{
-			"path": "pages/profile/index",
-			"style": {
-				"navigationStyle": "custom",
-				"navigationBarTitleText": "个人中心",
-				"enablePullDownRefresh": false
-			}
-		},
-		{
-			"path": "pages/profile/user-info",
-			"style": {
-				"navigationBarTitleText": "个人资料",
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/profile/edit-basic-info",
-			"style": {
-				"navigationBarTitleText": "编辑基本信息",
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/profile/edit-bio",
-			"style": {
-				"navigationBarTitleText": "编辑个人简介",
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/profile/edit-skills",
-			"style": {
-				"navigationBarTitleText": "编辑技能标签",
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/profile/edit-awards",
-			"style": {
-				"navigationBarTitleText": "编辑获奖经历",
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/profile/my-awards",
-			"style": {
-				"navigationBarTitleText": "我的获奖",
-				"navigationStyle": "custom",
-				"enablePullDownRefresh": false
-			}
-		},
-		{
-			"path" : "pages/Xiaoxi/Xiaoxi",
-			"style" : 
-			{
-				"navigationBarTitleText" : "消息通知"
-			}
-		},
-		{
-			"path" : "pages/application/application",
-			"style" : 
-			{
-				"navigationBarTitleText" : "申请管理",
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/websocket-test/index",
-			"style": {
-				"navigationBarTitleText": "WebSocket测试"
-			}
-		},
-		{
-			"path": "pages/schedule/index",
-			"style": {
-				"navigationStyle": "custom",
-				"navigationBarTitleText": "日程安排",
-				"enablePullDownRefresh": true
-			}
-		},
-		{
-			"path": "pages/project/create",
-			"style": {
-				"navigationStyle": "custom",
-				"enablePullDownRefresh": false
-			}
-		},
-		{
-			"path": "pages/profile/medal-detail",
-			"style": {
-				"navigationBarTitleText": "荣誉勋章",
-				"navigationStyle": "custom",
-				"enablePullDownRefresh": false
-			}
-		},
-		{
-			"path": "pages/profile/apply-badge",
-			"style": {
-				"navigationStyle": "custom",
-				"app-plus": {
-					"bounce": "none",
-					"titleNView": false
-				}
-			}
-		},
-		{
-			"path": "pages/profile/material-reward",
-			"style": {
-				"navigationStyle": "custom",
-				"app-plus": {
-					"bounce": "none",
-					"titleNView": false
-				}
-			}
-		},
-		{
-			"path" : "pages/mycompetitions/mycompetitions",
-			"style" : 
-			{
-				"navigationBarTitleText" : "我的竞赛"
-			}
-		},
-		{
-			"path" : "pages/myTeam/myTeam",
-			"style" : 
-			{
-				"navigationBarTitleText" : "我的队伍"
-			}
-		},
-		{
-			"path" : "pages/mytasks/index",
-			"style" : 
-			{
-				"navigationBarTitleText" : "我的任务",
-				"navigationStyle": "custom",
-				"enablePullDownRefresh": true
-			}
-		},
-		{
-			"path" : "pages/myTeam/teamSpace",
-			"style" : 
-			{
-				"navigationBarTitleText" : "团队空间",
-				"navigationStyle": "custom",
-				"enablePullDownRefresh": true
-			}
-		}
-	],
-	"globalStyle": {
-		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "uni-app",
-		"navigationBarBackgroundColor": "#F8F8F8",
-		"backgroundColor": "#F8F8F8",
-		"app-plus": {
-			"background": "#efeff4",
-			"titleNView": false,
-			"scrollIndicator": "none",
-			"safearea": {
-				"bottom": {
-					"offset": "auto"
-				}
-			}
-		}
-	},
-	"tabBar": {
-		"height": "1px",
-		"backgroundColor": "#FFFFFF",
-		"color": "#9CA3AF",
-		"selectedColor": "#3B82F6",
-		"list": [
-			{
-				"pagePath": "pages/index/index",
-				"text": " "
-			}, 
-			{
-				"pagePath": "pages/competition/index",
-				"text": " "
-			},
-			{
-				"pagePath": "pages/team/list",
-				"text": " "
-			},
-			{
-				"pagePath": "pages/profile/index",
-				"text": " "
-			}
-		]
-	}
+    "pages": [{
+            "path": "pages/login/login",
+            "style": {
+                "navigationBarTitleText": "登录",
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/index/index",
+            "style": {
+                "navigationBarTitleText": "校园任务与组队平台",
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/project/project-showcase",
+            "style": {
+                "navigationBarTitleText": "项目展示",
+                "navigationStyle": "custom",
+                "enablePullDownRefresh": true
+            }
+        },
+        {
+            "path": "pages/project/detail",
+            "style": {
+                "navigationBarTitleText": "项目详情",
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/task-square/index",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "任务广场",
+                "enablePullDownRefresh": true,
+                "onReachBottomDistance": 50
+            }
+        },
+        {
+            "path": "pages/task-square/detail",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "任务详情",
+                "enablePullDownRefresh": false
+            }
+        },
+        {
+            "path": "pages/task-square/create",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "发布任务",
+                "enablePullDownRefresh": false
+            }
+        },
+        {
+            "path": "pages/team/detail",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "队伍详情",
+                "enablePullDownRefresh": true
+            }
+        },
+        {
+            "path": "pages/team/list",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "组队广场",
+                "enablePullDownRefresh": true
+            }
+        },
+        {
+            "path": "pages/team/create",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "创建团队",
+                "enablePullDownRefresh": false
+            }
+        },
+        {
+            "path": "pages/team/recommended",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "AI智能推荐",
+                "enablePullDownRefresh": false
+            }
+        },
+        {
+            "path": "pages/competition/index",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "竞赛广场",
+                "enablePullDownRefresh": true,
+                "onReachBottomDistance": 50
+            }
+        },
+        {
+            "path": "pages/competition/create",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "创建竞赛",
+                "enablePullDownRefresh": false
+            }
+        },
+        {
+            "path": "pages/competition/detail",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "竞赛详情",
+                "enablePullDownRefresh": false
+            }
+        },
+        {
+            "path": "pages/profile/index",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "个人中心",
+                "enablePullDownRefresh": false
+            }
+        },
+        {
+            "path": "pages/profile/user-info",
+            "style": {
+                "navigationBarTitleText": "个人资料",
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/profile/edit-basic-info",
+            "style": {
+                "navigationBarTitleText": "编辑基本信息",
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/profile/edit-bio",
+            "style": {
+                "navigationBarTitleText": "编辑个人简介",
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/profile/edit-skills",
+            "style": {
+                "navigationBarTitleText": "编辑技能标签",
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/profile/edit-awards",
+            "style": {
+                "navigationBarTitleText": "编辑获奖经历",
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/profile/my-awards",
+            "style": {
+                "navigationBarTitleText": "我的获奖",
+                "navigationStyle": "custom",
+                "enablePullDownRefresh": false
+            }
+        },
+        {
+            "path": "pages/Xiaoxi/Xiaoxi",
+            "style": {
+                "navigationBarTitleText": "消息通知"
+            }
+        },
+        {
+            "path": "pages/application/application",
+            "style": {
+                "navigationBarTitleText": "申请管理",
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/websocket-test/index",
+            "style": {
+                "navigationBarTitleText": "WebSocket测试"
+            }
+        },
+        {
+            "path": "pages/schedule/index",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "日程安排",
+                "enablePullDownRefresh": true
+            }
+        },
+        {
+            "path": "pages/project/create",
+            "style": {
+                "navigationStyle": "custom",
+                "enablePullDownRefresh": false
+            }
+        },
+        {
+            "path": "pages/profile/medal-detail",
+            "style": {
+                "navigationBarTitleText": "荣誉勋章",
+                "navigationStyle": "custom",
+                "enablePullDownRefresh": false
+            }
+        },
+        {
+            "path": "pages/profile/apply-badge",
+            "style": {
+                "navigationStyle": "custom",
+                "app-plus": {
+                    "bounce": "none",
+                    "titleNView": false
+                }
+            }
+        },
+        {
+            "path": "pages/profile/material-reward",
+            "style": {
+                "navigationStyle": "custom",
+                "app-plus": {
+                    "bounce": "none",
+                    "titleNView": false
+                }
+            }
+        },
+        {
+            "path": "pages/mycompetitions/mycompetitions",
+            "style": {
+                "navigationBarTitleText": "我的竞赛"
+            }
+        },
+        {
+            "path": "pages/myTeam/myTeam",
+            "style": {
+                "navigationBarTitleText": "我的队伍"
+            }
+        },
+        {
+            "path": "pages/mytasks/index",
+            "style": {
+                "navigationBarTitleText": "我的任务",
+                "navigationStyle": "custom",
+                "enablePullDownRefresh": true
+            }
+        },
+        {
+            "path": "pages/myTeam/teamSpace",
+            "style": {
+                "navigationBarTitleText": "团队空间",
+                "navigationStyle": "custom",
+                "enablePullDownRefresh": true
+            }
+        },
+        {
+            "path": "pages/TUIRoom/TUIRoom",
+            "style": {
+                "navigationBarTitleText": "语音模块",
+                "navigationStyle": "custom",
+                "app-plus": {
+                    "titleNView": false
+                }
+            }
+        }
+    ],
+    "globalStyle": {
+        "navigationBarTextStyle": "black",
+        "navigationBarTitleText": "uni-app",
+        "navigationBarBackgroundColor": "#F8F8F8",
+        "backgroundColor": "#F8F8F8",
+        "app-plus": {
+            "background": "#efeff4",
+            "titleNView": false,
+            "scrollIndicator": "none",
+            "safearea": {
+                "bottom": {
+                    "offset": "auto"
+                }
+            }
+        }
+    },
+    "tabBar": {
+        "height": "1px",
+        "backgroundColor": "#FFFFFF",
+        "color": "#9CA3AF",
+        "selectedColor": "#3B82F6",
+        "list": [{
+                "pagePath": "pages/index/index",
+                "text": " "
+            },
+            {
+                "pagePath": "pages/competition/index",
+                "text": " "
+            },
+            {
+                "pagePath": "pages/team/list",
+                "text": " "
+            },
+            {
+                "pagePath": "pages/profile/index",
+                "text": " "
+            }
+        ]
+    }
 }

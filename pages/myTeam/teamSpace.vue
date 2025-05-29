@@ -91,7 +91,7 @@
               </view>
               <text class="module-title">成员管理</text>
             </view>
-			<view class="module-item" @click="switchTab('members')">
+			<view class="module-item" @click="gotoTUIRoom">
 			  <view class="module-icon members">
 			    <text class="module-icon-text">成员</text>
 			  </view>
@@ -267,6 +267,18 @@ function refreshTeamSpace() {
 function getTeamInitials(name) {
   if (!name) return '';
   return name.substring(0, 2);
+}
+function gotoTUIRoom(){
+  // 检查是否在app环境且plus对象是否可用
+  // #ifdef APP-PLUS
+  if (typeof plus !== 'undefined') {
+    // plus相关操作
+  }
+  // #endif
+  
+  uni.navigateTo({
+    url:'/pages/TUIRoom/TUIRoom?teamId=' + teamInfo.value.id + '&teamName=' + teamInfo.value.name
+  })
 }
 
 function getStatusClass(status) {

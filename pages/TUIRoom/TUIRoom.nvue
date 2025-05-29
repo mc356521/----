@@ -1,0 +1,152 @@
+<template>
+	<ConferenceMainView></ConferenceMainView>
+</template>
+
+<script setup lang="ts">
+import { onMounted } from 'vue';
+import ConferenceMainView from '../../TUIRoom/conference.vue';
+import {conference} from '../../TUIRoom/index';
+import { genTestUserSig } from '@tencentcloud/chat-uikit-uniapp/debug/GenerateTestUserSig.js';
+import api from '@/api';
+
+// 获取用户信息的函数，使用项目中已有的API模块
+async function getUserInfo() {
+	try {
+		// 使用API模块中的parseUserRole方法获取用户信息
+		const res = await api.user.getUserProfile();
+		
+		// 检查返回结果
+		if (res && res.code === 200 && res.data) {
+			console.log('获取用户信息成功:', res.data);
+			return res.data;
+		} else {
+			console.error('获取用户信息失败:', res);
+			return null;
+		}
+	} catch (error) {
+		console.error('获取用户信息出错:', error);
+		return null;
+	}
+}
+
+onMounted(async () => {
+    try {
+        // 获取页面传递的参数
+        const query = getPageParams();
+        const teamId = query.teamId;
+        const teamName = query.teamName;
+        const userInfo = await getUserInfo();
+        console.log('用户信息:', userInfo);
+        console.log('接收到的团队参数:'+ teamId, teamName);
+                console.log('团队ID是:'+ teamId);
+        const roomId = teamId;
+        if (!roomId) {
+            uni.showModal({
+                title: '提示',
+                content: '缺少必要的团队ID参数',
+                showCancel: false,
+                success: () => {
+                    uni.navigateBack();
+                }
+            });
+            return;
+        }
+        
+        // 确保用户ID是字符串类型且不为空
+        let userid = '';
+        if (userInfo && userInfo.id) {
+            userid = String(userInfo.id);
+        } 
+
+        // 生成用户签名
+        const {userSig} = genTestUserSig({
+            SDKAppID: 1600088427,
+            userID: userid+"mc",
+            secretKey: '74289e3b31e6cacb3b1669ae1dc1524df6839987d5b456b2970b1e2cfb8916d3'
+        });
+        console.log("用户ID是"+userid+"，签名是"+userSig);
+
+        // 登录
+        await conference.login({    
+            sdkAppId: 1600088427,
+            userId: userid+"mc",
+            userSig: userSig, 
+        });
+        
+        // 设置用户名称
+        let userName = '会议用户';
+        if (userInfo && userInfo.realName) {
+            userName = userInfo.realName;
+        } else if (teamName) {
+            userName = `${teamName}成员`;
+        }
+        
+        // 设置用户信息，显示用户名
+        await conference.setSelfInfo({
+            userName: userName,
+            avatarUrl: userInfo?.avatarUrl || ''
+        });
+      
+      await conference.start(roomId, {
+      roomName: 'TestRoom',
+      isSeatEnabled: false,
+      isOpenCamera: false,
+      isOpenMicrophone: false,
+    });
+     await conference.join(roomId, {
+      isOpenCamera: false,
+      isOpenMicrophone: false,
+    });
+    
+    } catch (error) {
+        console.error('初始化会议失败:', error);
+        uni.showModal({
+            title: '提示',
+            content: '会议初始化失败，请检查网络后重试',
+            showCancel: false,
+            success: () => {
+                uni.navigateBack();
+            }
+        });
+    }
+});
+
+
+
+// 获取页面参数的辅助函数
+function getPageParams() {
+    let params = {};
+    try {
+        const pages = getCurrentPages();
+        const currentPage = pages[pages.length - 1];
+        if (currentPage && currentPage.options) {
+            params = currentPage.options;
+        } else if (currentPage && currentPage.$page && currentPage.$page.fullPath) {
+            const fullPath = currentPage.$page.fullPath;
+            const queryIndex = fullPath.indexOf('?');
+            if (queryIndex > -1) {
+                const queryPart = fullPath.substring(queryIndex + 1);
+                const queryParams = queryPart.split('&');
+                for (let param of queryParams) {
+                    const [key, value] = param.split('=');
+                    if (key && value) {
+                        params[key] = decodeURIComponent(value);
+                    }
+                }
+            }
+        }
+        
+        // 对于APP环境，尝试从$mp.query获取
+        else if (currentPage && currentPage.$mp && currentPage.$mp.query) {
+            params = currentPage.$mp.query;
+        }
+        // 兼容小程序
+        else if (currentPage && currentPage.route) {
+            params = currentPage.options || {};
+        }
+    } catch (error) {
+        console.error('获取页面参数出错:', error);
+    }
+    return params;
+}
+</script>

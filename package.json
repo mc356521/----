@@ -1,0 +1,20 @@
+{
+  "name": "shaichuangunaipp",
+  "version": "1.0.0",
+  "description": "1. 重构了团队API模块，使其符合接口文档规范\r 2. 优化了团队列表页面，实现了分页加载和筛选功能\r 3. 改进了团队详情页面，完善了用户交互和状态管理\r 4. 添加了团队申请功能，实现了角色申请和状态检查",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@tencentcloud/chat": "^3.5.5",
+    "@tencentcloud/tuiroom-engine-uniapp-app": "^2.8.4",
+    "@tencentcloud/universal-api": "^2.4.0",
+    "mitt": "^3.0.1",
+    "pinia": "^3.0.2",
+    "shaichuangunaipp": "file:"
+  }
+}

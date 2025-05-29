@@ -14,15 +14,17 @@ app.$mount()
 import { createSSRApp } from 'vue'
 import { getEnv } from '@/config/env'
 import store from './store'
-
+import * as Pinia from 'pinia';
 const env = getEnv()
 
 export function createApp() {
   const app = createSSRApp(App)
+    app.use(Pinia.createPinia());
   // 将store挂载到全局属性
   app.config.globalProperties.$store = store
   return {
-    app
+    app,
+	Pinia,
   }
 }
 // #endif
