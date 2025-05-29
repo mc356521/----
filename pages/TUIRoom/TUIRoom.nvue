@@ -29,6 +29,35 @@ async function getUserInfo() {
 	}
 }
 
+// 检查房间是否存在
+async function checkRoomExists(roomId) {
+    try {
+        const adminkey="eJwtjF0LgjAYRv-LrsOW23QIXXRhgUSlGUh0I2zVi19rrhFF-72lXj7nPJwPyrdHz0qNIuR7GM2GDUK2Bq4w4FI00EJvdGk6PR16UZVKgUDRIsAYc079cDTypUBLxxljvlMjNdD8WUg5w4QwPlXg5vp50p2lKtZ7XCSVzlaPmNMgfqo7uczfti52fNOH2cHW6Sldou8PkNU1Qw__"
+        
+        const response = await uni.request({
+            url: `https://console.tim.qq.com/v4/room_engine_http_srv/get_room_info?sdkappid=1600088427&identifier=administrator&usersig=${adminkey}&random=99999999&contenttype=json`,
+            method: 'POST',
+            data: {
+                RoomId: roomId
+            },
+            header: {
+                'Content-Type': 'application/json'
+            },
+            dataType: 'json'
+        });
+        
+        console.log('检查房间状态:', response.data);
+        // 如果返回错误码为100004，表示房间不存在
+        if (response.data.ErrorCode === 100004) {
+            return false;
+        }
+        return true;
+    } catch (error) {
+        console.error('检查房间是否存在出错:', error);
+        return false;
+    }
+}
+
 onMounted(async () => {
     try {
         // 获取页面传递的参数
@@ -38,7 +67,7 @@ onMounted(async () => {
         const userInfo = await getUserInfo();
         console.log('用户信息:', userInfo);
         console.log('接收到的团队参数:'+ teamId, teamName);
-                console.log('团队ID是:'+ teamId);
+        console.log('团队ID是:'+ teamId);
         const roomId = teamId;
         if (!roomId) {
             uni.showModal({
@@ -87,16 +116,26 @@ onMounted(async () => {
             avatarUrl: userInfo?.avatarUrl || ''
         });
       
-      await conference.start(roomId, {
-      roomName: 'TestRoom',
-      isSeatEnabled: false,
-      isOpenCamera: false,
-      isOpenMicrophone: false,
-    });
-     await conference.join(roomId, {
-      isOpenCamera: false,
-      isOpenMicrophone: false,
-    });
+        // 检查房间是否存在
+        const roomExists = await checkRoomExists(roomId);
+         console.log('房间不存在，创建新房间:', roomExists);
+        if (!roomExists) {
+            console.log('房间不存在，创建新房间:', roomId);
+            // 创建并加入房间
+            await conference.start(roomId, {
+                roomName: teamName || 'TestRoom',
+                isSeatEnabled: false,
+                isOpenCamera: false,
+                isOpenMicrophone: false,
+            });
+        } else {
+            console.log('房间已存在，直接加入:', roomId);
+            // 直接加入房间
+            await conference.join(roomId, {
+                isOpenCamera: false,
+                isOpenMicrophone: false,
+            });
+        }
     
     } catch (error) {
         console.error('初始化会议失败:', error);
