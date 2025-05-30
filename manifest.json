@@ -109,19 +109,19 @@
         "setting" : {
             "urlCheck" : false
         },
-		"optimization" : {
-		    "subPackages" : true
-		},
+        "optimization" : {
+            "subPackages" : true
+        },
         "usingComponents" : true
     },
-	// H5: close treeshaking to solve the problem of uni[methond]() is not a function 
-	"h5" : {
-	    "optimization" : {
-	        "treeShaking" : {
-	            "enable" : false
-	        }
-	    }
-	},
+    // H5: close treeshaking to solve the problem of uni[methond]() is not a function 
+    "h5" : {
+        "optimization" : {
+            "treeShaking" : {
+                "enable" : false
+            }
+        }
+    },
     "vueVersion" : "3",
     "locale" : "zh-Hans"
 }

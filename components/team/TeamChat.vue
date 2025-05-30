@@ -274,14 +274,6 @@
 	const emojiList = ref(['😊', '😂', '😍', '🤔', '😎', '👍', '❤️', '🎉', '🔥', '👏', '😁', '🙏', '🌟', '💯', '🤝',
 		'🚀'
 	]);
-	const quickReplies = ref([
-		'好的，我明白了',
-		'稍等，我确认一下',
-		'这个问题我需要研究一下',
-		'同意你的观点',
-		'很好的想法！',
-		'我们可以讨论一下具体细节'
-	]);
 
 	// 备用状态，用于自定义弹出层
 	const showCustomMoreActionsPopup = ref(false);
@@ -607,127 +599,10 @@
 	// 方法
 	async function loadMessages() {
 		getMessage()
-		initializeMessages();
 		// 模拟加载数据，实际上这里会从父组件传递过来
 	}
 	
-	function initializeMessages() {
-		const avatarMap = {
-			'1001': 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/675b261911764dd9bdf6ad7942fec558.png', // 我
-			'1002': 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/dbfafe03bc0e4f30b288e70cfeee434e.png', // 张三
-			'1003': 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/ad929a51b8f243cfaf0792e0de963d08.png', // 李四
-			'1004': 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/884086871e4c4c078f7721123f372c4f.png', // 王五
-			'1005': 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/871731a3efa5453fb4b2310f0bcefb97.png' // 赵六
-		};
 
-		const now = new Date();
-		const currentDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-		const getTime = (hoursAgo, minutesAgo = 0, secondsAgo = 0) => {
-			const time = new Date(currentDay);
-			time.setHours(0);
-			time.setMinutes(0);
-			time.setSeconds(0);
-			time.setTime(time.getTime() - (hoursAgo * 3600000 + minutesAgo * 60000 + secondsAgo * 1000));
-			return time;
-		};
-
-		// 清空现有消息
-		messages.value = [];
-
-		// 按时间顺序添加历史消息
-		const historyMessages = [{
-				id: '1',
-				userId: '1002',
-				userName: '张三',
-				avatar: avatarMap['1002'],
-				type: 'text',
-				content: '各位早上好，昨天我们讨论的用户登录模块需要有新的进展了，产品经理希望下周三之前能完成原型开发。',
-				sendTime: getTime(0, 50, 0)
-			},
-			{
-				id: '2',
-				userId: '1003',
-				userName: '李四',
-				avatar: avatarMap['1003'],
-				type: 'text',
-				content: '我已经完成了一版设计草图，稍后上传到共享文件夹，大家可以先看一下。',
-				sendTime: getTime(0, 48, 30)
-			},
-			{
-				id: '3',
-				userId: '1005',
-				userName: '赵六',
-				avatar: avatarMap['1005'],
-				type: 'text',
-				content: '好的，我这边负责前端实现，需要后端接口文档尽快确定下来。',
-				sendTime: getTime(0, 47, 15)
-			},
-			{
-				id: '4',
-				userId: '1004',
-				userName: '王五',
-				avatar: avatarMap['1004'],
-				type: 'text',
-				content: '接口文档我昨天已经整理了初稿，现在发给大家参考。',
-				sendTime: getTime(0, 46, 5)
-			},
-			{
-				id: '5',
-				userId: '1004',
-				userName: '王五',
-				avatar: avatarMap['1004'],
-				type: 'file',
-				content: 'user-api-docs-v1.pdf',
-				fileName: 'user-api-docs-v1.pdf',
-				fileSize: '1.8MB',
-				sendTime: getTime(0, 45, 30)
-			},
-			{
-				id: '6',
-				userId: '1001',
-				userName: '我',
-				avatar: avatarMap['1001'],
-				type: 'text',
-				content: '我看了一下接口文档，用户验证部分是否需要考虑添加图形验证码？最近安全团队提出了一些关于防止暴力破解的建议。',
-				sendTime: getTime(0, 42, 10)
-			},
-			{
-				id: '7',
-				userId: '1002',
-				userName: '张三',
-				avatar: avatarMap['1002'],
-				type: 'text',
-				content: '这个建议很好，安全性确实需要考虑。王五，你看能加上这个功能吗？',
-				sendTime: getTime(0, 40, 45)
-			},
-		];
-
-		// 按照时间顺序逐条添加消息
-		historyMessages.forEach(msg => {
-			messages.value.push({
-				...msg,
-				sendTime: new Date(msg.sendTime) // 确保所有时间戳都是Date对象
-			});
-		});
-
-		// 确保按时间排序
-		messages.value.sort((a, b) => {
-			const timeA = new Date(a.sendTime).getTime();
-			const timeB = new Date(b.sendTime).getTime();
-			return timeA - timeB;
-		});
-
-		// 设置最新消息ID
-		if (messages.value.length > 0) {
-			latestMessageId.value = 'msg-' + messages.value[messages.value.length - 1].id;
-		}
-
-		// 滚动到底部
-		nextTick(() => {
-			scrollToBottom();
-		});
-	}
 
 	function loadMoreMessages() {
 		if (loadingMore.value) return;
@@ -1097,16 +972,10 @@
 			});
 		},
 		showTypingIndicator(user) {
-			isTyping.value = true;
-			typingUser.value = user;
-
-			// 3秒后自动隐藏
-			setTimeout(() => {
-				isTyping.value = false;
-			}, 3000);
+			// 移除打字指示器逻辑，保持API兼容性
 		},
 		hideTypingIndicator() {
-			isTyping.value = false;
+			// 移除打字指示器逻辑，保持API兼容性
 		}
 	});
 </script>

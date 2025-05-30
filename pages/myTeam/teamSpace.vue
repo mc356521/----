@@ -366,43 +366,6 @@ function handleSendMessage(messageData) {
   nextTick(async () => {
     teamChatRef.value.addMessage(newMessage);
   });
-  
-  // 模拟对方正在输入
-    setTimeout(() => {
-      teamChatRef.value.showTypingIndicator('张');
-      
-      // 模拟回复
-      if (Math.random() > 0.3) {
-        const replyDelay = 1500 + Math.random() * 2000;
-        
-      setTimeout(() => {
-          // 随机回复内容
-          const replies = [
-            '好的，我明白了',
-            '这个想法不错',
-            '稍等，我确认一下',
-            '同意你的观点',
-            '这个问题我们需要讨论一下'
-          ];
-          
-          const randomReply = replies[Math.floor(Math.random() * replies.length)];
-          const replyMessage = {
-            id: Date.now().toString(),
-            userId: '1002',
-            userName: '张三',
-            avatar: 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/dbfafe03bc0e4f30b288e70cfeee434e.png',
-            type: 'text',
-            content: randomReply,
-            sendTime: new Date()
-          };
-          
-          nextTick(async () => {
-            teamChatRef.value.addMessage(replyMessage);
-          });
-        }, replyDelay);
-      }
-    }, 500);
-  
 }
 
 function handleLoadMoreMessages(callback) {

@@ -16,6 +16,7 @@
     "WebSocket"
   ],
   "dependencies": {
+    "@tencentcloud/tui-customer-service-plugin": "file:",
     "@tencentcloud/universal-api": "latest",
     "@vue/composition-api": "^1.0.0-rc.1",
     "marked": "4.0.0"

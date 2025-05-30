@@ -400,6 +400,104 @@ function loadTasks() {
     
     tasks.value = [
       {
+        id: '1',                 // 任务唯一标识符
+        title: '完成登录页面设计',  // 任务标题
+        description: '设计用户登录界面，包括表单布局和交互效果',  // 任务详细描述
+        status: 'completed',     // 任务状态：待处理(todo)、进行中(inProgress)、已完成(completed)
+        priority: 'high',        // 任务优先级：高(high)、中(medium)、低(low)
+        creatorId: '1002',       // 创建者ID
+        creatorName: '张三',      // 创建者姓名
+        assigneeId: '1003',      // 负责人ID
+        assigneeName: '李四',     // 负责人姓名
+        assigneeAvatar: avatarMap['1003'],  // 负责人头像
+        createTime: new Date(Date.now() - 7 * 24 * 3600 * 1000),  // 创建时间
+        deadline: new Date(Date.now() - 2 * 24 * 3600 * 1000)     // 截止时间
+      },
+      {
+        id: '2',
+        title: '实现用户注册表单验证',
+        description: '编写前端表单验证逻辑，包括用户名、密码格式检查等',
+        status: 'inProgress',
+        priority: 'high',
+        creatorId: '1002',
+        creatorName: '张三',
+        assigneeId: '1005',
+        assigneeName: '赵六',
+        assigneeAvatar: avatarMap['1005'],
+        createTime: new Date(Date.now() - 5 * 24 * 3600 * 1000),
+        deadline: new Date(Date.now() + 2 * 24 * 3600 * 1000)
+      },
+	  {
+	    id: '1',
+	    title: '完成登录页面设计',
+	    description: '设计用户登录界面，包括表单布局和交互效果',
+	    status: 'completed',
+	    priority: 'high',
+	    creatorId: '1002',
+	    creatorName: '张三',
+	    assigneeId: '1003',
+	    assigneeName: '李四',
+	    assigneeAvatar: avatarMap['1003'],
+	    createTime: new Date(Date.now() - 7 * 24 * 3600 * 1000),
+	    deadline: new Date(Date.now() - 2 * 24 * 3600 * 1000)
+	  },
+	  {
+	    id: '2',
+	    title: '实现用户注册表单验证',
+	    description: '编写前端表单验证逻辑，包括用户名、密码格式检查等',
+	    status: 'inProgress',
+	    priority: 'high',
+	    creatorId: '1002',
+	    creatorName: '张三',
+	    assigneeId: '1005',
+	    assigneeName: '赵六',
+	    assigneeAvatar: avatarMap['1005'],
+	    createTime: new Date(Date.now() - 5 * 24 * 3600 * 1000),
+	    deadline: new Date(Date.now() + 2 * 24 * 3600 * 1000)
+	  },
+      {
+        id: '3',
+        title: '开发后端API接口',
+        description: '实现用户登录、注册等相关API接口',
+        status: 'inProgress',
+        priority: 'medium',
+        creatorId: '1002',
+        creatorName: '张三',
+        assigneeId: '1004',
+        assigneeName: '王五',
+        assigneeAvatar: avatarMap['1004'],
+        createTime: new Date(Date.now() - 4 * 24 * 3600 * 1000),
+        deadline: new Date(Date.now() + 3 * 24 * 3600 * 1000)
+      },
+      {
+        id: '4',
+        title: '编写单元测试',
+        description: '为登录模块编写单元测试用例，确保功能正确性',
+        status: 'todo',
+        priority: 'medium',
+        creatorId: '1002',
+        creatorName: '张三',
+        assigneeId: '1001',
+        assigneeName: '我',
+        assigneeAvatar: avatarMap['1001'],
+        createTime: new Date(Date.now() - 3 * 24 * 3600 * 1000),
+        deadline: new Date(Date.now() + 5 * 24 * 3600 * 1000)
+      },
+      {
+        id: '5',
+        title: '系统集成测试',
+        description: '进行登录模块与其他系统的集成测试',
+        status: 'todo',
+        priority: 'low',
+        creatorId: '1002',
+        creatorName: '张三',
+        assigneeId: '1001',
+        assigneeName: '我',
+        assigneeAvatar: avatarMap['1001'],
+        createTime: new Date(Date.now() - 2 * 24 * 3600 * 1000),
+        deadline: new Date(Date.now() + 7 * 24 * 3600 * 1000)
+      },
+      {
         id: '1',
         title: '完成登录页面设计',
         description: '设计用户登录界面，包括表单布局和交互效果',
@@ -427,6 +525,34 @@ function loadTasks() {
         createTime: new Date(Date.now() - 5 * 24 * 3600 * 1000),
         deadline: new Date(Date.now() + 2 * 24 * 3600 * 1000)
       },
+	  {
+	    id: '1',
+	    title: '完成登录页面设计',
+	    description: '设计用户登录界面，包括表单布局和交互效果',
+	    status: 'completed',
+	    priority: 'high',
+	    creatorId: '1002',
+	    creatorName: '张三',
+	    assigneeId: '1003',
+	    assigneeName: '李四',
+	    assigneeAvatar: avatarMap['1003'],
+	    createTime: new Date(Date.now() - 7 * 24 * 3600 * 1000),
+	    deadline: new Date(Date.now() - 2 * 24 * 3600 * 1000)
+	  },
+	  {
+	    id: '2',
+	    title: '实现用户注册表单验证',
+	    description: '编写前端表单验证逻辑，包括用户名、密码格式检查等',
+	    status: 'inProgress',
+	    priority: 'high',
+	    creatorId: '1002',
+	    creatorName: '张三',
+	    assigneeId: '1005',
+	    assigneeName: '赵六',
+	    assigneeAvatar: avatarMap['1005'],
+	    createTime: new Date(Date.now() - 5 * 24 * 3600 * 1000),
+	    deadline: new Date(Date.now() + 2 * 24 * 3600 * 1000)
+	  },
       {
         id: '3',
         title: '开发后端API接口',

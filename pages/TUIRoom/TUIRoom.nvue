@@ -90,7 +90,7 @@ onMounted(async () => {
         // 生成用户签名
         const {userSig} = genTestUserSig({
             SDKAppID: 1600088427,
-            userID: userid+"mc",
+            userID: userid,
             secretKey: '74289e3b31e6cacb3b1669ae1dc1524df6839987d5b456b2970b1e2cfb8916d3'
         });
         console.log("用户ID是"+userid+"，签名是"+userSig);
