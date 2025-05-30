@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "@tencentcloud/chat": "^3.5.5",
+    "@tencentcloud/chat-uikit-uniapp": "^2.4.3",
     "@tencentcloud/tuiroom-engine-uniapp-app": "^2.8.4",
     "@tencentcloud/universal-api": "^2.4.0",
     "mitt": "^3.0.1",

@@ -1,6 +1,9 @@
 <script>
 import notificationService from './utils/notification-service';
-
+import { TUIChatKit } from './TUIKit';
+TUIChatKit.init();
+let vueVersion = 3;
+uni.$SDKAppID = 1600088427; // Your SDKAppID
 export default {
 	globalData: {
 		unreadNotificationCount: 0,
