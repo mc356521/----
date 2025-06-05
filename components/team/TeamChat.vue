@@ -20,7 +20,7 @@
             'self-message': message.flow === 'out',
             'system-message': message.type === 'system'
           }">
-					
+
 					<!-- 其他人的头像 -->
 					<view class="avatar-container" v-if="message.flow !== 'out' && message.type !== 'system'">
 						<image class="avatar" :src="message.avatar" mode="aspectFill"></image>
@@ -32,8 +32,7 @@
 					</view>
 					<!-- 消息内容 -->
 					<view class="message-content">
-						<view class="message-sender"
-							v-if="message.flow !== 'out' && message.type !== 'system'">
+						<view class="message-sender" v-if="message.flow !== 'out' && message.type !== 'system'">
 							<text>{{ message.userName }}</text>
 						</view>
 						<view class="message-bubble" :class="{'system-bubble': message.type === 'system'}">
@@ -212,27 +211,31 @@
 		nextTick,
 		defineProps,
 		defineEmits,
-		onMounted
+		onMounted,
+		onUnmounted
 	} from 'vue';
 	import api from '@/api';
-	
-	
-	
+
+
+
 	//腾讯Chat
 	import TencentCloudChat from '@tencentcloud/chat';
-	import { TUILogin,TUICore } from '@tencentcloud/tui-core';
+	import {
+		TUILogin,
+		TUICore
+	} from '@tencentcloud/tui-core';
 	let options = {
 		SDKAppID: uni.$SDKAppID, // 接入时需要将0替换为您的云通信应用的 SDKAppID，类型为 Number
 	};
 	const chat = TencentCloudChat.create(options); // SDK 实例通常用 chat 表示
-	
+
 	//腾讯签名
 	import {
 		genTestUserSig
 	} from '@tencentcloud/chat-uikit-uniapp/debug/GenerateTestUserSig.js';
 	// import {conference} from '../../TUIRoom/index';
-	
-	
+
+
 	// 导入uni-popup组件
 	let uniPopupAvailable = false;
 	try {
@@ -274,7 +277,7 @@
 	const emojiList = ref(['😊', '😂', '😍', '🤔', '😎', '👍', '❤️', '🎉', '🔥', '👏', '😁', '🙏', '🌟', '💯', '🤝',
 		'🚀'
 	]);
- 
+
 	// 备用状态，用于自定义弹出层
 	const showCustomMoreActionsPopup = ref(false);
 	const showCustomEmojiPickerPopup = ref(false);
@@ -298,15 +301,15 @@
 	// });
 
 
-	
+
 	const gPre = 'trxy@saituo#us' //
-	const gPre_meeting = 'trxymt@saituo#us'	//临时会议，任何人都可以加入
-	
+	const gPre_meeting = 'trxymt@saituo#us' //临时会议，任何人都可以加入
+
 	let tUid = ''
 	let teamId = ''
 	let teamName = ''
-	let userInfo={}
-	async function isReady(event){
+	let userInfo = {}
+	async function isReady(event) {
 		// let promise = chat.dismissGroup(gPre_meeting+teamId);
 		// promise.then(function(imResponse) { // 解散成功
 		// console.log('--------解散成功=-----');
@@ -317,76 +320,87 @@
 		await searchGroup()
 		//加载数据
 		loadMessages();
-		
+
 	}
-	
-	
+
+
 
 	//注意：请在调用 login 接口前调用此接口监听事件，避免漏掉 SDK 派发的事件。
 	let onMessageReceived = function(event) {
-	  // 收到推送的单聊、群聊、群提示、群系统通知的新消息，可通过遍历 event.data 获取消息列表数据并渲染到页面
-	  // event.name - TencentCloudChat.EVENT.MESSAGE_RECEIVED
-	  // event.data - 存储 Message 对象的数组 - [Message]
-	  console.log('=============接收到消息=============');
-	  console.log(event.data);
-	  
-	  // 处理接收到的消息
-	  event.data.forEach(msg => {
-		// 创建基础消息对象
-		const messageObj = {
-			id: msg.ID,
-			from: msg.from,
-			flow: msg.flow,
-			userName: msg.nick || '未知用户',
-			avatar: msg.avatar,
-			sendTime: new Date(msg.time * 1000), // 将时间戳转换为Date对象
-			type: 'text', // 默认类型
-			content: '',
-			isSystemMessage: msg.isSystemMessage
-		};
-		
-		// 根据消息类型处理内容
-		if (msg.type === 'TIMTextElem') {
-			messageObj.type = 'text';
-			messageObj.content = msg.payload.text;
-		} else if (msg.type === 'TIMCustomElem') {
-			// 处理自定义消息（如系统消息）
-			try {
-				const customData = JSON.parse(msg.payload.data);
-				if (customData.businessID === 'group_create') {
-					messageObj.type = 'system';
-					messageObj.content = `${customData.opUser} ${customData.content}`;
+		// 收到推送的单聊、群聊、群提示、群系统通知的新消息，可通过遍历 event.data 获取消息列表数据并渲染到页面
+		// event.name - TencentCloudChat.EVENT.MESSAGE_RECEIVED
+		// event.data - 存储 Message 对象的数组 - [Message]
+		console.log('=============接收到消息=============');
+		console.log(event.data);
+
+		// 处理接收到的消息
+		event.data.forEach(msg => {
+			// 创建基础消息对象
+			const messageObj = {
+				id: msg.ID,
+				from: msg.from,
+				flow: msg.flow,
+				userName: msg.nick || '未知用户',
+				avatar: msg.avatar,
+				sendTime: new Date(msg.time * 1000), // 将时间戳转换为Date对象
+				type: 'text', // 默认类型
+				content: '',
+				isSystemMessage: msg.isSystemMessage
+			};
+
+			// 根据消息类型处理内容
+			if (msg.type === 'TIMTextElem') {
+				messageObj.type = 'text';
+				messageObj.content = msg.payload.text;
+			} else if (msg.type === 'TIMCustomElem') {
+				// 处理自定义消息（如系统消息）
+				try {
+					const customData = JSON.parse(msg.payload.data);
+					if (customData.businessID === 'group_create') {
+						messageObj.type = 'system';
+						messageObj.content = `${customData.opUser} ${customData.content}`;
+					}
+				} catch (e) {
+					console.error('解析自定义消息失败:', e);
 				}
-			} catch (e) {
-				console.error('解析自定义消息失败:', e);
 			}
-		}
-		
-		// 添加到消息列表
-		messages.value.push(messageObj);
-		
-		// 按时间排序
-		messages.value.sort((a, b) => {
-			return new Date(a.sendTime).getTime() - new Date(b.sendTime).getTime();
+
+			// 添加到消息列表
+			messages.value.push(messageObj);
+
+			// 按时间排序
+			messages.value.sort((a, b) => {
+				return new Date(a.sendTime).getTime() - new Date(b.sendTime).getTime();
+			});
+
+			// 设置最新消息ID
+			latestMessageId.value = 'msg-' + messageObj.id;
+
+			// 滚动到底部
+			nextTick(() => {
+				scrollToBottom();
+			});
 		});
-		
-		// 设置最新消息ID
-		latestMessageId.value = 'msg-' + messageObj.id;
-		
-		// 滚动到底部
-		nextTick(() => {
-			scrollToBottom();
-		});
-	  });
 	};
-	
-	
+
+	onUnmounted(async () => {
+		let promise = chat.logout();
+		promise.then(function(imResponse) {
+			console.log(imResponse.data); // 登出成功
+		}).catch(function(imError) {
+			console.warn('logout error:', imError);
+		});
+
+		chat.off(TencentCloudChat.EVENT.MESSAGE_RECEIVED, onMessageReceived);
+		chat.off(TencentCloudChat.EVENT.SDK_READY, isReady)
+	}) 
+
 	onMounted(async () => {
 
 		// 获取页面传递的参数
 		teamId = props.teamId;
 		teamName = props.teamName;
-		 userInfo = await getUserInfo();
+		userInfo = await getUserInfo();
 		console.log('用户信息:', userInfo);
 		console.log('接收到的团队参数:' + teamId, teamName);
 		console.log('团队ID是:' + teamId);
@@ -424,109 +438,114 @@
 		} else if (teamName) {
 			userName = `${teamName}成员`;
 		}
-		
-		
+
+
 		chat.on(TencentCloudChat.EVENT.MESSAGE_RECEIVED, onMessageReceived);
-		chat.on(TencentCloudChat.EVENT.SDK_READY,isReady)
+		chat.on(TencentCloudChat.EVENT.SDK_READY, isReady)
 		tUid = userid
 		currentUserId.value = tUid
 		TUILogin.login({
-		  SDKAppID: uni.$SDKAppID,
-		  userID: tUid, 
-		  userSig: userSig, 
-		  useUploadPlugin: true, // If you need to send rich media messages, please set to true.
-		  framework: `vue3` // framework used vue2 / vue3
+			SDKAppID: uni.$SDKAppID,
+			userID: tUid,
+			userSig: userSig,
+			useUploadPlugin: true, // If you need to send rich media messages, please set to true.
+			framework: `vue3` // framework used vue2 / vue3
 		}).catch(() => {});
-        // 设置用户信息，显示用户名
-        // await conference.setSelfInfo({
-        //     userName: userName,
-        //     avatarUrl: userInfo?.avatarUrl || ''
-        // });
+		// 设置用户信息，显示用户名
+		// await conference.setSelfInfo({
+		//     userName: userName,
+		//     avatarUrl: userInfo?.avatarUrl || ''
+		// });
 		console.log("用户ID是" + userid + "，签名是" + userSig);
-		
+
 	})
-	
-	async function searchGroup(){
-		
+
+	async function searchGroup() {
+
 		// 该接口默认只会拉取这些资料：群类型、群名称、群头像、最后一条消息的时间。
 		let promise = chat.getGroupList()
-		
+
 		return promise.then(function(imResponse) {
 			let groupList = imResponse.data.groupList
 			console.log("============群组列表==========");
 			console.log(groupList); // 群组列表
 			let isExist = false
-			groupList.forEach(group=>{
-				if(group.groupID == gPre_meeting+teamId){
+			groupList.forEach(group => {
+				if (group.groupID == gPre_meeting + teamId) {
 					isExist = true;
 				}
 			})
-			if(!isExist){
+			if (!isExist) {
 				console.log(`============群组不存在${isExist}`);
-				createGroup(teamId,teamName)
+				createGroup(teamId, teamName)
 				// joinGroup(teamId,tUid)
 			}
 		}).catch(function(imError) {
-		  console.warn('getGroupList error:', imError); // 获取群组列表失败的相关信息
+			console.warn('getGroupList error:', imError); // 获取群组列表失败的相关信息
 		});
 	}
 	//创建工作群组
-	async function createGroup(gId,groupName){
+	async function createGroup(gId, groupName) {
 		let promise = chat.createGroup({
-		  type: TencentCloudChat.TYPES.GRP_MEETING,//创建社群，工作群无法被搜索到
-		  name: groupName,
-		  groupID: gPre_meeting+gId,
-		  joinOption:TencentCloudChat.JOIN_OPTIONS_FREE_ACCESS,
-		  inviteOption:TencentCloudChat.TYPES.INVITE_OPTIONS_FREE_ACCESS
+			type: TencentCloudChat.TYPES.GRP_MEETING, //创建社群，工作群无法被搜索到
+			name: groupName,
+			groupID: gPre_meeting + gId,
+			joinOption: TencentCloudChat.JOIN_OPTIONS_FREE_ACCESS,
+			inviteOption: TencentCloudChat.TYPES.INVITE_OPTIONS_FREE_ACCESS
 		});
 		promise.then(function(imResponse) { // 创建成功
 			console.log("-------群组创建成功-------")
 			console.log(imResponse.data); // 创建的群的资料
 		}).catch(function(imError) {
 			console.log("-------群组创建失败-------")
-			joinGroup(gId,tUid)
+			joinGroup(gId, tUid)
 			console.warn('createGroup error:', imError); // 创建群组失败的相关信息
 		});
 	}
 
-	async function joinGroup(gId,uid){
+	async function joinGroup(gId, uid) {
 		console.log(`-------加入群组中-------${gId} - ${uid}`)
-		let promise = chat.joinGroup({ groupID: gPre_meeting+gId });
-		return promise.then(function(imResponse) {
-		  switch (imResponse.data.status) {
-		    case TencentCloudChat.TYPES.JOIN_STATUS_WAIT_APPROVAL: // 等待管理员同意
-				console.log("-------群组加入，等待管理员同意-------")
-		      break;
-		    case TencentCloudChat.TYPES.JOIN_STATUS_SUCCESS: // 加群成功
-				console.log("-------群组加入成功-------")
-		      console.log(imResponse.data.group); // 加入的群组资料
-		      break;
-		    case TencentCloudChat.TYPES.JOIN_STATUS_ALREADY_IN_GROUP: // 已经在群中
-				console.log("-------已在群中-------")
-		      break;
-		    default:
-		      break;
-		  }
-		}).catch(function(imError){
-		  console.warn('joinGroup error:', imError); // 申请加群失败的相关信息
+		let promise = chat.joinGroup({
+			groupID: gPre_meeting + gId
 		});
-		
+		return promise.then(function(imResponse) {
+			switch (imResponse.data.status) {
+				case TencentCloudChat.TYPES.JOIN_STATUS_WAIT_APPROVAL: // 等待管理员同意
+					console.log("-------群组加入，等待管理员同意-------")
+					break;
+				case TencentCloudChat.TYPES.JOIN_STATUS_SUCCESS: // 加群成功
+					console.log("-------群组加入成功-------")
+					console.log(imResponse.data.group); // 加入的群组资料
+					break;
+				case TencentCloudChat.TYPES.JOIN_STATUS_ALREADY_IN_GROUP: // 已经在群中
+					console.log("-------已在群中-------")
+					break;
+				default:
+					break;
+			}
+		}).catch(function(imError) {
+			console.warn('joinGroup error:', imError); // 申请加群失败的相关信息
+		});
+
 	}
 
-	async function getMessage(){
+	async function getMessage() {
 		// 打开某个会话时，第一次拉取消息列表，注意！第一次拉取时不要传入 nextReqMessageID
-		let promise = chat.getMessageList({conversationID: `GROUP${gPre_meeting+teamId}`});
+		let promise = chat.getMessageList({
+			conversationID: `GROUP${gPre_meeting+teamId}`
+		});
 		promise.then(function(imResponse) {
 			const messageList = imResponse.data.messageList; // 消息列表。
 			const nextReqMessageID = imResponse.data.nextReqMessageID; // 用于续拉，分页续拉时需传入该字段。
-			const isCompleted = imResponse.data.isCompleted; // 表示是否已经拉完所有消息。isCompleted 为 true 时，nextReqMessageID 为 ""。
-		  
-		    console.log("=========历史消息列表");
-		    console.log(messageList);
-			
+			const isCompleted = imResponse.data
+			.isCompleted; // 表示是否已经拉完所有消息。isCompleted 为 true 时，nextReqMessageID 为 ""。
+
+			console.log("=========历史消息列表");
+			console.log(messageList);
+
 			// 清空现有消息
 			messages.value = [];
-			
+
 			// 处理消息列表
 			messageList.forEach(msg => {
 				// 创建基础消息对象
@@ -535,13 +554,13 @@
 					from: msg.from,
 					flow: msg.flow,
 					userName: msg.nick || '未知用户',
-					avatar: msg.avatar ,
+					avatar: msg.avatar,
 					sendTime: new Date(msg.time * 1000), // 将时间戳转换为Date对象
 					type: 'text', // 默认类型
 					content: '',
 					isSystemMessage: msg.isSystemMessage
 				};
-				
+
 				// 根据消息类型处理内容
 				if (msg.type === 'TIMTextElem') {
 					messageObj.type = 'text';
@@ -558,21 +577,21 @@
 						console.error('解析自定义消息失败:', e);
 					}
 				}
-				
+
 				// 添加到消息列表
 				messages.value.push(messageObj);
 			});
-			
+
 			// 按时间排序
 			messages.value.sort((a, b) => {
 				return new Date(a.sendTime).getTime() - new Date(b.sendTime).getTime();
 			});
-			
+
 			// 设置最新消息ID
 			if (messages.value.length > 0) {
 				latestMessageId.value = 'msg-' + messages.value[messages.value.length - 1].id;
 			}
-			
+
 			// 滚动到底部
 			nextTick(() => {
 				scrollToBottom();
@@ -605,7 +624,7 @@
 		getMessage()
 		// 模拟加载数据，实际上这里会从父组件传递过来
 	}
-	
+
 
 
 	function loadMoreMessages() {
@@ -662,31 +681,31 @@
 		// 发送文本消息，Web 端与小程序端相同
 		// 1. 创建消息实例，接口返回的实例可以上屏
 		let message = chat.createTextMessage({
-		  to: gPre_meeting+teamId,
-		  conversationType: TencentCloudChat.TYPES.CONV_GROUP,
-		  // 消息优先级，用于群聊。如果某个群的消息超过了频率限制，后台会优先下发高优先级的消息，详细请参考：https://cloud.tencent.com/document/product/269/3663#.E6.B6.88.E6.81.AF.E4.BC.98.E5.85.88.E7.BA.A7.E4.B8.8E.E9.A2.91.E7.8E.87.E6.8E.A7.E5.88.B6)
-		  // 支持的枚举值：TencentCloudChat.TYPES.MSG_PRIORITY_HIGH, TencentCloudChat.TYPES.MSG_PRIORITY_NORMAL（默认）, TencentCloudChat.TYPES.MSG_PRIORITY_LOW, TencentCloudChat.TYPES.MSG_PRIORITY_LOWEST
-		  // priority: TencentCloudChat.TYPES.MSG_PRIORITY_NORMAL,
-		  payload: {
-			text: messageContent
-		  },
-		  // 支持C2C消息已读回执功能，如果您发消息需要已读回执，需购买旗舰版套餐，并且创建消息时将 needReadReceipt 设置为 true
-		  needReadReceipt: true
-		  // 消息自定义数据（云端保存，会发送到对端，程序卸载重装后还能拉取到）
-		  // cloudCustomData: 'your cloud custom data'
+			to: gPre_meeting + teamId,
+			conversationType: TencentCloudChat.TYPES.CONV_GROUP,
+			// 消息优先级，用于群聊。如果某个群的消息超过了频率限制，后台会优先下发高优先级的消息，详细请参考：https://cloud.tencent.com/document/product/269/3663#.E6.B6.88.E6.81.AF.E4.BC.98.E5.85.88.E7.BA.A7.E4.B8.8E.E9.A2.91.E7.8E.87.E6.8E.A7.E5.88.B6)
+			// 支持的枚举值：TencentCloudChat.TYPES.MSG_PRIORITY_HIGH, TencentCloudChat.TYPES.MSG_PRIORITY_NORMAL（默认）, TencentCloudChat.TYPES.MSG_PRIORITY_LOW, TencentCloudChat.TYPES.MSG_PRIORITY_LOWEST
+			// priority: TencentCloudChat.TYPES.MSG_PRIORITY_NORMAL,
+			payload: {
+				text: messageContent
+			},
+			// 支持C2C消息已读回执功能，如果您发消息需要已读回执，需购买旗舰版套餐，并且创建消息时将 needReadReceipt 设置为 true
+			needReadReceipt: true
+			// 消息自定义数据（云端保存，会发送到对端，程序卸载重装后还能拉取到）
+			// cloudCustomData: 'your cloud custom data'
 		});
 		// 2. 发送消息
 		let promise = chat.sendMessage(message);
 		promise.then(function(imResponse) {
-		  // 发送成功
-		  console.log(imResponse);
+			// 发送成功
+			console.log(imResponse);
 		}).catch(function(imError) {
-		  // 发送失败
-		  console.warn('sendMessage error:', imError);
+			// 发送失败
+			console.warn('sendMessage error:', imError);
 		});
-		
-		
-		
+
+
+
 		// 隐藏快捷回复
 		showQuickReplies.value = false;
 		// 发送消息到父组件处理
