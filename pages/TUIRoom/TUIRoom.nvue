@@ -89,16 +89,16 @@ onMounted(async () => {
 
         // 生成用户签名
         const {userSig} = genTestUserSig({
-            SDKAppID: 1600088427,
+            SDKAppID: 1600089635,
             userID: userid,
-            secretKey: '74289e3b31e6cacb3b1669ae1dc1524df6839987d5b456b2970b1e2cfb8916d3'
+            secretKey: 'e0b01fef05f7f7b644b7c374bf26ae5a9afc88853a4817fc18494fc2a1f56540'
         });
         console.log("用户ID是"+userid+"，签名是"+userSig);
 
         // 登录
         await conference.login({    
-            sdkAppId: 1600088427,
-            userId: userid+"mc",
+            sdkAppId: 1600089635,
+            userId: userid,
             userSig: userSig, 
         });
         

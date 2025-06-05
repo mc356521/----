@@ -173,7 +173,7 @@ import TeamChat from '@/components/team/TeamChat.vue';
 import TeamCalendar from '@/components/team/TeamCalendar.vue';
 import TeamMembers from '@/components/team/TeamMembers.vue';
 import { getPageParams, handleImagePath } from '@/utils/pathHandler.js';
-
+import api from '@/api';
 // 数据定义
 const loading = ref(true);
 const refreshing = ref(false);
@@ -186,12 +186,34 @@ const teamInfo = ref({
   description: ''
 });
 const activeTab = ref('tasks'); // 默认显示任务标签页
-const currentUserId = ref('1001');
 const messages = ref([]);
 const teamChatRef = ref(null);
+let userInfo={};
 
+// 获取用户信息的函数，使用项目中已有的API模块
+async function getUserInfo() {
+	try {
+		// 使用API模块中的parseUserRole方法获取用户信息
+		const res = await api.user.getUserProfile();
+		
+		// 检查返回结果
+		if (res && res.code === 200 && res.data) {
+			console.log('获取用户信息成功:', res.data);
+			return res.data;
+		} else {
+			console.error('获取用户信息失败:', res);
+			return null;
+		}
+	} catch (error) {
+		console.error('获取用户信息出错:', error);
+		return null;
+	}
+}
 // 生命周期钩子
-onMounted(() => {
+onMounted(async () => {
+  userInfo = await getUserInfo();
+  console.log('用户信息21221121:', userInfo);
+  
   // 获取页面参数 - 使用新的工具函数
   const query = getPageParams();
   
@@ -347,15 +369,15 @@ function handleSendMessage(messageData) {
   // 创建新消息
   const newMessage = {
     id: Date.now().toString(),
-    userId: currentUserId.value,
+    userId: teamInfo.value.id,
     flow: 'out',
     userName: '我',
-    avatar: 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/675b261911764dd9bdf6ad7942fec558.png',
+    avatar: userInfo.avatarUrl,
     type: messageData.type,
     content: messageData.content,
     sendTime: new Date()
   };
-  
+ console.log('新消息:', userInfo.avatarUrl);
   // 如果是文件类型，添加文件相关信息
   if (messageData.type === 'file' && messageData.fileName) {
     newMessage.fileName = messageData.fileName;

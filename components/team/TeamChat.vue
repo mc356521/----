@@ -274,7 +274,7 @@
 	const emojiList = ref(['😊', '😂', '😍', '🤔', '😎', '👍', '❤️', '🎉', '🔥', '👏', '😁', '🙏', '🌟', '💯', '🤝',
 		'🚀'
 	]);
-
+ 
 	// 备用状态，用于自定义弹出层
 	const showCustomMoreActionsPopup = ref(false);
 	const showCustomEmojiPickerPopup = ref(false);
@@ -305,6 +305,7 @@
 	let tUid = ''
 	let teamId = ''
 	let teamName = ''
+	let userInfo={}
 	async function isReady(event){
 		// let promise = chat.dismissGroup(gPre_meeting+teamId);
 		// promise.then(function(imResponse) { // 解散成功
@@ -318,6 +319,9 @@
 		loadMessages();
 		
 	}
+	
+	
+
 	//注意：请在调用 login 接口前调用此接口监听事件，避免漏掉 SDK 派发的事件。
 	let onMessageReceived = function(event) {
 	  // 收到推送的单聊、群聊、群提示、群系统通知的新消息，可通过遍历 event.data 获取消息列表数据并渲染到页面
@@ -334,7 +338,7 @@
 			from: msg.from,
 			flow: msg.flow,
 			userName: msg.nick || '未知用户',
-			avatar: msg.avatar || 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/675b261911764dd9bdf6ad7942fec558.png',
+			avatar: msg.avatar,
 			sendTime: new Date(msg.time * 1000), // 将时间戳转换为Date对象
 			type: 'text', // 默认类型
 			content: '',
@@ -382,7 +386,7 @@
 		// 获取页面传递的参数
 		teamId = props.teamId;
 		teamName = props.teamName;
-		const userInfo = await getUserInfo();
+		 userInfo = await getUserInfo();
 		console.log('用户信息:', userInfo);
 		console.log('接收到的团队参数:' + teamId, teamName);
 		console.log('团队ID是:' + teamId);
@@ -409,9 +413,9 @@
 		const {
 			userSig
 		} = genTestUserSig({
-			SDKAppID: 1600088427,
-			userID: userid + "mc",
-			secretKey: '74289e3b31e6cacb3b1669ae1dc1524df6839987d5b456b2970b1e2cfb8916d3'
+			SDKAppID: 1600089635,
+			userID: userid,
+			secretKey: 'e0b01fef05f7f7b644b7c374bf26ae5a9afc88853a4817fc18494fc2a1f56540'
 		});
 		// 设置用户名称
 		let userName = '会议用户';
@@ -428,7 +432,7 @@
 		currentUserId.value = tUid
 		TUILogin.login({
 		  SDKAppID: uni.$SDKAppID,
-		  userID: tUid+'mc', 
+		  userID: tUid, 
 		  userSig: userSig, 
 		  useUploadPlugin: true, // If you need to send rich media messages, please set to true.
 		  framework: `vue3` // framework used vue2 / vue3
@@ -531,7 +535,7 @@
 					from: msg.from,
 					flow: msg.flow,
 					userName: msg.nick || '未知用户',
-					avatar: msg.avatar || 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/675b261911764dd9bdf6ad7942fec558.png',
+					avatar: msg.avatar ,
 					sendTime: new Date(msg.time * 1000), // 将时间戳转换为Date对象
 					type: 'text', // 默认类型
 					content: '',
