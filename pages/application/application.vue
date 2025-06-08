@@ -107,7 +107,7 @@
               
               <view class="info-item" v-if="currentRole === 'creator' || currentRole === 'leader'">
 				<text class="info-label">申请人：</text>
-                <text class="info-value">{{ item.applicantName }} {{ item.applicantMajor ? '· ' + item.applicantMajor : '' }}</text>
+                <text class="info-value clickable" @click="viewUserProfile(item.applicantId)">{{ item.applicantName }} {{ item.applicantMajor ? '· ' + item.applicantMajor : '' }}</text>
 			  </view>
 			  
               <view class="info-item" v-if="item.type === 'team' && item.roleName">
@@ -1045,6 +1045,21 @@
 	  }
   }
   
+  // 查看用户个人资料
+  function viewUserProfile(userId) {
+    if (!userId) {
+      uni.showToast({
+        title: '无法获取用户ID',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    uni.navigateTo({
+      url: `/pages/profile/view-user-info?userId=${userId}`
+    });
+  }
+  
   // 返回上一页
   function goBack() {
 	uni.navigateBack();
@@ -1352,6 +1367,15 @@
 			.info-value {
 			  color: $text-color;
 			  flex: 1;
+              
+              &.clickable {
+                color: $primary-color;
+                text-decoration: underline;
+                
+                &:active {
+                  opacity: 0.7;
+                }
+              }
 			}
 		  }
 		}

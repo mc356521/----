@@ -27,7 +27,7 @@
         </view>
         
         <view class="participant-list" v-else-if="participants.length > 0">
-          <view class="participant-item" v-for="(item, index) in participants" :key="index">
+          <view class="participant-item" v-for="(item, index) in participants" :key="index" @click="viewUserProfile(item.userId)">
             <view class="participant-avatar">
               <image :src="item.avatarUrl || '/static/image/default-avatar.png'" mode="aspectFill"></image>
             </view>
@@ -226,6 +226,19 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+    viewUserProfile(userId) {
+      if (!userId) {
+        uni.showToast({
+          title: '无法获取用户ID',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      uni.navigateTo({
+        url: `/pages/profile/view-user-info?userId=${userId}`
+      });
     },
     getStatusText(status) {
       const statusMap = {

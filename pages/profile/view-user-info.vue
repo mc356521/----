@@ -5,7 +5,7 @@
       <view class="back-btn" @click="goBack">
         <SvgIcon name="back" size="20"></SvgIcon>
       </view>
-      <text class="header-title">个人资料</text>
+      <text class="header-title">用户资料</text>
       <view class="right-placeholder"></view>
     </view>
     
@@ -28,10 +28,6 @@
                 :src="userInfo.avatarUrl || 'https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=200'" 
                 mode="aspectFill"
               ></image>
-              <!-- 头像编辑按钮 -->
-              <view class="avatar-edit-btn" @click="changeAvatar">
-                <SvgIcon name="bianji" size="16" color="#ffffff"></SvgIcon>
-              </view>
             </view>
             <view class="user-basic-info">
               <text class="user-name">{{ userInfo.realName || '未设置姓名' }}</text>
@@ -39,9 +35,11 @@
                 <text>{{ userInfo.role === 'student' ? '学生' : userInfo.role === 'teacher' ? '教师' : '管理员' }}</text>
               </view>
             </view>
-            <view class="edit-profile-btn" @click="editBasicInfo">
-              <SvgIcon name="bianji" size="16"></SvgIcon>
-              <text>编辑资料</text>
+            
+            <!-- 联系按钮 -->
+            <view class="contact-btn" @click="contactUser">
+              <SvgIcon name="message" size="16"></SvgIcon>
+              <text>联系Ta</text>
             </view>
           </view>
           
@@ -94,7 +92,6 @@
                   @click="showMedalImage(medal)" >
                   <image 
                     class="medal-image" 
-                 
                     :src="medal.imageUrl" 
                     mode="aspectFit" 
                   ></image>
@@ -130,14 +127,10 @@
       <view class="info-card">
         <view class="card-header">
           <text class="card-title">个人简介</text>
-          <view class="edit-btn" @click="editBio">
-            <SvgIcon name="bianji" size="20"></SvgIcon>
-            <text class="edit-text">编辑</text>
-          </view>
         </view>
         
         <view class="bio-content">
-          <text>{{ userInfo.bio || '暂无个人简介，点击右上角编辑添加' }}</text>
+          <text>{{ userInfo.bio || '该用户暂无个人简介' }}</text>
         </view>
       </view>
       
@@ -145,10 +138,6 @@
       <view class="info-card">
         <view class="card-header">
           <text class="card-title">技能标签</text>
-          <view class="edit-btn" @click="editSkills">
-            <SvgIcon name="bianji" size="20"></SvgIcon>
-            <text class="edit-text">编辑</text>
-          </view>
         </view>
         
         <view class="skills-container">
@@ -156,7 +145,7 @@
             <text>{{ skill }}</text>
           </view>
           <view class="empty-skills" v-if="!userInfo.skillTags || userInfo.skillTags.length === 0">
-            <text>暂无技能标签，点击右上角编辑添加</text>
+            <text>该用户暂无技能标签</text>
           </view>
         </view>
       </view>
@@ -165,10 +154,6 @@
       <view class="info-card">
         <view class="card-header">
           <text class="card-title">获奖经历</text>
-          <view class="edit-btn" @click="editAwards">
-            <SvgIcon name="bianji" size="20"></SvgIcon>
-            <text class="edit-text">编辑</text>
-          </view>
         </view>
         
         <view class="awards-container">
@@ -183,16 +168,11 @@
             </view>
           </view>
           <view class="empty-awards" v-if="!userInfo.awardsHistory || userInfo.awardsHistory.length === 0">
-            <text>暂无获奖经历，点击右上角编辑添加</text>
+            <text>该用户暂无获奖经历</text>
           </view>
         </view>
       </view>
     </scroll-view>
-    
-    <!-- 悬浮刷新按钮 -->
-    <view class="refresh-btn" @click="refreshUserInfo">
-      <SvgIcon name="shuaxin" size="48" color="#ffffff"></SvgIcon>
-    </view>
 
     <!-- 勋章大图预览弹窗 -->
     <view class="medal-preview-overlay" v-if="showPreview" @click="closePreview">
@@ -225,8 +205,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import userApi from '@/api/modules/user';
 import SvgIcon from '@/components/SvgIcon.vue';
+import userApi from '@/api/modules/user';
+
+// 用户ID参数，从路由获取
+const userId = ref('');
 
 // 用户信息状态
 const userInfo = ref({
@@ -247,8 +230,6 @@ const userInfo = ref({
 
 // 加载状态
 const loading = ref(true);
-// 刷新状态
-const isRefreshing = ref(false);
 
 // 用户勋章数据
 const medals = ref([]);
@@ -268,11 +249,39 @@ function onScrollToBottom() {
   }, 3000);
 }
 
-// 获取用户个人资料
+// 获取用户ID参数
+function getRouteParams() {
+  const pages = getCurrentPages();
+  const currentPage = pages[pages.length - 1];
+  
+  if (currentPage && currentPage.options) {
+    userId.value = currentPage.options.userId || '';
+    console.log('获取到用户ID:', userId.value);
+  }
+}
+
+// 获取对方用户勋章
+async function getUserIdBadges() {
+  try {
+    const res = await userApi.getUserIdBadges(userId.value);
+    if (res.code === 200 && res.data) {
+      medals.value = res.data;
+      console.log('获取到用户勋章:', medals.value);
+    } else {
+      console.error('获取勋章失败:', res.message);
+    }
+  } catch (error) {
+    console.error('获取用户勋章失败:', error);
+  }
+}
+
+// 获取他人用户资料
 async function getUserProfile() {
   try {
     loading.value = true;
-    const res = await userApi.getUserProfile();
+    
+    // 调用API获取他人资料
+    const res = await userApi.getUserProfileById(userId.value);
     
     if (res.code === 200 && res.data) {
       userInfo.value = res.data;
@@ -283,10 +292,11 @@ async function getUserProfile() {
         icon: 'none'
       });
     }
+    
   } catch (error) {
     console.error('获取用户资料失败:', error);
     uni.showToast({
-      title: '获取个人资料失败',
+      title: '获取用户资料失败',
       icon: 'none'
     });
   } finally {
@@ -294,299 +304,33 @@ async function getUserProfile() {
   }
 }
 
-// 获取用户勋章
-async function getUserBadges() {
-  try {
-    const res = await userApi.getUserBadges();
-    if (res.code === 200 && res.data) {
-      medals.value = res.data.map(badge => ({
-        id: badge.badgeId,
-        name: badge.name,
-        imageUrl: badge.icon,
-        description: `${badge.name} - 稀有度: ${badge.rarity}/6`,
-        type: badge.badgeType,
-        glowEffect: badge.glowEffect,
-        rarity: badge.rarity
-      }));
-      console.log('获取到用户勋章:', medals.value);
-    } else {
-      console.error('获取勋章失败:', res.message);
-    }
-  } catch (error) {
-    console.error('获取用户勋章失败:', error);
-  }
-}
-
-
-
-// 刷新用户信息
-async function refreshUserInfo() {
-  if (isRefreshing.value) return;
-  
-  isRefreshing.value = true;
-  uni.showToast({
-    title: '正在刷新...',
-    icon: 'none',
-    duration: 1000
-  });
-  
-  try {
-    const [profileRes, badgesRes] = await Promise.all([
-      userApi.getUserProfile(),
-      userApi.getUserBadges()
-    ]);
-    
-    if (profileRes.code === 200 && profileRes.data) {
-      userInfo.value = profileRes.data;
-    }
-    
-    if (badgesRes.code === 200 && badgesRes.data) {
-      medals.value = badgesRes.data.map(badge => ({
-        id: badge.badgeId,
-        name: badge.name,
-        imageUrl: badge.icon,
-        description: `${badge.name} - 稀有度: ${badge.rarity}/6`,
-        type: badge.badgeType,
-        glowEffect: badge.glowEffect,
-        rarity: badge.rarity
-      }));
-    }
-    
-    uni.showToast({
-      title: '刷新成功',
-      icon: 'success',
-      duration: 1000
-    });
-  } catch (error) {
-    console.error('刷新用户资料失败:', error);
-    uni.showToast({
-      title: '刷新失败',
-      icon: 'none'
-    });
-  } finally {
-    isRefreshing.value = false;
-  }
-}
-
-// 更换头像
-function changeAvatar() {
-  try {
-    // 图片选择配置
-    const imageOptions = {
-      count: 1, // 最多可以选择的图片张数
-      sizeType: ['compressed'], // 压缩图
-      sourceType: ['album', 'camera'], // 从相册选择或拍照
-      success: function(res) {
-        try {
-          console.log('选择图片成功:', res);
-          const tempFilePath = res.tempFilePaths[0];
-          
-          // 检查图片格式 - 改进格式识别逻辑
-          let fileExt = '';
-          try {
-            // 尝试从路径中提取扩展名
-            const extMatch = tempFilePath.match(/\.([a-zA-Z0-9]+)$/);
-            if (extMatch && extMatch[1]) {
-              fileExt = extMatch[1].toLowerCase();
-            }
-          } catch (e) {
-            console.error('提取文件扩展名失败:', e);
-          }
-          
-          console.log('文件路径:', tempFilePath);
-          console.log('识别到的扩展名:', fileExt);
-          
-          const allowedExts = ['jpg', 'jpeg', 'png'];
-          
-          // 如果无法从文件名识别扩展名，或者扩展名是png/jpg/jpeg，则允许上传
-          // 真正的格式验证会在服务器端进行
-          if (fileExt && !allowedExts.includes(fileExt)) {
-            uni.showToast({
-              title: '仅支持JPG、JPEG和PNG格式',
-              icon: 'none'
-            });
-            return;
-          }
-          
-          // 直接上传，不使用预览
-          uni.showModal({
-            title: '确认上传',
-            content: '是否将选择的图片设为头像？',
-            confirmColor: '#3B82F6',
-            success: function(modalRes) {
-              if (modalRes.confirm) {
-                try {
-                  uploadAvatar(tempFilePath);
-                } catch (uploadErr) {
-                  console.error('启动上传过程出错:', uploadErr);
-                  uni.showToast({
-                    title: '上传初始化失败',
-                    icon: 'none'
-                  });
-                }
-              }
-            }
-          });
-        } catch (innerErr) {
-          console.error('处理选中的图片时出错:', innerErr);
-          uni.showToast({
-            title: '处理图片错误',
-            icon: 'none'
-          });
-        }
-      },
-      fail: function(err) {
-        console.error('选择图片失败:', err);
+// 联系用户
+function contactUser() {
+  uni.showModal({
+    title: '联系用户',
+    content: `是否要联系 ${userInfo.value.realName || '该用户'}？`,
+    confirmColor: '#3B82F6',
+    success: function(res) {
+      if (res.confirm) {
+        // 这里可以跳转到聊天页面或者其他联系方式
         uni.showToast({
-          title: '选择图片失败',
+          title: '即将跳转到聊天页面',
           icon: 'none'
         });
-      },
-      complete: function() {
-        console.log('选择图片操作完成');
+        
+        // 模拟跳转到聊天页面
+        setTimeout(() => {
+          uni.navigateTo({
+            url: `/pages/chat/index?userId=${userInfo.value.id}&userName=${userInfo.value.realName}`
+          });
+        }, 1000);
       }
-    };
-    
-    // 选择图片
-    uni.chooseImage(imageOptions);
-  } catch (err) {
-    console.error('调用选择图片API出错:', err);
-    uni.showToast({
-      title: '选择图片功能异常',
-      icon: 'none'
-    });
-  }
-}
-
-// 上传头像到服务器
-function uploadAvatar(filePath) {
-  // 显示上传中提示
-  const loadingText = '上传中';
-  let dots = '';
-  let loadingTimer = null;
-  
-  // 创建动态加载效果
-  uni.showLoading({
-    title: loadingText,
-    mask: true
-  });
-  
-  loadingTimer = setInterval(() => {
-    dots = dots.length >= 3 ? '' : dots + '.';
-    uni.showLoading({
-      title: loadingText + dots,
-      mask: true
-    });
-  }, 500);
-  
-  // 调用上传头像API
-  userApi.uploadAvatar(filePath, (progress) => {
-    console.log('上传进度:', progress);
-    
-    // 更新loading文字
-    if (progress > 0) {
-      uni.showLoading({
-        title: `上传中 ${progress}%`,
-        mask: true
-      });
     }
-  }).then(res => {
-    // 清除loading计时器
-    if (loadingTimer) {
-      clearInterval(loadingTimer);
-    }
-    uni.hideLoading();
-    
-    if (res.code === 200 && res.data) {
-      // 更新头像显示
-      userInfo.value.avatarUrl = res.data.avatarUrl;
-      
-      // 标记头像已更新，以便在返回时通知父页面刷新
-      uni.setStorageSync('avatar_updated', true);
-      
-      // 立即刷新本页面的头像显示
-      // 重新获取用户资料
-      getUserProfile();
-      
-      uni.showToast({
-        title: '头像上传成功',
-        icon: 'success'
-      });
-    } else {
-      uni.showToast({
-        title: res.message || '头像上传失败',
-        icon: 'none'
-      });
-    }
-  }).catch(error => {
-    // 清除loading计时器
-    if (loadingTimer) {
-      clearInterval(loadingTimer);
-    }
-    uni.hideLoading();
-    
-    console.error('头像上传失败:', error);
-    uni.showToast({
-      title: '头像上传失败',
-      icon: 'none'
-    });
-  });
-}
-
-// 编辑基本信息
-function editBasicInfo() {
-  uni.navigateTo({
-    url: '/pages/profile/edit-basic-info'
-  });
-}
-
-// 编辑个人简介
-function editBio() {
-  uni.navigateTo({
-    url: '/pages/profile/edit-bio'
-  });
-}
-
-// 编辑技能标签
-function editSkills() {
-  uni.navigateTo({
-    url: '/pages/profile/edit-skills'
-  });
-}
-
-// 编辑获奖经历
-function editAwards() {
-  uni.navigateTo({
-    url: '/pages/profile/edit-awards'
   });
 }
 
 // 返回
 function goBack() {
-  // 判断是否上传了新头像
-  const avatarUpdated = uni.getStorageSync('avatar_updated');
-  
-  if (avatarUpdated) {
-    // 清除标记
-    uni.removeStorageSync('avatar_updated');
-    
-    // 设置页面返回数据，通知上一页刷新头像
-    const pages = getCurrentPages();
-    if (pages.length > 1) {
-      const prevPage = pages[pages.length - 2];
-      if (prevPage && prevPage.$vm) {
-        // 尝试调用上一页的刷新方法
-        if (typeof prevPage.$vm.refreshUserInfo === 'function') {
-          // 直接调用上一页的刷新方法
-          prevPage.$vm.refreshUserInfo();
-        } else {
-          // 不要直接设置属性，而是使用事件通信
-          uni.$emit('profileUpdated');
-        }
-      }
-    }
-  }
-  
   uni.navigateBack();
 }
 
@@ -659,27 +403,18 @@ function getMedalEffectByRarity(rarity) {
   }
 }
 
-// 显示勋章详情
-function showMedalDetail(medal) {
-  uni.showModal({
-    title: medal.name,
-    content: medal.description,
-    showCancel: false,
-    confirmText: '知道了'
-  });
-}
-
 // 跳转到勋章详情页
 function goToMedalDetail() {
   uni.navigateTo({
-    url: '/pages/profile/medal-detail'
+    url: `/pages/profile/medal-detail?userId=${userId.value}`
   });
 }
 
 // 页面加载时获取用户资料和勋章
 onMounted(() => {
+  getRouteParams();
   getUserProfile();
-  getUserBadges();
+  getUserIdBadges();
 });
 </script>
 
@@ -809,25 +544,6 @@ page {
     border-radius: 50%;
     border: 2rpx solid rgba($primary-color, 0.2);
   }
-  
-  .avatar-edit-btn {
-    position: absolute;
-    bottom: 6rpx;
-    right: 6rpx;
-    width: 46rpx;
-    height: 46rpx;
-    border-radius: 50%;
-    background-color: rgb(239 239 239 / 90%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.2);
-    z-index: 5;
-    
-    &:active {
-      transform: scale(0.95);
-    }
-  }
 }
 
 .user-basic-info {
@@ -852,21 +568,6 @@ page {
   text {
     font-size: 24rpx;
     color: $primary-color;
-  }
-}
-
-.edit-profile-btn {
-  display: flex;
-  align-items: center;
-  background-color: rgba($primary-color, 0.1);
-  padding: 10rpx 18rpx;
-  border-radius: 30rpx;
-  margin-left: auto;
-  
-  text {
-    font-size: 28rpx;
-    color: $primary-color;
-    margin-left: 6rpx;
   }
 }
 
@@ -928,19 +629,6 @@ page {
       .medals-count {
         font-size: 28rpx;
         color: $text-secondary;
-      }
-    }
-    
-    .view-all-btn {
-      display: flex;
-      align-items: center;
-      background-color: rgba($primary-color, 0.1);
-      padding: 4rpx 16rpx;
-      border-radius: 20rpx;
-      
-      text {
-        font-size: 28rpx;
-        color: $primary-color;
       }
     }
   }
@@ -1106,22 +794,6 @@ page {
       font-size: 32rpx;
       font-weight: bold;
       color: $text-color;
-    }
-    
-    .edit-btn {
-      display: flex;
-      align-items: center;
-      
-      .iconfont {
-        font-size: 30rpx;
-        color: $primary-color;
-        margin-right: 4rpx;
-      }
-      
-      .edit-text {
-        font-size: 28rpx;
-        color: $primary-color;
-      }
     }
   }
   
@@ -1374,5 +1046,25 @@ page {
 @keyframes common_shine {
   0%, 100% { box-shadow: 0 0 4rpx 1rpx rgba(169, 169, 169, 0.5); }
   50% { box-shadow: 0 0 8rpx 2rpx rgba(169, 169, 169, 0.7); }
+}
+
+// 添加联系按钮的样式
+.contact-btn {
+  display: flex;
+  align-items: center;
+  background-color: rgba($primary-color, 0.1);
+  padding: 10rpx 18rpx;
+  border-radius: 30rpx;
+  margin-left: auto;
+  
+  text {
+    font-size: 28rpx;
+    color: $primary-color;
+    margin-left: 6rpx;
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
 }
 </style> 

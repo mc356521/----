@@ -313,7 +313,7 @@
 				<!-- 成员列表 -->
 				<view class="members-list" v-else-if="teamMembers && teamMembers.length > 0">
 				  <view class="member-item" v-for="(member, index) in teamMembers" :key="index">
-					<view class="member-avatar-container">
+					<view class="member-avatar-container" @click="viewUserProfile(member.userId)">
 					  <image class="member-avatar" :src="member.avatar"></image>
 					  <view :class="['member-status', `status-${member.status}`]"></view>
 					</view>
@@ -1171,7 +1171,19 @@ async function refreshTeamRoles(teamId) {
     loadingRoles.value = false;
   }
 }
-
+function viewUserProfile(userId) {
+      if (!userId) {
+        uni.showToast({
+          title: '无法获取用户ID',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      uni.navigateTo({
+        url: `/pages/profile/view-user-info?userId=${userId}`
+      });
+    }
 // 打开新增角色表单
 function openAddRoleForm() {
   roleFormMode.value = 'add';

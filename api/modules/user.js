@@ -218,6 +218,22 @@ const userApi = {
     },
 
     /**
+     * 获取指定用户ID的个人资料信息
+     * @param {Number} userId - 用户ID
+     * @returns {Promise} 指定用户个人资料的Promise对象
+     */
+    getUserProfileById(userId) {
+        if (!userId) {
+            return Promise.reject(new Error('用户ID不能为空'));
+        }
+
+        return request({
+            url: `/users/${userId}/profile`,
+            method: 'GET'
+        });
+    },
+
+    /**
      * 更新用户个人资料
      * @param {Object} data - 更新的个人资料数据
      * @param {String} data.realName - 真实姓名
@@ -302,7 +318,19 @@ const userApi = {
             }
         });
     },
-
+    /**
+     * 获取对方用户勋章数据
+     * @returns {Promise} 用户勋章数据的Promise对象
+     */
+    getUserIdBadges(userId) {
+        return request({
+            url: `/user/honors/simple-badges/${userId}`,
+            method: 'GET',
+            header: {
+                'Authorization': 'Bearer ' + getToken()
+            }
+        });
+    },
     /**
      * 获取用户详细勋章数据
      * @returns {Promise} 用户详细勋章数据的Promise对象
@@ -310,6 +338,25 @@ const userApi = {
     getUserBadgesDetail() {
         return request({
             url: '/user/honors/badges',
+            method: 'GET',
+            header: {
+                'Authorization': 'Bearer ' + getToken()
+            }
+        });
+    },
+
+    /**
+     * 获取指定用户ID的详细勋章数据
+     * @param {Number} userId - 用户ID
+     * @returns {Promise} 指定用户详细勋章数据的Promise对象
+     */
+    getUserBadgesDetailById(userId) {
+        if (!userId) {
+            return Promise.reject(new Error('用户ID不能为空'));
+        }
+
+        return request({
+            url: `/user/honors/badges/${userId}`,
             method: 'GET',
             header: {
                 'Authorization': 'Bearer ' + getToken()

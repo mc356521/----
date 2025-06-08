@@ -5,7 +5,7 @@
       <view class="back-btn" @click="goBack">
         <SvgIcon name="back" size="20"></SvgIcon>
       </view>
-      <text class="header-title">荣誉勋章</text>
+      <text class="header-title">{{ isViewingOther ? '用户勋章' : '我的勋章' }}</text>
       <view class="right-placeholder"></view>
     </view>
     
@@ -208,7 +208,7 @@
     <view class="safe-area-bottom"></view>
     
     <!-- 悬浮申请按钮 -->
-    <view class="apply-badge-btn" @click="goToApplyBadge">
+    <view class="apply-badge-btn" @click="goToApplyBadge" v-if="!isViewingOther">
       <text>申请勋章</text>
     </view>
   </view>
@@ -224,6 +224,11 @@ const loading = ref(true);
 
 // 勋章数据
 const badgesList = ref([]);
+
+// 用户ID参数，从路由获取
+const userId = ref('');
+// 是否查看他人勋章
+const isViewingOther = ref(false);
 
 // 分类标签
 const activeTab = ref('all');
@@ -249,13 +254,32 @@ const filteredBadges = computed(() => {
   return badgesList.value;
 });
 
+// 获取路由参数
+function getRouteParams() {
+  const pages = getCurrentPages();
+  const currentPage = pages[pages.length - 1];
+  
+  if (currentPage && currentPage.options) {
+    userId.value = currentPage.options.userId || '';
+    isViewingOther.value = !!userId.value;
+    console.log('获取到用户ID:', userId.value, '是否查看他人勋章:', isViewingOther.value);
+  }
+}
+
 // 获取勋章列表
 async function getBadges() {
   try {
     loading.value = true;
     
-    // 调用API获取勋章详情
-    const res = await userApi.getUserBadgesDetail();
+    let res;
+    // 根据是否有userId参数决定调用哪个API
+    if (isViewingOther.value) {
+      // 调用查看他人勋章的API
+      res = await userApi.getUserBadgesDetailById(userId.value);
+    } else {
+      // 调用查看自己勋章的API
+      res = await userApi.getUserBadgesDetail();
+    }
     
     if (res.code === 200 && res.data) {
       badgesList.value = res.data.records || [];
@@ -420,6 +444,7 @@ function goToApplyBadge() {
 
 // 页面加载时获取勋章列表
 onMounted(() => {
+  getRouteParams();
   getBadges();
 });
 </script>

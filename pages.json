@@ -119,6 +119,14 @@
             }
         },
         {
+            "path": "pages/profile/view-user-info",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "个人资料",
+                "enablePullDownRefresh": false
+            }
+        },
+        {
             "path": "pages/profile/user-info",
             "style": {
                 "navigationBarTitleText": "个人资料",

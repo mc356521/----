@@ -111,7 +111,7 @@
     <view class="info-card" v-if="teamMembers.length > 0">
       <text class="section-header">队伍成员 ({{teamMembers.length}})</text>
       <view class="member-grid">
-        <view class="member-item" v-for="(member, index) in teamMembers" :key="index">
+        <view class="member-item" v-for="(member, index) in teamMembers" :key="index" @click="viewUserProfile(member.userId)">
           <image class="member-avatar" :src="member.userAvatarUrl || defaultAvatar" :class="{'leader-border2': member.isLeader}"></image>
           <text class="member-name">
             {{member.userName}}
@@ -128,7 +128,7 @@
     <view class="info-card" v-if="teamInfo.teachers && teamInfo.teachers.length > 0">
       <text class="section-header">指导老师</text>
       <view class="member-grid">
-        <view class="member-item" v-for="(teacher, index) in teamInfo.teachers" :key="index">
+        <view class="member-item" v-for="(teacher, index) in teamInfo.teachers" :key="index" @click="viewUserProfile(teacher.userId)">
           <image class="member-avatar" :src="teacher.avatarUrl || defaultAvatar"></image>
           <text class="member-name">{{teacher.name}}</text>
           <text v-if="teacher.major" class="teacher-major">{{teacher.major}}</text>
@@ -565,6 +565,20 @@ export default {
       } finally {
         this.isLoading = false;
       }
+    },
+
+    viewUserProfile(userId) {
+      if (!userId) {
+        uni.showToast({
+          title: '无法获取用户ID',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      uni.navigateTo({
+        url: `/pages/profile/view-user-info?userId=${userId}`
+      });
     }
   }
 }

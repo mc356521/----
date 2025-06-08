@@ -19,7 +19,7 @@
         </view>
         
         <!-- 发布者信息 -->
-        <view class="publisher-info-row">
+        <view class="publisher-info-row" @click="viewUserProfile(taskDetail.creatorId)">
           <image class="publisher-avatar" :src="taskDetail.creatorAvatarUrl || defaultAvatar" mode="aspectFill"></image>
           <view class="publisher-text">
             <text class="publisher-name">{{ taskDetail.creatorName }}</text>
@@ -422,6 +422,19 @@ async function getTaskDetail(id) {
   }
 }
 
+    function viewUserProfile(userId) {
+      if (!userId) {
+        uni.showToast({
+          title: '无法获取用户ID',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      uni.navigateTo({
+        url: `/pages/profile/view-user-info?userId=${userId}`
+      });
+    }
 // 格式化日期
 function formatDeadline(dateStr) {
   if (!dateStr) return '';
