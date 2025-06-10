@@ -422,19 +422,16 @@ async function getTaskDetail(id) {
   }
 }
 
-    function viewUserProfile(userId) {
-      if (!userId) {
-        uni.showToast({
-          title: '无法获取用户ID',
-          icon: 'none'
-        });
-        return;
-      }
-      
-      uni.navigateTo({
-        url: `/pages/profile/view-user-info?userId=${userId}`
-      });
-    }
+// 查看用户资料
+function viewUserProfile(userId) {
+  // 保存参数到本地存储，确保在页面加载时能获取到
+  uni.setStorageSync('viewUserParams', { userId });
+  // 跳转到用户资料页面
+  uni.navigateTo({
+    url: `/pages/profile/view-user-info?userId=${userId}`
+  });
+}
+
 // 格式化日期
 function formatDeadline(dateStr) {
   if (!dateStr) return '';

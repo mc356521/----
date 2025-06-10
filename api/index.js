@@ -22,6 +22,7 @@ import tasksApi from './modules/tasks';
 import * as taskApplicationsApi from './modules/taskApplications';
 import competitionResults from './modules/competitionResults';
 import statisticsApi from './modules/statistics';
+import teamTaskApi from './modules/teamTask';
 
 // 导入其他模块API (示例，根据需要添加)
 // import courseApi from './modules/course';
@@ -29,14 +30,15 @@ import statisticsApi from './modules/statistics';
 
 // 统一导出
 export default {
-  user: userApi,
-  competitions: competitionsApi,
-  team: teamApi,
-  tasks: tasksApi,
-  taskApplications: taskApplicationsApi,
-  competitionResults,
-  statistics: statisticsApi,
-  // 其他模块
-  // course: courseApi,
-  // notice: noticeApi
-}; 
+    user: userApi,
+    competitions: competitionsApi,
+    team: teamApi,
+    tasks: tasksApi,
+    taskApplications: taskApplicationsApi,
+    competitionResults,
+    statistics: statisticsApi,
+    teamTask: teamTaskApi,
+    // 其他模块
+    // course: courseApi,
+    // notice: noticeApi
+};

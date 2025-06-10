@@ -1,9 +1,14 @@
 <template>
   <view class="members-container">
-    <view class="empty-state" v-if="!hasMembers">
+    <!-- 加载状态 -->
+    <view class="loading-state" v-if="loading">
+      <uni-load-more status="loading" iconType="snow" iconSize="20" :contentText="{contentdown: '加载中...'}"></uni-load-more>
+    </view>
+    
+    <view class="empty-state" v-else-if="!hasMembers">
       <image class="empty-image" src="/static/image/empty-members.png" mode="aspectFit"></image>
       <text class="empty-text">暂无团队成员</text>
-      <view class="action-btn primary" @click="inviteMember">
+      <view class="action-btn primary" @click="inviteMember" v-if="isCurrentUserLeader">
         <text>邀请成员</text>
       </view>
     </view>
@@ -19,7 +24,6 @@
           <text class="stat-value">{{ onlineCount }}</text>
           <text class="stat-label">在线</text>
         </view>
-
       </view>
       
       <!-- 成员管理操作栏 -->
@@ -36,11 +40,13 @@
           </view>
         </view>
         <view class="operation-right">
-          <view class="invite-btn" @click="inviteMember">
+          <view class="invite-btn" @click="inviteMember" v-if="isCurrentUserLeader">
             <text class="invite-text">邀请成员</text>
           </view>
         </view>
       </view>
+      
+      <!-- 队长列表 -->
       <view class="member-section" v-if="leaderMembers.length > 0">
         <view class="section-header">
           <text>队长</text>
@@ -63,11 +69,10 @@
             <view class="member-info">
               <view class="member-name-row">
                 <text class="member-name">{{ member.userName }}</text>
-                <text class="member-role">{{ member.roleName }}</text>
+                <text class="member-role">队长</text>
               </view>
               <view class="member-detail">
                 <text class="member-major">{{ member.userMajor }}</text>
-                <text class="member-join-time">加入于 {{ formatDate(member.joinTime) }}</text>
               </view>
             </view>
             <view class="member-actions">
@@ -80,7 +85,7 @@
       </view>
       
       <!-- 普通成员列表 -->
-      <view class="member-section">
+      <view class="member-section" v-if="normalMembers.length > 0">
         <view class="section-header">
           <text>团队成员</text>
         </view>
@@ -106,7 +111,6 @@
               </view>
               <view class="member-detail">
                 <text class="member-major">{{ member.userMajor }}</text>
-                <text class="member-join-time">加入于 {{ formatDate(member.joinTime) }}</text>
               </view>
             </view>
             <view class="member-actions">
@@ -125,7 +129,9 @@
 </template>
 
 <script setup>
-import { ref, computed, defineProps, defineEmits } from 'vue';
+import { ref, computed, defineProps, defineEmits, onMounted } from 'vue';
+import api from '@/api';
+import { navigateToUserProfile } from '@/utils/navigation';
 
 const props = defineProps({
   teamId: {
@@ -141,91 +147,202 @@ const teamMembers = ref([]);
 const searchKey = ref('');
 const filteredMembers = ref([]);
 const isCurrentUserLeader = ref(false);
+const loading = ref(false);
+const currentUserId = ref(''); // 当前用户ID
 
 // 计算属性
-const hasMembers = ref(false);
+const hasMembers = computed(() => {
+  return teamMembers.value && teamMembers.value.length > 0;
+});
 
 const leaderMembers = computed(() => {
-  return teamMembers.value.filter(member => member.role === 'leader');
+  return teamMembers.value.filter(member => member.isLeader);
 });
 
 const normalMembers = computed(() => {
-  return teamMembers.value.filter(member => member.role !== 'leader');
+  return teamMembers.value.filter(member => !member.isLeader);
 });
 
 const onlineCount = computed(() => {
   return teamMembers.value.filter(member => member.isOnline).length;
 });
 
+// 获取当前用户信息
+async function getCurrentUserInfo() {
+  try {
+    const res = await api.user.getUserProfile();
+    if (res && res.code === 200 && res.data) {
+      currentUserId.value = res.data.id;
+      console.log('获取到当前用户ID:', currentUserId.value);
+    }
+  } catch (error) {
+    console.error('获取用户信息失败:', error);
+  }
+}
+
+// 获取用户在线状态
+async function getUserOnlineStatus(userId) {
+  try {
+    const res = await api.user.getUserOnlineStatus(userId);
+    if (res && res.code === 200) {
+      return res.data; // 返回布尔值表示在线状态
+    }
+    return false; // 默认离线
+  } catch (error) {
+    console.error(`获取用户${userId}在线状态失败:`, error);
+    return false; // 出错时默认为离线
+  }
+}
+
+// 批量获取成员在线状态
+async function getMembersOnlineStatus(members) {
+  const onlineStatusPromises = members.map(member => 
+    getUserOnlineStatus(member.userId).then(isOnline => {
+      // 直接修改成员对象的isOnline属性
+      member.isOnline = isOnline;
+      return member;
+    })
+  );
+  
+  // 等待所有请求完成
+  return Promise.all(onlineStatusPromises);
+}
+
 // 方法
-function loadMembers() {
-  // 模拟加载数据
-  setTimeout(() => {
-    const avatarMap = {
-      '1001': 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/675b261911764dd9bdf6ad7942fec558.png', // 我
-      '1002': 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/dbfafe03bc0e4f30b288e70cfeee434e.png', // 张三
-      '1003': 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/ad929a51b8f243cfaf0792e0de963d08.png', // 李四
-      '1004': 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/797e26b7290049b3bf7d86594f275a12.png', // 王五
-      '1005': 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/871731a3efa5453fb4b2310f0bcefb97.png'  // 赵六
-    };
+async function loadMembers() {
+  if (!props.teamId) {
+    console.error('未提供团队ID，无法加载成员');
+    return;
+  }
+  
+  loading.value = true;
+  
+  try {
+    const res = await api.team.getTeamMembers(props.teamId);
     
-    const now = new Date();
-    
-    teamMembers.value = [
-      {
-        userId: '1001',
-        userName: '我',
-        avatar: avatarMap['1001'],
-        role: 'member',
-        roleName: '测试工程师',
-        userMajor: '计算机科学',
-        joinTime: new Date(now.getTime() - 3600000 * 24 * 30 * 3),
-        isOnline: true
-      },
-      {
-        userId: '1002',
-        userName: '张三',
-        avatar: avatarMap['1002'],
-        role: 'leader',
-        userMajor: '软件工程',
-        joinTime: new Date(now.getTime() - 3600000 * 24 * 30 * 6),
-        isOnline: true
-      },
-      {
-        userId: '1003',
-        userName: '李四',
-        avatar: avatarMap['1003'],
-        role: 'member',
-        roleName: 'UI设计师',
-        userMajor: '视觉设计',
-        joinTime: new Date(now.getTime() - 3600000 * 24 * 30 * 5),
-        isOnline: false
-      },
-      {
-        userId: '1004',
-        userName: '王五',
-        avatar: avatarMap['1004'],
-        role: 'member',
-        roleName: '后端开发',
-        userMajor: '软件工程',
-        joinTime: new Date(now.getTime() - 3600000 * 24 * 30 * 4),
-        isOnline: true
-      },
-      {
-        userId: '1005',
-        userName: '赵六',
-        avatar: avatarMap['1005'],
-        role: 'member',
-        roleName: '前端开发',
-        userMajor: '计算机科学',
-        joinTime: new Date(now.getTime() - 3600000 * 24 * 30 * 2),
-        isOnline: false
+    if (res && res.code === 200 && res.data) {
+      // 处理数据，转换接口返回的数据格式为组件使用的格式
+      const formattedMembers = res.data.map(member => ({
+        userId: member.userId,
+        userName: member.userName,
+        avatar: member.userAvatarUrl || '/static/image/default-avatar.png',
+        isLeader: member.isLeader || false,
+        roleName: member.roleName || '成员',
+        userMajor: member.userMajor || '未设置专业',
+        joinTime: new Date(),  // 假设API没有返回joinTime
+        isOnline: false // 初始化为离线，后续更新
+      }));
+      
+      // 先设置成员列表，显示基本信息
+      teamMembers.value = formattedMembers;
+      
+      // 判断当前用户是否为队长
+      isCurrentUserLeader.value = teamMembers.value.some(
+        member => String(member.userId) === String(currentUserId.value) && member.isLeader
+      );
+      
+      // 获取所有成员的在线状态
+      await getMembersOnlineStatus(teamMembers.value);
+      
+      console.log('获取到团队成员列表(含在线状态):', teamMembers.value);
+    } else {
+      console.error('获取团队成员列表失败:', res);
+      uni.showToast({
+        title: res?.message || '获取成员列表失败',
+        icon: 'none'
+      });
+      
+      // 如果API调用失败，使用一些默认数据以便测试
+      if (!teamMembers.value.length) {
+        useMockData();
       }
-    ];
+    }
+  } catch (error) {
+    console.error('获取团队成员列表出错:', error);
+    uni.showToast({
+      title: '网络错误，请稍后重试',
+      icon: 'none'
+    });
     
-    hasMembers.value = teamMembers.value.length > 0;
-    isCurrentUserLeader.value = teamMembers.value.some(member => member.userId === '1001' && member.role === 'leader');
-  }, 500);
+    // 如果API调用失败，使用一些默认数据以便测试
+    if (!teamMembers.value.length) {
+      useMockData();
+    }
+  } finally {
+    loading.value = false;
+  }
+}
+
+// 使用模拟数据（仅在API调用失败时使用）
+function useMockData() {
+  console.log('使用模拟数据');
+  const avatarMap = {
+    '1001': 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/675b261911764dd9bdf6ad7942fec558.png', // 我
+    '1002': 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/dbfafe03bc0e4f30b288e70cfeee434e.png', // 张三
+    '1003': 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/ad929a51b8f243cfaf0792e0de963d08.png', // 李四
+    '1004': 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/797e26b7290049b3bf7d86594f275a12.png', // 王五
+    '1005': 'https://saichuang.oss-cn-beijing.aliyuncs.com/avatar/871731a3efa5453fb4b2310f0bcefb97.png'  // 赵六
+  };
+  
+  const now = new Date();
+  
+  teamMembers.value = [
+    {
+      userId: '1001',
+      userName: '我',
+      avatar: avatarMap['1001'],
+      isLeader: false,
+      roleName: '测试工程师',
+      userMajor: '计算机科学',
+      joinTime: new Date(now.getTime() - 3600000 * 24 * 30 * 3),
+      isOnline: true
+    },
+    {
+      userId: '1002',
+      userName: '张三',
+      avatar: avatarMap['1002'],
+      isLeader: true,
+      roleName: '项目经理',
+      userMajor: '软件工程',
+      joinTime: new Date(now.getTime() - 3600000 * 24 * 30 * 6),
+      isOnline: true
+    },
+    {
+      userId: '1003',
+      userName: '李四',
+      avatar: avatarMap['1003'],
+      isLeader: false,
+      roleName: 'UI设计师',
+      userMajor: '视觉设计',
+      joinTime: new Date(now.getTime() - 3600000 * 24 * 30 * 5),
+      isOnline: false
+    },
+    {
+      userId: '1004',
+      userName: '王五',
+      avatar: avatarMap['1004'],
+      isLeader: false,
+      roleName: '后端开发',
+      userMajor: '软件工程',
+      joinTime: new Date(now.getTime() - 3600000 * 24 * 30 * 4),
+      isOnline: true
+    },
+    {
+      userId: '1005',
+      userName: '赵六',
+      avatar: avatarMap['1005'],
+      isLeader: false,
+      roleName: '前端开发',
+      userMajor: '计算机科学',
+      joinTime: new Date(now.getTime() - 3600000 * 24 * 30 * 2),
+      isOnline: false
+    }
+  ];
+  
+  // 判断当前用户是否为队长
+  isCurrentUserLeader.value = teamMembers.value.some(
+    member => String(member.userId) === String(currentUserId.value) && member.isLeader
+  );
 }
 
 function filterMembers() {
@@ -251,7 +368,11 @@ function contactMember(member) {
 }
 
 function viewMemberProfile(member) {
-  emit('viewProfile', member);
+  // 使用统一的导航工具函数
+  navigateToUserProfile(member.userId, { 
+    userName: member.userName,
+    fromTeam: props.teamId
+  });
 }
 
 function showMemberOptions(member) {
@@ -283,16 +404,37 @@ function changeRole(member) {
   });
 }
 
-function removeMember(member) {
+async function removeMember(member) {
   uni.showModal({
     title: '移出成员',
     content: `确定要将${member.userName}移出团队吗？`,
-    success: function(res) {
+    success: async function(res) {
       if (res.confirm) {
-        uni.showToast({
-          title: `已将${member.userName}移出团队`,
-          icon: 'none'
-        });
+        try {
+          // 调用API移除成员
+          const result = await api.team.removeTeamMember(props.teamId, member.userId);
+          
+          if (result && result.code === 200) {
+            uni.showToast({
+              title: `已将${member.userName}移出团队`,
+              icon: 'success'
+            });
+            
+            // 重新加载成员列表
+            await loadMembers();
+          } else {
+            uni.showToast({
+              title: result?.message || '移除成员失败',
+              icon: 'none'
+            });
+          }
+        } catch (error) {
+          console.error('移除成员失败:', error);
+          uni.showToast({
+            title: '移除成员失败，请稍后重试',
+            icon: 'none'
+          });
+        }
       }
     }
   });
@@ -307,12 +449,22 @@ function formatDate(date) {
 }
 
 // 初始化
-loadMembers();
+onMounted(async () => {
+  await getCurrentUserInfo();
+  await loadMembers();
+});
 </script>
 
 <style>
 .members-container {
   padding: 20rpx 0;
+}
+
+.loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60rpx 0;
 }
 
 .empty-state {

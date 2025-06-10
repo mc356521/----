@@ -362,6 +362,49 @@ const userApi = {
                 'Authorization': 'Bearer ' + getToken()
             }
         });
+    },
+
+    /**
+     * 获取用户简单信息（ID、姓名、头像）
+     * @param {Number} userId - 用户ID
+     * @returns {Promise} 用户简单信息的Promise对象
+     */
+    getUserSimpleInfo(userId) {
+        if (!userId) {
+            return Promise.reject(new Error('用户ID不能为空'));
+        }
+
+        return request({
+            url: `/users/${userId}/simple-info`,
+            method: 'GET'
+        });
+    },
+
+    /**
+     * 获取指定用户的在线状态
+     * @param {Number} userId - 用户ID
+     * @returns {Promise} 用户在线状态的Promise对象，返回布尔值
+     */
+    getUserOnlineStatus(userId) {
+        if (!userId) {
+            return Promise.reject(new Error('用户ID不能为空'));
+        }
+
+        return request({
+            url: `/users/${userId}/online-status`,
+            method: 'GET'
+        });
+    },
+
+    /**
+     * 获取当前登录用户的在线状态
+     * @returns {Promise} 当前用户在线状态的Promise对象，返回布尔值
+     */
+    getCurrentUserOnlineStatus() {
+        return request({
+            url: '/users/online-status',
+            method: 'GET'
+        });
     }
 };
 

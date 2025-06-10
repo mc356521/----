@@ -228,13 +228,10 @@ export default {
       }
     },
     viewUserProfile(userId) {
-      if (!userId) {
-        uni.showToast({
-          title: '无法获取用户ID',
-          icon: 'none'
-        });
-        return;
-      }
+      if (!userId) return;
+      
+      // 保存参数到本地存储，确保在页面加载时能获取到
+      uni.setStorageSync('viewUserParams', { userId });
       
       uni.navigateTo({
         url: `/pages/profile/view-user-info?userId=${userId}`

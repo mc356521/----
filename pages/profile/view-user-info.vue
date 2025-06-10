@@ -204,11 +204,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, defineProps, onUnmounted } from 'vue';
 import SvgIcon from '@/components/SvgIcon.vue';
 import userApi from '@/api/modules/user';
 
-// 用户ID参数，从路由获取
+// 定义props接收路由参数
+const props = defineProps({
+  userId: {
+    type: [String, Number],
+    default: ''
+  }
+});
+
+// 用户ID参数
 const userId = ref('');
 
 // 用户信息状态
@@ -251,12 +259,42 @@ function onScrollToBottom() {
 
 // 获取用户ID参数
 function getRouteParams() {
+  // 从onLoad传入的参数或props中获取userId
+  if (props.userId) {
+    userId.value = props.userId;
+    console.log('从props获取到用户ID:', userId.value);
+    return;
+  }
+  
+  // 尝试从页面参数中获取
   const pages = getCurrentPages();
   const currentPage = pages[pages.length - 1];
   
   if (currentPage && currentPage.options) {
     userId.value = currentPage.options.userId || '';
-    console.log('获取到用户ID:', userId.value);
+    console.log('从getCurrentPages获取到用户ID:', userId.value);
+    return;
+  }
+  
+  // 如果还获取不到，尝试从uni-app的全局对象获取
+  const query = uni.getStorageSync('viewUserParams');
+  if (query && query.userId) {
+    userId.value = query.userId;
+    console.log('从本地存储获取到用户ID:', userId.value);
+    // 使用后清除存储
+    uni.removeStorageSync('viewUserParams');
+  }
+}
+
+// onLoad生命周期函数，在页面加载时获取参数
+function onLoad(options) {
+  console.log('页面onLoad, 接收参数:', options);
+  if (options && options.userId) {
+    userId.value = options.userId;
+    console.log('从onLoad获取到用户ID:', userId.value);
+  } else {
+    // 没有直接获取到参数，尝试其他方法
+    getRouteParams();
   }
 }
 
@@ -410,11 +448,31 @@ function goToMedalDetail() {
   });
 }
 
+// 注册页面生命周期钩子
+uni.$on('hook:onLoad', onLoad);
+
 // 页面加载时获取用户资料和勋章
 onMounted(() => {
-  getRouteParams();
-  getUserProfile();
-  getUserIdBadges();
+  // 已经在onLoad中获取了userId，这里只需要加载数据
+  if (!userId.value) {
+    getRouteParams();
+  }
+  
+  if (userId.value) {
+    getUserProfile();
+    getUserIdBadges();
+  } else {
+    console.error('无法获取用户ID，请检查传参');
+    uni.showToast({
+      title: '无法获取用户信息，请返回重试',
+      icon: 'none'
+    });
+  }
+});
+
+// 组件卸载时清理事件监听
+onUnmounted(() => {
+  uni.$off('hook:onLoad');
 });
 </script>
 
