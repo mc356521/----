@@ -32,6 +32,16 @@
           </view>
         </view>
         
+        <!-- 所属院系 -->
+        <view class="form-item">
+          <text class="form-label">所属院系<text class="required">*</text></text>
+          <view class="select-box" @click="showDepartmentModal">
+            <text v-if="form.departmentId" class="select-text">{{ selectedDepartmentName }}</text>
+            <text v-else class="placeholder-text">请选择院系</text>
+            <SvgIcon name="xialaxuanze"  size="24"></SvgIcon>
+          </view>
+        </view>
+        
         <!-- 竞赛选择弹窗 -->
         <uni-popup ref="competitionPopup" type="bottom">
           <view class="popup-container">
@@ -78,6 +88,39 @@
             
             <view class="popup-footer">
               <button class="confirm-btn" @click="confirmCompetitionSelection">确定</button>
+            </view>
+          </view>
+        </uni-popup>
+    
+        <!-- 院系选择弹窗 -->
+        <uni-popup ref="departmentPopup" type="bottom">
+          <view class="popup-container">
+            <view class="popup-header">
+              <text class="popup-title">选择院系</text>
+              <text class="popup-close" @click="closeDepartmentModal">关闭</text>
+            </view>
+            
+            <!-- 院系列表 -->
+            <scroll-view scroll-y="true" class="competitions-list">
+              <view 
+                v-for="department in departmentList" 
+                :key="department.id"
+                class="competition-item"
+                :class="{ 'active-competition': form.departmentId === department.id }"
+                @click="selectDepartment(department)"
+              >
+                <view class="competition-info">
+                  <text class="competition-title">{{ department.name }}</text>
+                </view>
+                <text class="iconfont icon-check" v-if="form.departmentId === department.id"></text>
+              </view>
+              <view class="empty-tip" v-if="departmentList.length === 0">
+                <text>暂无院系信息</text>
+              </view>
+            </scroll-view>
+            
+            <view class="popup-footer">
+              <button class="confirm-btn" @click="confirmDepartmentSelection">确定</button>
             </view>
           </view>
         </uni-popup>
@@ -471,6 +514,7 @@
 import { ref, reactive, computed, onMounted, nextTick } from 'vue';
 import teamApi from '@/api/modules/team';
 import competitionsApi from '@/api/modules/competitions';
+import { getDepartmentsList } from '@/api/modules/departments';
 import dev from '../../config/env/dev';
 import SvgIcon from '@/components/SvgIcon.vue';
 
@@ -478,10 +522,12 @@ import SvgIcon from '@/components/SvgIcon.vue';
 const competitionPopup = ref(null);
 const teacherPopup = ref(null);
 const skillPopup = ref(null);
+const departmentPopup = ref(null);
 const baseUrl = dev.baseUrl;
 // 表单数据
 const form = reactive({
   competitionId: '',
+  departmentId: '',
   teamName: '',
   researchDirection: '',
   description: '我们是一支充满激情与创造力的队伍',
@@ -498,6 +544,9 @@ const competitionList = ref([]);
 const filteredCompetitionList = ref([]);
 const competitionCategories = ref([]);
 const selectedCategoryId = ref(0); // 0表示全部
+
+// 院系列表数据
+const departmentList = ref([]);
 
 // 教师列表数据
 const teacherList = ref([]);
@@ -554,6 +603,12 @@ const getOpenerEventChannel = () => {
 const selectedCompetitionName = computed(() => {
   const competition = competitionList.value.find(item => item.id === form.competitionId);
   return competition ? competition.title : '';
+});
+
+// 计算属性：获取选中院系的名称
+const selectedDepartmentName = computed(() => {
+  const department = departmentList.value.find(item => item.id === form.departmentId);
+  return department ? department.name : '';
 });
 
 // 获取竞赛基本信息列表
@@ -613,6 +668,21 @@ async function getCompetitionsBasicInfo() {
     showToast('获取竞赛列表失败');
   } finally {
     uni.hideLoading();
+  }
+}
+
+// 获取院系列表
+async function getDepartments() {
+  try {
+    const res = await getDepartmentsList();
+    if (res && res.code == 200) {
+      departmentList.value = res.data;
+    } else {
+      showToast('获取院系列表失败');
+    }
+  } catch (error) {
+    console.error('获取院系列表失败:', error);
+    showToast('获取院系列表失败');
   }
 }
 
@@ -708,6 +778,26 @@ function selectCompetition(competition) {
 // 确认竞赛选择
 function confirmCompetitionSelection() {
   closeCompetitionModal();
+}
+
+// 显示院系选择器
+function showDepartmentModal() {
+  departmentPopup.value.open();
+}
+
+// 关闭院系选择器
+function closeDepartmentModal() {
+  departmentPopup.value.close();
+}
+
+// 选择院系
+function selectDepartment(department) {
+  form.departmentId = department.id;
+}
+
+// 确认院系选择
+function confirmDepartmentSelection() {
+  closeDepartmentModal();
 }
 
 // 显示老师选择器
@@ -807,6 +897,11 @@ function validateForm() {
     return false;
   }
   
+  if (!form.departmentId) {
+    showToast('请选择所属院系');
+    return false;
+  }
+  
   if (!form.teamName) {
     showToast('请输入团队名称');
     return false;
@@ -841,8 +936,6 @@ function validateForm() {
     }
   }
   
-
-  
   if (form.roles.length === 0) {
     showToast('请至少添加一个招募角色');
     return false;
@@ -871,6 +964,7 @@ async function submitTeam() {
     // 转换数据格式，适配API
     const apiData = {
       competitionId: form.competitionId,
+      departmentId: form.departmentId,
       name: form.teamName,
       description: form.description,
       direction: form.researchDirection,
@@ -986,6 +1080,7 @@ onMounted(async () => {
   
   // 然后获取竞赛和教师等数据
   await getCompetitionsBasicInfo();
+  await getDepartments();
   await getTeachersList();
   await getSkillTags();
   

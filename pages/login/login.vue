@@ -238,11 +238,7 @@ onMounted(async () => {
       }
     }
   } catch (error) {
-    console.error('获取学校列表失败:', error);
-    uni.showToast({
-      title: '获取学校列表失败',
-      icon: 'none'
-    });
+
   }
   
   // 检查是否已经登录以及是否记住登录
@@ -408,12 +404,7 @@ async function handleLogin() {
     
     // 关闭加载指示器
     uni.hideLoading();
-    
-    uni.showToast({
-      title: error.message || '登录失败，请检查网络连接或服务器配置',
-      icon: 'none',
-      duration: 3000
-    });
+
   }
 }
 

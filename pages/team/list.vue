@@ -295,10 +295,7 @@ async function getTeamList(refresh = false) {
         }
       });
     } else {
-      uni.showToast({
-        title: '网络异常，请稍后重试',
-        icon: 'none'
-      });
+
     }
   } finally {
     loading.value = false;
