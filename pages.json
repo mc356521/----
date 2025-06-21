@@ -268,6 +268,14 @@
                     "titleNView": false
                 }
             }
+        },
+        {
+            "path": "pages/chat-me/chat-me",
+            "style": {
+                "navigationBarTitleText": "联系私聊",
+                "navigationStyle": "custom",
+                "enablePullDownRefresh": true
+            }
         }
     ],
     "globalStyle": {

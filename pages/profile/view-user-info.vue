@@ -351,17 +351,10 @@ function contactUser() {
     success: function(res) {
       if (res.confirm) {
         // 这里可以跳转到聊天页面或者其他联系方式
-        uni.showToast({
-          title: '即将跳转到聊天页面',
-          icon: 'none'
-        });
         
-        // 模拟跳转到聊天页面
-        setTimeout(() => {
-          uni.navigateTo({
-            url: `/pages/chat/index?userId=${userInfo.value.id}&userName=${userInfo.value.realName}`
-          });
-        }, 1000);
+        uni.navigateTo({
+			url: `/pages/chat-me/chat-me?userId=${userInfo.value.id}&userName=${userInfo.value.realName}`
+        });
       }
     }
   });

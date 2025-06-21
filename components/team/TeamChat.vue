@@ -1297,7 +1297,7 @@
 	}
 
 	.chat-input {
-		width: 100%;
+		width:auto;
 		min-height: 80rpx;
 		max-height: 120rpx;
 		padding: 20rpx;

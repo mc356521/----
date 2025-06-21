@@ -431,11 +431,34 @@ function handleInviteMember() {
   });
 }
 
-function handleContactMember(member) {
-  uni.showToast({
-    title: `联系${member.userName}`,
-    icon: 'none'
+
+// 联系用户
+function contactUser(member) {
+  uni.showModal({
+    title: '联系用户',
+    content: `是否要联系 ${member.userName || '该用户'}？`,
+    confirmColor: '#3B82F6',
+    success: function(res) {
+      if (res.confirm) {
+        // 这里可以跳转到聊天页面或者其他联系方式
+        uni.showToast({
+          title: '即将跳转到聊天页面',
+          icon: 'none'
+        });
+        
+        // 模拟跳转到聊天页面
+        setTimeout(() => {
+          uni.navigateTo({
+            url: `/pages/chat-me/chat-me?userId=${member.userId}&userName=${member.userName}`
+          });
+        }, 1000);
+      }
+    }
   });
+}
+function handleContactMember(member) {
+	contactUser(member)
+	// console.log(member);
 }
 
 function handleViewMemberProfile(member) {

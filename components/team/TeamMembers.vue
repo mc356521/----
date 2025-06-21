@@ -75,7 +75,7 @@
                 <text class="member-major">{{ member.userMajor }}</text>
               </view>
             </view>
-            <view class="member-actions">
+            <view class="member-actions"  v-if="member.userId!==currentUserId">
               <view class="action-btn" @click.stop="contactMember(member)">
                 <text class="action-icon">✉</text>
               </view>
@@ -113,7 +113,7 @@
                 <text class="member-major">{{ member.userMajor }}</text>
               </view>
             </view>
-            <view class="member-actions">
+            <view class="member-actions" v-if="member.userId!==currentUserId">
               <view class="action-btn" @click.stop="contactMember(member)">
                 <text class="action-icon">✉</text>
               </view>
@@ -364,6 +364,7 @@ function inviteMember() {
 }
 
 function contactMember(member) {
+
   emit('contact', member);
 }
 
