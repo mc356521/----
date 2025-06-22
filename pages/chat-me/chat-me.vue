@@ -5,7 +5,7 @@
       <view class="header-left" @click="navigateBack">
         <SvgIcon name="back" />
       </view>
-      <view class="header-title">{{ chatInfo.name || `私聊${options.userName||''}` }}</view>
+      <view class="header-title">{{ chatInfo.realName }}</view>
       <view class="header-right">
         <text class="iconfont icon-more"></text>
       </view>
@@ -42,7 +42,7 @@
           }">
             <!-- 其他人的头像 -->
             <view class="avatar-container" v-if="message.flow !== 'out' && message.type !== 'system'">
-              <image class="avatar" :src="out_user.avatarUrl" mode="aspectFill"></image>
+              <image class="avatar" :src="chatInfo.avatarUrl" mode="aspectFill"></image>
             </view>
 
             <!-- 自己的头像 -->
@@ -124,24 +124,20 @@
 
 <script setup>
 import { ref, computed, onMounted, nextTick, onUnmounted } from 'vue';
+import { onLoad } from '@dcloudio/uni-app'
 import SvgIcon from '@/components/SvgIcon.vue';
 import TencentCloudChat from '@tencentcloud/chat';
-import { TUILogin } from '@tencentcloud/tui-core';
-import { genTestUserSig } from '@tencentcloud/chat-uikit-uniapp/debug/GenerateTestUserSig.js';
+import { loginChat,logoutChat } from '../../utils/chatUtils.js'
 import api from '@/api';
-import { logout } from '../../TUIKit/components/TUIChat/entry-chat-only';
-// 聊天配置
-const options = {
-  SDKAppID: uni.$SDKAppID,
-};
-const chat = TencentCloudChat.create(options);
-
+import chatMessageApi from '../../api/modules/chatMessage.js';
 // 数据定义
 const chatInfo = ref({
   id: '',
-  name: '',
-  avatar: ''
+  realName: '',
+  avatarUrl: ''
 });
+let ids = []
+let conversationID = ''
 const messages = ref([]);
 const messageInput = ref('');
 const scrollTop = ref(0);
@@ -149,8 +145,6 @@ const loadingMore = ref(false);
 const latestMessageId = ref('');
 const showScrollBottom = ref(false);
 const userInfo = ref(null);
-const out_user = ref(null)
-const query = ref(null)
 // 计算属性
 const sortedMessages = computed(() => {
   return [...messages.value].sort((a, b) => {
@@ -160,72 +154,72 @@ const sortedMessages = computed(() => {
   });
 });
 onUnmounted(async ()=>{
-	let promise = chat.logout();
+	let promise = uni.$chat.logout();
 	promise.then(function(imResponse) {
 		console.log(imResponse.data); // 登出成功
 	}).catch(function(imError) {
 		console.warn('logout error:', imError);
 	});
 	
-	chat.off(TencentCloudChat.EVENT.MESSAGE_RECEIVED, onMessageReceived);
+	uni.$chat.off(TencentCloudChat.EVENT.MESSAGE_RECEIVED, onMessageReceived);
 })
+
+onLoad(async (options) => {
+  if (options.userId) {
+	chatInfo.value.id = options.userId
+  }
+  if (options.userName) {
+	chatInfo.value.realName = options.userName;
+  }
+  console.log('接收到的页面参数:', chatInfo);
+});
 // 生命周期钩子
 onMounted(async () => {
-  // 获取页面参数
-  const pages = getCurrentPages();
-  const currentPage = pages[pages.length - 1];
-  const options = currentPage.options;
-  query.value = options
-  console.log('接收到的页面参数:', options);
-  
-  // 设置聊天信息
-  if (options.userId) {
-    chatInfo.value.id = options.userId;
-  }
-  if (options.name) {
-    chatInfo.value.name = decodeURIComponent(options.name);
-  }
-  if (options.avatar) {
-    chatInfo.value.avatar = decodeURIComponent(options.avatar);
-  }
-
-  // 获取用户信息
-  userInfo.value = await getUserInfo();
-  
+  // 监听消息
+  uni.$chat.on(TencentCloudChat.EVENT.SDK_READY,chat_ready)
+  uni.$chat.on(TencentCloudChat.EVENT.MESSAGE_RECEIVED, onMessageReceived);
   // 初始化聊天
-  await initChat();
+  await initChatData();
 });
+onUnmounted(async ()=>{
+	logoutChat()
+})
 
 // 方法定义
-async function initChat() {
-  if (!userInfo.value) return;
+async function initChatData() {
+  if (!chatInfo.value) return;
   uni.showLoading({
   	mask:true,
 	title:'加载中'
-  })
-  // 生成用户签名
-  const { userSig } = genTestUserSig({
-    SDKAppID: 1600089635,
-    userID: String(userInfo.value.id),
-    secretKey: 'e0b01fef05f7f7b644b7c374bf26ae5a9afc88853a4817fc18494fc2a1f56540'
-  });
-
-  // 登录
-  await TUILogin.login({
-    SDKAppID: uni.$SDKAppID,
-    userID: String(userInfo.value.id),
-    userSig: userSig,
-    useUploadPlugin: true,
-    framework: 'vue3'
-  });
-
-  // 监听消息
-  chat.on(TencentCloudChat.EVENT.MESSAGE_RECEIVED, onMessageReceived);
+  }) 
+  Promise.all([await loginChat(),await api.user.getUserProfile(),await api.user.getUserProfileById(chatInfo.value.id)])
+	  .then(([loginData,_userInfo,_chatInfo])=>{
+		  console.log('loginData',loginData);
+		  console.log('_userInfo',_userInfo);
+		  console.log('_chatInfo',_chatInfo);
+		  userInfo.value = _userInfo.data
+		  chatInfo.value = _chatInfo.data
+		  ids.push(userInfo.value.id)
+		  ids.push(chatInfo.value.id)
+		  ids.sort()
+		  conversationID = `C2C${chatInfo.value.id}`//`C2C${ids[0]+'_'+ids[1]}`
+		  chatMessageApi.clearUnread(chatInfo.value.id).then(r=>{
+			  console.log(r);
+			  console.log('已读消息');
+		  })
+		  loadMessages();
+	  }).catch(e=>{
+		  uni.showToast({
+		    title: '服务器繁忙，请稍后再试',
+		    icon: 'none'
+		  });
+		  uni.hideLoading()
+	  })
   
-  // 加载历史消息
-  loadMessages();
 }
-
+async function chat_ready(){
+	console.log('chat_ready!!!');
+}
 async function getUserInfo() {
   try {
     const res = await api.user.getUserProfile();
@@ -245,12 +239,12 @@ function navigateBack() {
 
 async function loadMessages() {
   // 获取历史消息
-  const promise = chat.getMessageList({
-    conversationID: `C2C${chatInfo.value.id}`
+  const promise = uni.$chat.getMessageList({
+    conversationID: conversationID
   });
-  out_user.value = (await api.user.getUserProfileById(query.value.userId)).data;
   promise.then(function(imResponse) {
     const messageList = imResponse.data.messageList;
+	console.log('ChatMessageDatas:',imResponse);
     messages.value = messageList.map(msg => ({
       id: msg.ID,
       from: msg.from,
@@ -290,6 +284,10 @@ async function onMessageReceived(event) {
       content: msg.type === 'TIMTextElem' ? msg.payload.text : ''
     };
     
+    chatMessageApi.clearUnread(chatInfo.value.id).then(r=>{
+    			  console.log(r);
+    			  console.log('已读消息');
+    })
     messages.value.push(messageObj);
     latestMessageId.value = 'msg-' + messageObj.id;
     
@@ -305,7 +303,7 @@ async function sendMessage() {
   // 创建消息对象
   const messageObj = {
     id: Date.now().toString(),
-    from: userInfo.value.id,
+    from: userInfo.value.id+'',
     flow: 'out',
     userName: userInfo.value.realName || userInfo.value.userName || '我',
     avatar: userInfo.value.avatarUrl || '',
@@ -320,15 +318,21 @@ async function sendMessage() {
   console.log(chatInfo);
   
   // 发送消息到腾讯云
-  const message = chat.createTextMessage({
-    to: chatInfo.value.id,
+  const message = uni.$chat.createTextMessage({
+    to: chatInfo.value.id+'',
     conversationType: TencentCloudChat.TYPES.CONV_C2C,
     payload: {
       text: messageInput.value
     }
   });
   
-  chat.sendMessage(message).then(function(imResponse) {
+  //将消息发送到后端
+  chatMessageApi.addUserUnread(chatInfo.value.id).then(r=>{
+	  console.log('ChatPushOk',r);
+  })
+  
+  
+  uni.$chat.sendMessage(message).then(function(imResponse) {
     console.log('消息发送成功:', imResponse);
     messageInput.value = '';
     

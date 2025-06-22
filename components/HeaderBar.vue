@@ -12,11 +12,20 @@
         <view class="action-btn" @click.stop="onFilter" v-if="showFilter">
             <SvgIcon name="saixuanx" size="25" />
         </view>
+		
+		<!-- 未读Chat消息提示-->
+        <!--
+        <view class="action-btn message-btn" @click="onMessage" v-if="showChatMessage">
+          <SvgIcon name="xiaoxi" size="34" />
+          <view class="badge" v-if="unreadChatCount > 0">{{ unreadChatCount > 99 ? '99+' : unreadChatCount }}</view>
+        </view> 
+        -->
+		
+		
         <view class="action-btn message-btn" @click="onMessage" v-if="showMessage">
           <SvgIcon name="xiaoxi" size="34" />
-          <view class="badge" v-if="unreadCount > 0">{{ unreadCount > 99 ? '99+' : unreadCount }}</view>
+          <view class="badge" v-if="unreadCount+unreadChatCount > 0">{{ unreadCount+unreadChatCount > 99 ? '99+' : unreadCount+unreadChatCount }}</view>
         </view>
-   
         <slot name="actions"></slot>
       </view>
     </view>
@@ -43,6 +52,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import notificationsApi from '@/api/modules/notifications';
 import SvgIcon from '@/components/SvgIcon.vue';
+import chatMessageApi from '../api/modules/chatMessage';
 
 // tabBar页面路径列表
 const tabBarPages = [
@@ -70,6 +80,10 @@ const props = defineProps({
     type: Boolean,
     default: true
   },
+  showChatMessage:{
+	type:Boolean,
+	default: true
+  },
   showAiRecommend: {
     type: Boolean,
     default: false
@@ -89,6 +103,7 @@ const currentCategory = ref(props.defaultCategory);
 
 // 未读消息数量
 const unreadCount = ref(0);
+const unreadChatCount = ref(0)
 
 // 安全区高度
 const safeAreaTop = ref(0);
@@ -122,6 +137,20 @@ const headerHeight = computed(() => {
 
 // 定义事件
 const emit = defineEmits(['search', 'filter', 'category-change', 'ai-recommend', 'back']);
+
+
+//获取Chat未读消息
+async function getChatMessage(){
+	chatMessageApi.getMyUnreadList().then(response=>{
+		console.log('response',response);
+		let count = 0
+		response.data.forEach(item=>{
+			count=count+item.unreadCount
+		})
+		unreadChatCount.value = count
+	})
+}
+
 
 // 搜索按钮点击事件
 function onSearch() {
@@ -253,10 +282,11 @@ onMounted(() => {
   
   // 首先尝试从API获取未读消息数量
   fetchUnreadCount();
-  
+  getChatMessage();
   // 设置定时器，每隔30秒更新一次未读消息数量
   timer = setInterval(() => {
     fetchUnreadCount();
+    getChatMessage();
   }, 30000);
 });
 

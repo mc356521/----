@@ -40,7 +40,7 @@
         @click="switchTab('unread')"
       >
         <text>未读</text>
-        <text class="badge" v-if="unreadCount > 0">{{ unreadCount }}</text>
+        <text class="badge" v-if="unreadCount+unreadChatCount > 0">{{ unreadCount+unreadChatCount }}</text>
       </view>
       <view 
         :class="['tab-item', activeTab === 'read' ? 'tab-active' : '']" 
@@ -61,6 +61,27 @@
     >
       <!-- 未读通知列表 -->
       <view v-if="activeTab === 'unread'">
+      
+        <view class="chat-list">
+          <view class="chat-item" v-for="item in messageList" :key="item.id" @click="goToChat(item)">
+            <image class="avatar" :src="item.avatarUrl || '/static/image/default-avatar.png'" mode="aspectFill"></image>
+            <view class="chat-info">
+              <view class="chat-title">
+                <text class="nickname">{{ item.realName || getPeerUserId(item) }}</text>
+                <text class="time">{{ formatTime(item.updateTime) }}</text>
+              </view>
+              <view class="chat-last-msg">
+                <text>有新的 {{ item.realName || getPeerUserId(item) }} 私聊消息</text>
+              </view>
+            </view>
+            <view class="unread-badge" v-if="item.unreadCount > 0">
+              {{ item.unreadCount > 99 ? '99+' : item.unreadCount }}
+            </view>
+          </view>
+        </view>
+
+
+
         <view 
           class="notification-item unread" 
           v-for="(item, index) in unreadNotifications" 
@@ -171,6 +192,7 @@ import notificationsApi from '@/api/modules/notifications';
 import teamApi from '@/api/modules/team';
 import taskApplicationsApi from '@/api/modules/taskApplications';
 import tasksApi from '@/api/modules/tasks';
+import chatMessageApi from '../../api/modules/chatMessage';
 import SvgIcon from '@/components/SvgIcon.vue';
 // 获取App实例
 const app = getApp();
@@ -181,11 +203,12 @@ const wsConnected = ref(false);
 // 标签页状态
 const activeTab = ref('unread');
 const unreadCount = ref(0);
+const unreadChatCount = ref(0)
 
 // 通知数据
 const unreadNotifications = ref([]);
 const readNotifications = ref([]);
-
+const messageList = ref([])
 // 分页参数
 const pagination = ref({
   current: 1,
@@ -202,6 +225,37 @@ const hasMore = ref(true);
 // 编辑模式状态
 const isEditMode = ref(false);
 const selectedItems = ref([]);
+
+//获取Chat未读消息
+async function getChatMessage(){
+	chatMessageApi.getMyUnreadList().then(response=>{
+		console.log('response',response);
+		messageList.value = response.data; // data 就是你给的数组
+		let count = 0
+		response.data.forEach(item=>{
+			count=count+item.unreadCount
+		})
+		unreadChatCount.value = count
+	})
+}
+function getPeerUserId(item) {
+  const myUserId = uni.getStorageSync('userId');
+  if (item.fromId == myUserId) {
+    return item.toId;
+  } else {
+    return item.fromId;
+  }
+}
+//根据消息私聊用户
+function goToChat(item) {
+  // 假设当前登录用户 id 是 myUserId
+  const myUserId = uni.getStorageSync('userId');
+  // 判断对方 id
+  const peerId = item.fromId === myUserId ? item.toId : item.fromId;
+  uni.navigateTo({
+    url: `/pages/chat-me/chat-me?userId=${peerId}`
+  });
+}
 
 // 是否全选
 const isAllSelected = computed(() => {
@@ -263,6 +317,7 @@ function confirmBatchDelete() {
     }
   });
 }
+
 
 // 处理新的通知消息
 function handleNewNotification(notification) {
@@ -1147,6 +1202,7 @@ function switchTab(tab) {
 // 下拉刷新
 function onRefresh() {
   loadNotifications(true);
+  getChatMessage();
 }
 
 // 加载更多
@@ -1217,6 +1273,7 @@ async function batchDeleteNotifications(ids) {
 onMounted(() => {
   // 加载通知列表
   loadNotifications(true);
+  getChatMessage();
   
   // 监听WebSocket连接状态
   monitorWebSocketStatus();
@@ -1365,6 +1422,16 @@ async function updateTaskStatus(taskId, status, cancelReason = '') {
     console.error('更新任务状态失败:', error);
     return null;
   }
+}
+
+function getPeerAvatar(item) {
+  // 这里假设你有 userInfoMap 或接口返回了头像
+  // 没有就返回默认头像
+  return item.peerAvatar || '/static/image/default-avatar.png';
+}
+
+function getPeerNickname(item) {
+  return item.peerNickname || getPeerUserId(item);
 }
 </script>
 
@@ -1758,5 +1825,66 @@ $border-color: #eeeeee;
       color: $text-secondary;
     }
   }
+}
+
+
+//未读Chat消息列表样式
+.chat-list {
+  padding: 20rpx;
+}
+.chat-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+  position: relative;
+}
+.avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background: #eee;
+  margin-right: 24rpx;
+}
+.chat-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.chat-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.nickname {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+.chat-last-msg {
+  font-size: 28rpx;
+  color: #666;
+  margin-top: 8rpx;
+}
+.unread-badge {
+  min-width: 36rpx;
+  height: 36rpx;
+  background: #e74c3c;
+  color: #fff;
+  border-radius: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22rpx;
+  position: absolute;
+  right: 0;
+  top: 70%;
+  transform: translateY(-50%);
+  padding: 0 10rpx;
+}
+.time {
+  font-size: 24rpx;
+  color: #999;
 }
 </style>

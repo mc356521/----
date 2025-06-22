@@ -1,9 +1,18 @@
 <script>
 import notificationService from './utils/notification-service';
+
+//腾讯云SDK
 import { TUIChatKit } from './TUIKit';
+import TencentCloudChat from '@tencentcloud/chat';
 TUIChatKit.init();
 let vueVersion = 3;
 uni.$SDKAppID = 1600089635; // Your SDKAppID
+uni.$IMOptions = {
+	SDKAppID: uni.$SDKAppID, // 接入时需要将0替换为您的云通信应用的 SDKAppID，类型为 Number
+};
+uni.$chat = TencentCloudChat.create(uni.$IMOptions); // SDK 实例通常用 chat 表示
+//END腾讯云SDK
+
 export default {
 	globalData: {
 		unreadNotificationCount: 0,

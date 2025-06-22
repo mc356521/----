@@ -203,6 +203,7 @@ const request = (options) => {
   // 返回Promise
   return new Promise((resolve, reject) => {
     uni.request({
+	  sslVerify: false,
       url: interceptedConfig.url,
       method: interceptedConfig.method,
       data: interceptedConfig.data,

@@ -223,6 +223,8 @@ import store from '@/store';
 import { icons } from '@/static/svg/icons.js';
 import SvgIcon from '@/components/SvgIcon.vue';
 import { handleImagePath } from '@/utils/pathHandler.js';
+
+
 // HeaderBar引用
 const headerBarRef = ref(null);
 
@@ -263,6 +265,40 @@ const aiAnalyzingTexts = [
 ];
 let aiAnalyzingTimer = null;
 const currentTextIndex = ref(0);
+
+
+onMounted(() => {
+  // 获取状态栏高度
+  const statusBarHeight = uni.getSystemInfoSync().statusBarHeight;
+  console.log('状态栏高度:', statusBarHeight);
+  
+  // 检查全局状态中是否有AI推荐点击记录
+  const hasClickedAiRecommend = store.getState('hasClickedAiRecommend');
+  console.log('用户是否已点击过AI推荐:', hasClickedAiRecommend ? '是' : '否');
+  
+  // 如果用户没有点击过AI推荐，确保重置状态
+  if (!hasClickedAiRecommend) {
+    aiAnalyzing.value = false;
+    currentTextIndex.value = 0;
+    if (aiAnalyzingTimer) {
+      clearInterval(aiAnalyzingTimer);
+      aiAnalyzingTimer = null;
+    }
+  }
+
+  
+  
+  // 并行请求数据，提升页面加载速度
+  Promise.all([
+    getTeamList(),
+    getCompetitionsList(),
+    getRecommendedTeams() // 提前预加载AI推荐数据
+  ]).then(() => {
+    console.log('所有数据加载完成');
+  }).catch(err => {
+    console.error('数据加载出错:', err);
+  });
+});
 
 // 获取热门竞赛数据
 async function getCompetitionsList() {
@@ -770,36 +806,6 @@ function resetAiRecommendForTesting() {
   });
 }
 
-onMounted(() => {
-  // 获取状态栏高度
-  const statusBarHeight = uni.getSystemInfoSync().statusBarHeight;
-  console.log('状态栏高度:', statusBarHeight);
-  
-  // 检查全局状态中是否有AI推荐点击记录
-  const hasClickedAiRecommend = store.getState('hasClickedAiRecommend');
-  console.log('用户是否已点击过AI推荐:', hasClickedAiRecommend ? '是' : '否');
-  
-  // 如果用户没有点击过AI推荐，确保重置状态
-  if (!hasClickedAiRecommend) {
-    aiAnalyzing.value = false;
-    currentTextIndex.value = 0;
-    if (aiAnalyzingTimer) {
-      clearInterval(aiAnalyzingTimer);
-      aiAnalyzingTimer = null;
-    }
-  }
-  
-  // 并行请求数据，提升页面加载速度
-  Promise.all([
-    getTeamList(),
-    getCompetitionsList(),
-    getRecommendedTeams() // 提前预加载AI推荐数据
-  ]).then(() => {
-    console.log('所有数据加载完成');
-  }).catch(err => {
-    console.error('数据加载出错:', err);
-  });
-});
 </script>
 
 <style lang="scss">

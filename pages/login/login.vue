@@ -385,7 +385,10 @@ async function handleLogin() {
         title: '登录成功',
         icon: 'success'
       });
-    
+      const userInfo = await api.user.getUserProfile();
+      if (userInfo && userInfo.code === 200 && userInfo.data) {
+        uni.setStorageSync('userId', userInfo.data.id); // 假设 userId 字段叫 id
+      }
       // 登录成功，跳转到首页
       setTimeout(() => {
         uni.switchTab({
