@@ -71,7 +71,7 @@
                 <text class="time">{{ formatTime(item.updateTime) }}</text>
               </view>
               <view class="chat-last-msg">
-                <text>有新的 {{ item.realName || getPeerUserId(item) }} 私聊消息</text>
+                <text>{{item.lastMessageContent}}</text>
               </view>
             </view>
             <view class="unread-badge" v-if="item.unreadCount > 0">
@@ -209,18 +209,25 @@ const isEditMode = ref(false);
 const selectedItems = ref([]);
 
 //获取Chat未读消息
-async function getChatMessage(){
-    const mockMessageList = [
-        { id: 1, fromId: 'user1', toId: 'myUserId', realName: '小明', updateTime: new Date(Date.now() - 60000 * 5).toISOString(), unreadCount: 2, avatarUrl: '/static/image/Lianxi/a4.png' },
-        { id: 2, fromId: 'user2', toId: 'myUserId', realName: '团队助手', updateTime: new Date(Date.now() - 60000 * 60 * 3).toISOString(), unreadCount: 5, avatarUrl: '/static/image/Lianxi/a5.png' },
-        { id: 3, fromId: 'myUserId', toId: 'user3', realName: '张三', updateTime: new Date(Date.now() - 60000 * 60 * 24 * 2).toISOString(), unreadCount: 0, avatarUrl: '/static/image/Lianxi/a6.png' }
-    ];
-    messageList.value = mockMessageList;
-    let count = 0;
-    mockMessageList.forEach(item => {
+async function getChatMessage() {
+  try {
+    const res = await chatMessageApi.getMyUnreadList();
+    if (res.code === 200 && Array.isArray(res.data)) {
+      messageList.value = res.data;
+      // 统计未读消息数
+      let count = 0;
+      res.data.forEach(item => {
         count += item.unreadCount;
-    });
-    unreadChatCount.value = count;
+      });
+      unreadChatCount.value = count;
+    } else {
+      messageList.value = [];
+      unreadChatCount.value = 0;
+    }
+  } catch (e) {
+    messageList.value = [];
+    unreadChatCount.value = 0;
+  }
 }
 function getPeerUserId(item) {
   const myUserId = uni.getStorageSync('userId');
@@ -1825,7 +1832,7 @@ $border-color: #eeeeee;
 }
 .chat-last-msg {
   font-size: 28rpx;
-  color: #666;
+  color: #8a8a8a;
   margin-top: 8rpx;
 }
 .unread-badge {

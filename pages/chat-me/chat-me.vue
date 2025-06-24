@@ -327,7 +327,7 @@ async function sendMessage() {
   });
   
   //将消息发送到后端
-  chatMessageApi.addUserUnread(chatInfo.value.id).then(r=>{
+  chatMessageApi.addUserUnread({toId:chatInfo.value.id,content:messageInput.value}).then(r=>{
 	  console.log('ChatPushOk',r);
   })
   
