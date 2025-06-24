@@ -1313,7 +1313,7 @@ function addNewNotificationToUI(notification) {
 function playNotificationSound() {
   try {
     const audio = uni.createInnerAudioContext();
-    audio.src = '/static/sounds/notification.mp3'; // 确保有这个音频文件
+    audio.src = '/static/sounds/notification.wav'; // 确保有这个音频文件
     audio.play();
   } catch (error) {
     console.log('播放通知提示音失败', error);
