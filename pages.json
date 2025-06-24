@@ -317,10 +317,10 @@
             }
         ]
     },
-	"preloadRule": {
-	    "pages/index/index": {
-	      "network": "all",
-	      "packages": ["TUIKit"]
-	    }
-	  }
+    "preloadRule": {
+        "pages/index/index": {
+            "network": "all",
+            "packages": ["TUIKit"]
+        }
+    }
 }

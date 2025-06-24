@@ -13,20 +13,12 @@
             <SvgIcon name="saixuanx" size="25" />
         </view>
 		
-		<!-- 未读Chat消息提示-->
-        <!--
-        <view class="action-btn message-btn" @click="onMessage" v-if="showChatMessage">
-          <SvgIcon name="xiaoxi" size="34" />
-          <view class="badge" v-if="unreadChatCount > 0">{{ unreadChatCount > 99 ? '99+' : unreadChatCount }}</view>
-        </view> 
-        -->
-		
+
 		
         <view class="action-btn message-btn" @click="onMessage" v-if="showMessage">
           <SvgIcon name="xiaoxi" size="34" />
           <view class="badge" v-if="unreadCount+unreadChatCount > 0">{{ unreadCount+unreadChatCount > 99 ? '99+' : unreadCount+unreadChatCount }}</view>
         </view>
-        <slot name="actions"></slot>
       </view>
     </view>
     
@@ -156,6 +148,7 @@ async function getChatMessage(){
 function onSearch() {
   emit('search');
 }
+
 
 // 消息按钮点击事件
 function onMessage() {

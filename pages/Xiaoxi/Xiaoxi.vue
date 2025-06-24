@@ -4,7 +4,7 @@
     <view class="header">
       <view class="navbar">
         <SvgIcon name="back" size="20" @click="goBack"></SvgIcon>
-        <view class="title">通知</view>
+        <view class="title">消息</view>
         <view class="actions" >
           <view v-if="!isEditMode" class="mark-read" @click="markAllAsRead">
           <text class="mark-text">全部标记为已读</text>
@@ -35,18 +35,19 @@
     
     <!-- 标签页 -->
     <view class="tabs">
-      <view 
-        :class="['tab-item', activeTab === 'unread' ? 'tab-active' : '']" 
-        @click="switchTab('unread')"
+      <view
+        :class="['tab-item', activeTab === 'message' ? 'tab-active' : '']"
+        @click="switchTab('message')"
       >
-        <text>未读</text>
-        <text class="badge" v-if="unreadCount+unreadChatCount > 0">{{ unreadCount+unreadChatCount }}</text>
+        <text>聊天</text>
+        <text class="badge" v-if="unreadChatCount > 0">{{ unreadChatCount }}</text>
       </view>
-      <view 
-        :class="['tab-item', activeTab === 'read' ? 'tab-active' : '']" 
-        @click="switchTab('read')"
+      <view
+        :class="['tab-item', activeTab === 'notification' ? 'tab-active' : '']"
+        @click="switchTab('notification')"
       >
-        <text>已读</text>
+        <text>通知</text>
+        <text class="badge" v-if="unreadCount > 0">{{ unreadCount }}</text>
       </view>
     </view>
     
@@ -59,9 +60,8 @@
       @refresherrefresh="onRefresh"
       @scrolltolower="loadMore"
     >
-      <!-- 未读通知列表 -->
-      <view v-if="activeTab === 'unread'">
-      
+      <!-- 消息列表 -->
+      <view v-if="activeTab === 'message'">
         <view class="chat-list">
           <view class="chat-item" v-for="item in messageList" :key="item.id" @click="goToChat(item)">
             <image class="avatar" :src="item.avatarUrl || '/static/image/default-avatar.png'" mode="aspectFill"></image>
@@ -79,17 +79,24 @@
             </view>
           </view>
         </view>
+        <view class="empty-state" v-if="!loading && messageList.length === 0">
+          <image class="empty-image" src="/static/empty-notification.png" mode="aspectFit"></image>
+          <text class="empty-text">暂无消息</text>
+        </view>
+      </view>
 
-
-
+      <!-- 通知列表 -->
+      <view v-if="activeTab === 'notification'">
         <view 
-          class="notification-item unread" 
-          v-for="(item, index) in unreadNotifications" 
-          :key="index"
+          class="notification-item" 
+          v-for="(item, index) in notifications" 
+          :key="item.id"
           :class="{
             'item-selected': isEditMode && selectedItems.includes(item.id),
             'reading': item.isReading,
-            'processed': isProcessedApplication(item)
+            'processed': isProcessedApplication(item),
+            'unread': !item.read,
+            'read': item.read
           }"
           @mouseenter="!isEditMode && handleNotificationView(item, index)"
           @mouseleave="!isEditMode && handleNotificationLeave(item)"
@@ -122,48 +129,24 @@
             </view>
           </view>
         </view>
-      </view>
-      
-      <!-- 已读通知列表 -->
-      <view v-if="activeTab === 'read'">
-        <view 
-          class="notification-item read" 
-          v-for="(item, index) in readNotifications" 
-          :key="index"
-          :class="{
-            'item-selected': isEditMode && selectedItems.includes(item.id),
-            'processed': isProcessedApplication(item)
-          }"
-        >
-          <view class="select-box" v-if="isEditMode" @click.stop="toggleSelectItem(item.id)">
-            <view class="checkbox" :class="{'checked': selectedItems.includes(item.id)}">
-              <text class="iconfont icon-check" v-if="selectedItems.includes(item.id)"></text>
-            </view>
-          </view>
-          <view class="notification-avatar">
-            <image :src="item.avatar || '/static/default-avatar.png'" mode="aspectFill"></image>
-          </view>
-          <view class="notification-content" @click="isEditMode ? toggleSelectItem(item.id) : navigateToDetail(item)">
-            <view class="notification-type">{{ item.type }}</view>
-            <view class="notification-message">{{ item.message }}</view>
-            <view class="notification-time">{{ item.time }}</view>
-          </view>
+        <view class="empty-state" v-if="!loading && notifications.length === 0">
+          <image class="empty-image" src="/static/empty-notification.png" mode="aspectFit"></image>
+          <text class="empty-text">暂无通知</text>
         </view>
       </view>
       
       <!-- 加载更多 -->
-      <view class="loading-more" v-if="loading && !refreshing">
+      <view class="loading-more" v-if="loading && !refreshing && activeTab === 'notification'">
         <text>加载中...</text>
       </view>
       
       <!-- 无更多数据 -->
-      <view class="no-more" v-if="!loading && !hasMore && (activeTab === 'unread' ? unreadNotifications.length > 0 : readNotifications.length > 0)">
+      <view class="no-more" v-if="!loading && !hasMore && notifications.length > 0 && activeTab === 'notification'">
         <text>没有更多了</text>
       </view>
       
       <!-- 无通知状态 -->
-      <view class="empty-state" v-if="!loading && (activeTab === 'unread' && unreadNotifications.length === 0) || 
-                                    (activeTab === 'read' && readNotifications.length === 0)">
+      <view class="empty-state" v-if="false">
         <image class="empty-image" src="/static/empty-notification.png" mode="aspectFit"></image>
         <text class="empty-text">暂无{{ activeTab === 'unread' ? '未读' : '已读' }}通知</text>
       </view>
@@ -201,13 +184,12 @@ const app = getApp();
 const wsConnected = ref(false);
 
 // 标签页状态
-const activeTab = ref('unread');
+const activeTab = ref('message');
 const unreadCount = ref(0);
 const unreadChatCount = ref(0)
 
 // 通知数据
-const unreadNotifications = ref([]);
-const readNotifications = ref([]);
+const notifications = ref([]);
 const messageList = ref([])
 // 分页参数
 const pagination = ref({
@@ -228,15 +210,17 @@ const selectedItems = ref([]);
 
 //获取Chat未读消息
 async function getChatMessage(){
-	chatMessageApi.getMyUnreadList().then(response=>{
-		console.log('response',response);
-		messageList.value = response.data; // data 就是你给的数组
-		let count = 0
-		response.data.forEach(item=>{
-			count=count+item.unreadCount
-		})
-		unreadChatCount.value = count
-	})
+    const mockMessageList = [
+        { id: 1, fromId: 'user1', toId: 'myUserId', realName: '小明', updateTime: new Date(Date.now() - 60000 * 5).toISOString(), unreadCount: 2, avatarUrl: '/static/image/Lianxi/a4.png' },
+        { id: 2, fromId: 'user2', toId: 'myUserId', realName: '团队助手', updateTime: new Date(Date.now() - 60000 * 60 * 3).toISOString(), unreadCount: 5, avatarUrl: '/static/image/Lianxi/a5.png' },
+        { id: 3, fromId: 'myUserId', toId: 'user3', realName: '张三', updateTime: new Date(Date.now() - 60000 * 60 * 24 * 2).toISOString(), unreadCount: 0, avatarUrl: '/static/image/Lianxi/a6.png' }
+    ];
+    messageList.value = mockMessageList;
+    let count = 0;
+    mockMessageList.forEach(item => {
+        count += item.unreadCount;
+    });
+    unreadChatCount.value = count;
 }
 function getPeerUserId(item) {
   const myUserId = uni.getStorageSync('userId');
@@ -259,7 +243,7 @@ function goToChat(item) {
 
 // 是否全选
 const isAllSelected = computed(() => {
-  const currentList = activeTab.value === 'unread' ? unreadNotifications.value : readNotifications.value;
+  const currentList = activeTab.value === 'notification' ? notifications.value : [];
   return currentList.length > 0 && selectedItems.value.length === currentList.length;
 });
 
@@ -284,7 +268,7 @@ function toggleSelectItem(id) {
 
 // 切换全选/取消全选
 function toggleSelectAll() {
-  const currentList = activeTab.value === 'unread' ? unreadNotifications.value : readNotifications.value;
+  const currentList = activeTab.value === 'notification' ? notifications.value : [];
   
   if (isAllSelected.value) {
     // 如果已全选，则取消全选
@@ -318,7 +302,6 @@ function confirmBatchDelete() {
   });
 }
 
-
 // 处理新的通知消息
 function handleNewNotification(notification) {
   console.log('收到新通知', notification);
@@ -338,12 +321,12 @@ function handleNewNotification(notification) {
   
   // 添加到未读列表
   if (!notification.isRead) {
-    unreadNotifications.value.unshift(newNotification);
+    notifications.value.unshift(newNotification);
     unreadCount.value++;
   }
   
   // 添加到已读列表
-  readNotifications.value.unshift(newNotification);
+  notifications.value.unshift(newNotification);
   
   // 显示通知提示
   uni.showToast({
@@ -377,13 +360,13 @@ async function markAllAsRead() {
     
     if (res.code === 200) {
       // 更新本地状态
-  unreadNotifications.value.forEach(item => {
-    const index = readNotifications.value.findIndex(n => n.id === item.id);
+  notifications.value.forEach(item => {
+    const index = notifications.value.findIndex(n => n.id === item.id);
     if (index !== -1) {
-      readNotifications.value[index].read = true;
+      notifications.value[index].read = true;
     }
   });
-  unreadNotifications.value = [];
+  notifications.value = [];
   unreadCount.value = 0;
       
       // 重置App全局未读通知计数
@@ -415,9 +398,9 @@ async function markAllAsRead() {
 // 处理按钮操作
 function handleAction(type, id) {
   // 找到对应的通知
-  const notification = (activeTab.value === 'unread' ? 
-                        unreadNotifications.value : 
-                        readNotifications.value).find(item => item.id === id);
+  const notification = (activeTab.value === 'notification' ? 
+                        notifications.value : 
+                        []).find(item => item.id === id);
   if (!notification) return;
   
   // 获取通知的类型ID和相关ID
@@ -814,15 +797,15 @@ function handleScroll() {
   if (isEditMode.value) return;
   
   // 获取当前标签页下的通知列表
-  const notifications = activeTab.value === 'unread' ? unreadNotifications.value : readNotifications.value;
+  const currentNotifications = activeTab.value === 'notification' ? notifications.value : [];
   
   // 获取所有通知元素
   const notificationElements = document.querySelectorAll('.notification-item');
   
   // 检查每个通知是否在可视区域内
   notificationElements.forEach((element, index) => {
-    if (index < notifications.length && isNotificationVisible(element)) {
-      const notification = notifications[index];
+    if (index < currentNotifications.length && isNotificationVisible(element)) {
+      const notification = currentNotifications[index];
       
       // 如果通知未读且在可视区域内停留时间超过3秒，标记为已读
       if (!notification.read && !notification.scrollTimer) {
@@ -838,30 +821,25 @@ function handleScroll() {
 // 优化标记单个通知为已读的方法
 async function markNotificationAsRead(id) {
   // 找到对应的通知
-  const unreadIndex = unreadNotifications.value.findIndex(item => item.id === id);
+  const notificationIndex = notifications.value.findIndex(item => item.id === id);
   
   // 如果通知不存在或已读，不做处理
-  if (unreadIndex === -1) {
+  if (notificationIndex === -1 || notifications.value[notificationIndex].read) {
     return;
   }
   
   try {
     // 先在UI上标记为已读，提升响应速度
-    if (unreadIndex !== -1) {
-      // 从未读列表取出通知，将其加入已读列表
-      const notification = unreadNotifications.value.splice(unreadIndex, 1)[0];
-      notification.read = true;
-      readNotifications.value.unshift(notification);
-      unreadCount.value--;
+    notifications.value[notificationIndex].read = true;
+    unreadCount.value = Math.max(0, unreadCount.value - 1);
+    
+    // 更新全局未读通知计数
+    if (app && app.globalData) {
+      app.globalData.unreadNotificationCount = Math.max(0, app.globalData.unreadNotificationCount - 1);
       
-      // 更新全局未读通知计数
-      if (app && app.globalData) {
-        app.globalData.unreadNotificationCount = Math.max(0, app.globalData.unreadNotificationCount - 1);
-        
-        // 更新TabBar角标
-        if (app.updateMessageBadge) {
-          app.updateMessageBadge();
-        }
+      // 更新TabBar角标
+      if (app.updateMessageBadge) {
+        app.updateMessageBadge();
       }
     }
     
@@ -870,7 +848,7 @@ async function markNotificationAsRead(id) {
     
   } catch (error) {
     console.error('标记已读失败:', error);
-    // API调用失败时不回滚UI状态，避免用户体验不连贯
+    // API调用失败时可以考虑回滚UI状态，但为保持体验流畅，此处不回滚
   }
 }
 
@@ -903,13 +881,11 @@ async function loadNotifications(refresh = false) {
     const res = await notificationsApi.getNotificationList({
       pageNum: pagination.value.current,
       pageSize: pagination.value.size,
-      onlyUnread: activeTab.value === 'unread', // 未读标签页只请求未读通知
-      onlyRead: activeTab.value === 'read'      // 已读标签页只请求已读通知
     });
     
     if (res.code === 200 && res.data) {
       // 解析通知数据
-      const notifications = (res.data.records || []).map(item => {
+      const newNotifications = (res.data.records || []).map(item => {
         return {
           id: item.id,
           type: item.typeName,
@@ -940,39 +916,25 @@ async function loadNotifications(refresh = false) {
       
       if (refresh) {
         // 刷新列表
-        if (activeTab.value === 'unread') {
-          // 确保未读标签页只有未读消息
-          unreadNotifications.value = notifications.filter(item => !item.read);
-        } else if (activeTab.value === 'read') {
-          // 确保已读标签页只有已读消息
-          readNotifications.value = notifications.filter(item => item.read);
-        }
+        notifications.value = newNotifications;
       } else {
         // 加载更多
-        if (activeTab.value === 'unread') {
-          // 确保未读标签页只有未读消息
-          const newUnread = notifications.filter(item => !item.read);
-          unreadNotifications.value = [...unreadNotifications.value, ...newUnread];
-        } else if (activeTab.value === 'read') {
-          // 确保已读标签页只有已读消息
-          const newRead = notifications.filter(item => item.read);
-          readNotifications.value = [...readNotifications.value, ...newRead];
-        }
+        notifications.value = [...notifications.value, ...newNotifications];
       }
       
       // 更新未读计数
-      if (activeTab.value === 'unread' || refresh) {
-        // 计算真实的未读消息数量
-        unreadCount.value = activeTab.value === 'unread' 
-          ? unreadNotifications.value.length 
-          : notifications.filter(item => !item.read).length;
+      if (refresh) {
+        // 全量刷新时，可以从另一个接口获取总未读数，或者前端累加（如果分页加载不影响总数）
+        // 这里暂时用返回的 total，假设它是未读总数，如果不是，需要后端API支持或前端另行请求
+        // 更好的方式是有一个专门的接口获取未读数
+        unreadCount.value = notifications.value.filter(n => !n.read).length;
         
         // 同步全局未读通知计数
         if (app && app.globalData) {
           app.globalData.unreadNotificationCount = unreadCount.value;
           
-          // 更新TabBar角标，但要捕获可能的错误
-          updateTabBarBadge(unreadCount.value);
+          // 更新TabBar角标
+          updateTabBarBadge(unreadCount.value + unreadChatCount.value);
         }
       }
     } else {
@@ -1195,19 +1157,29 @@ function switchTab(tab) {
   
   activeTab.value = tab;
   
-  // 重新加载数据
-  loadNotifications(true);
+  // 清空选择
+  selectedItems.value = [];
+  isEditMode.value = false;
+  
+  if (tab === 'notification') {
+    loadNotifications(true);
+  } else if (tab === 'message') {
+    getChatMessage();
+  }
 }
 
 // 下拉刷新
 function onRefresh() {
-  loadNotifications(true);
-  getChatMessage();
+  if (activeTab.value === 'notification') {
+    loadNotifications(true);
+  } else {
+    getChatMessage();
+  }
 }
 
 // 加载更多
 function loadMore() {
-  if (loading.value || !hasMore.value) return;
+  if (loading.value || !hasMore.value || activeTab.value !== 'notification') return;
   
   pagination.value.current++;
   loadNotifications(false);
@@ -1225,19 +1197,14 @@ async function batchDeleteNotifications(ids) {
     
     if (res.code === 200) {
       // 从列表中移除已删除的通知
-      ids.forEach(id => {
-        const unreadIndex = unreadNotifications.value.findIndex(item => item.id === id);
-        if (unreadIndex !== -1) {
-          unreadNotifications.value.splice(unreadIndex, 1);
-          unreadCount.value--;
-        }
-        
-        const readIndex = readNotifications.value.findIndex(item => item.id === id);
-        if (readIndex !== -1) {
-          readNotifications.value.splice(readIndex, 1);
-        }
-      });
-      
+      const newNotifications = notifications.value.filter(item => !ids.includes(item.id));
+      const deletedUnreadCount = notifications.value
+        .filter(item => ids.includes(item.id) && !item.read)
+        .length;
+      notifications.value = newNotifications;
+      unreadCount.value -= deletedUnreadCount;
+      selectedItems.value = [];
+
       // 更新全局未读通知计数
       if (app && app.globalData) {
         app.globalData.unreadNotificationCount = unreadCount.value;
@@ -1272,7 +1239,9 @@ async function batchDeleteNotifications(ids) {
 // 组件挂载时
 onMounted(() => {
   // 加载通知列表
-  loadNotifications(true);
+  if (activeTab.value === 'notification') {
+    loadNotifications(true);
+  }
   getChatMessage();
   
   // 监听WebSocket连接状态
@@ -1305,6 +1274,12 @@ function listenForNewNotifications() {
 function addNewNotificationToUI(notification) {
   if (!notification) return;
   
+  // 检查是否已存在相同ID的通知，避免重复
+  const existingIndex = notifications.value.findIndex(item => item.id === notification.id);
+  if (existingIndex !== -1) {
+    return; // 已存在，不处理
+  }
+
   // 创建UI显示用的通知对象
   const newNotification = {
     id: notification.id,
@@ -1323,21 +1298,11 @@ function addNewNotificationToUI(notification) {
     scrollTimer: null
   };
   
-  // 添加到未读列表（如果是未读通知）
+  // 添加到列表顶部
+  notifications.value.unshift(newNotification);
+  
   if (!newNotification.read) {
-    // 检查是否已存在相同ID的通知，避免重复
-    const existingIndex = unreadNotifications.value.findIndex(item => item.id === newNotification.id);
-    if (existingIndex === -1) {
-      // 添加到列表顶部
-      unreadNotifications.value.unshift(newNotification);
-      unreadCount.value++;
-    }
-  } else {
-    // 如果是已读通知，添加到已读列表
-    const existingIndex = readNotifications.value.findIndex(item => item.id === newNotification.id);
-    if (existingIndex === -1) {
-      readNotifications.value.unshift(newNotification);
-    }
+    unreadCount.value++;
   }
   
   // 播放通知提示音
@@ -1366,8 +1331,7 @@ onUnmounted(() => {
   }
   
   // 清除所有计时器
-  const allNotifications = [...unreadNotifications.value, ...readNotifications.value];
-  allNotifications.forEach(notification => {
+  notifications.value.forEach(notification => {
     if (notification.viewTimer) clearTimeout(notification.viewTimer);
     if (notification.scrollTimer) clearTimeout(notification.scrollTimer);
   });
@@ -1380,14 +1344,11 @@ onUnmounted(() => {
 function removeNotification(id) {
   if (!id) return;
   
-  // 从未读列表中移除
-  const unreadIndex = unreadNotifications.value.findIndex(item => item.id === id);
-  if (unreadIndex !== -1) {
-    // 如果是未读通知，移到已读列表
-    const notification = unreadNotifications.value.splice(unreadIndex, 1)[0];
-    notification.read = true;
-    readNotifications.value.unshift(notification);
-    unreadCount.value--;
+  // 标记为已读
+  const notificationIndex = notifications.value.findIndex(item => item.id === id);
+  if (notificationIndex !== -1 && !notifications.value[notificationIndex].read) {
+    notifications.value[notificationIndex].read = true;
+    unreadCount.value = Math.max(0, unreadCount.value - 1);
     
     // 更新全局未读通知计数
     if (app && app.globalData) {
