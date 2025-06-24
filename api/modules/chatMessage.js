@@ -11,13 +11,14 @@ const chatMessageApi = {
 		})
 	},
 	
-	addUserUnread(toId){
+	addUserUnread(data){
 		return request({
 			url:'/chatMessageCount/increment-unread',
             method: 'POST',
 			data:{
 				chatType: 0,
-				toId: toId
+				toId: data.toId,
+				lastMessageContent:data.content
 			  }
 		})
 	},
