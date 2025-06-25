@@ -53,7 +53,7 @@
             <!-- 消息内容 -->
             <view class="message-content">
               <view class="message-sender" v-if="message.flow !== 'out' && message.type !== 'system'">
-                <text>{{ message.userName }}</text>
+                <text>{{ chatInfo.realName }}</text>
               </view>
               <view class="message-bubble" :class="{'system-bubble': message.type === 'system'}">
                 <text v-if="message.type === 'text' || message.type === 'system'">{{ message.content }}</text>
