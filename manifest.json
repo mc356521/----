@@ -16,6 +16,7 @@
             "autoclose" : true,
             "delay" : 0
         },
+        "sslVerify" : false,
         "modules" : {
             "Record" : {}
         },
@@ -39,7 +40,8 @@
                     "<uses-permission android:name=\"android.permission.WAKE_LOCK\"/>",
                     "<uses-permission android:name=\"android.permission.FLASHLIGHT\"/>",
                     "<uses-feature android:name=\"android.hardware.camera\"/>",
-                    "<uses-permission android:name=\"android.permission.WRITE_SETTINGS\"/>"
+                    "<uses-permission android:name=\"android.permission.WRITE_SETTINGS\"/>",
+                    "<uses-permission android:name=\"android.permission.INTERNET\" />"
                 ]
             },
             "ios" : {
@@ -95,6 +97,20 @@
                     "isCloud" : true,
                     "bought" : 1,
                     "pid" : "18466",
+                    "parameters" : {}
+                }
+            },
+            "TRTCCloudUniPlugin-TRTCCloudImpl" : {
+                "__plugin_info__" : {
+                    "name" : "【官方】腾讯云实时音视频SDK",
+                    "description" : "uni-app TRTC SDK 是腾讯云实时音视频通讯解决方案在 uni-app 上的 SDK，提供实时音视频服务",
+                    "platforms" : "Android,iOS",
+                    "url" : "https://ext.dcloud.net.cn/plugin?id=7774",
+                    "android_package_name" : "uni.app.UNI256111F",
+                    "ios_bundle_id" : "",
+                    "isCloud" : true,
+                    "bought" : 1,
+                    "pid" : "7774",
                     "parameters" : {}
                 }
             }

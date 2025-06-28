@@ -64,7 +64,7 @@
       </view>
 
       <!-- 标签页导航 -->
-      <view class="bg-white mt-2 shadow-sm">
+      <view class="bg-white mt-2 shadow-sm" id="competition-tabs">
         <view class="flex-row border-b">
           <view 
             class="flex-1 py-3 text-center text-sm font-medium" 
@@ -401,17 +401,24 @@
       
       <!-- 底部固定按钮 -->
       <view class="fixed-bottom">
-        <button class="team-btn" @click="createTeam">
-          <SvgIcon name="chuangjianduiwu" class="btn-icon"></SvgIcon>
+          
+          <!-- 创建队伍按钮 (仅在报名中和未开始时显示) -->
+          <button 
+              v-if="competition.statusCode === '0' || competition.statusCode === '1'" 
+              class="action-btn create-btn" 
+              @click="createTeam">
+              <SvgIcon name="chuangjianduiwu" class="btn-icon" size="20"></SvgIcon>
           <text>创建队伍</text>
         </button>
+          
+          <!-- 主操作按钮 -->
         <button 
-          class="register-btn" 
-          :class="{'disabled-btn': competition.statusCode === '0' || competition.statusCode === '3'}"
-          :disabled="competition.statusCode === '0' || competition.statusCode === '3'"
-          @click="handleActionButton">
-          <SvgIcon v-if="competition.statusCode === '0'" name="tixingwo" class="btn-icon"></SvgIcon>
-          <text>{{ getActionButtonText() }}</text>
+              class="action-btn main-action-btn" 
+              :class="getActionButtonProps().className"
+              :disabled="getActionButtonProps().disabled"
+              @click="handleActionButtonClick">
+              <SvgIcon :name="getActionButtonProps().icon" class="btn-icon" size="20"></SvgIcon>
+              <text>{{ getActionButtonProps().text }}</text>
         </button>
       </view>
     </template>
@@ -867,11 +874,11 @@ async function getCompetitionTeams(refresh = true) {
         
         // 设置状态颜色
         let statusColor = '#6B7280'; // 默认灰色
-        if (team.status === '0' || team.statusText === '招募中') {
+        if (team.statusText === '招募中') {
           statusColor = '#2563EB'; // 蓝色 - 招募中
-        } else if (team.status === '1' || team.statusText === '进行中') {
+        } else if (team.statusText === '进行中' || team.statusText === '已组队' || team.statusText === '已组满') {
           statusColor = '#10B981'; // 绿色 - 进行中
-        } else if (team.status === '2' || team.statusText === '已完成') {
+        } else if (team.statusText === '已完成') {
           statusColor = '#059669'; // 深绿色 - 已完成
         }
         
@@ -903,7 +910,7 @@ async function getCompetitionTeams(refresh = true) {
           statusColor,
           memberCount,
           remainingCount,
-          actionText: team.status === '0' ? '申请加入' : '查看详情',
+          actionText: team.statusText === '招募中' ? '申请加入' : '查看详情',
           facultyColor,
           faculty: team.direction || '未知方向',  // 使用研究方向作为院系显示
           roles
@@ -1077,20 +1084,46 @@ function getStatusBadgeClass(status) {
   }
 }
 
-// 根据竞赛状态返回按钮文本
-function getActionButtonText() {
-  switch(competition.value.status) {
-    case '未开始':
-      return '提醒我';
-    case '报名中':
-      return '寻找队伍';
-    case '进行中':
-      return '查看队伍';
-    case '已截止':
-      return '查看结果';
+// 根据竞赛状态返回主操作按钮的属性
+function getActionButtonProps() {
+  const status = competition.value.statusCode;
+  const props = {
+    text: '了解详情',
+    icon: 'info',
+    className: 'info-btn',
+    disabled: false
+  };
+
+  switch(status) {
+    case '0': // 未开始
+      props.text = '提醒我';
+      props.icon = 'tixingwo';
+      props.className = 'remind-btn';
+      break;
+    case '1': // 报名中
+      props.text = '寻找队伍';
+      props.icon = 'xunzhaoduiyou';
+      props.className = 'join-btn';
+      break;
+    case '2': // 进行中
+      props.text = '查看队伍';
+      props.icon = 'chakan';
+      props.className = 'info-btn';
+      break;
+    case '3': // 已截止
+      props.text = '查看结果';
+      props.icon = 'jiangbei';
+      props.className = 'disabled-btn';
+      props.disabled = competitionResults.value.length === 0; // 如果没结果则禁用
+      break;
     default:
-      return '了解详情';
+      props.text = '竞赛已结束';
+      props.icon = 'info';
+      props.className = 'disabled-btn';
+      props.disabled = true;
+      break;
   }
+  return props;
 }
 
 // 获取报名截止日期
@@ -1173,41 +1206,33 @@ function createTeam() {
 }
 
 // 处理行动按钮点击
-function handleActionButton() {
-  const buttonText = getActionButtonText();
+function handleActionButtonClick() {
+  const status = competition.value.statusCode;
   
-  switch(buttonText) {
-    case '寻找队伍':
-    case '查看队伍':
-      // 切换到参赛队伍标签页
+  switch(status) {
+    case '0': // 寻找队伍
+    case '1': // 寻找队伍
+    case '2': // 查看队伍
       currentTab.value = 'teams';
-      // 如果队伍列表为空，则加载队伍数据
       if (teams.value.length === 0) {
         getCompetitionTeams();
       }
-      // 滚动到队伍列表位置
       uni.pageScrollTo({
-        selector: '.tab-active',
+        selector: '#competition-tabs',
         duration: 300
       });
       break;
-    case '提醒我':
-      uni.showToast({
-        title: '已设置提醒',
-        icon: 'success'
-      });
-      break;
-    case '查看结果':
-      uni.showToast({
-        title: '比赛结果即将公布',
-        icon: 'none'
-      });
+    case '3': // 查看结果
+      if (competitionResults.value.length > 0) {
+        currentTab.value = 'results';
+        uni.pageScrollTo({ selector: '#competition-tabs', duration: 300 });
+      } else {
+        uni.showToast({ title: '获奖结果暂未公布', icon: 'none' });
+      }
       break;
     default:
-      uni.showToast({
-        title: '功能开发中',
-        icon: 'none'
-      });
+      uni.showToast({ title: '竞赛已结束', icon: 'none' });
+      break;
   }
 }
 
@@ -2143,45 +2168,89 @@ page {
   right: 0;
   background-color: #ffffff;
   border-top: 1rpx solid #e5e7eb;
-  padding: 24rpx;
+  padding: 16rpx 24rpx;
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
+  align-items: center;
+  gap: 16rpx;
   z-index: 10;
+  padding-bottom: calc(16rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
 }
 
-.team-btn {
+.icon-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16rpx;
+}
+
+.action-icon {
+  color: #4B5563;
+}
+
+.icon-action-text {
+  font-size: 22rpx;
+  color: #6B7280;
+  margin-top: 4rpx;
+}
+
+.action-btn {
   flex: 1;
-  margin-right: 24rpx;
-  height: 80rpx;
+  height: 88rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #8bff7ee6;
-  color: #4b5563;
-  border-radius: 16rpx;
-  text-align: center;
-  font-size: 28rpx;
+  border-radius: 44rpx;
+  font-size: 30rpx;
   font-weight: 500;
+  gap: 12rpx;
+  border: none;
+  
+  // 点击动效
+  &:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
 }
 
-.register-btn {
-  flex: 1;
-  height: 80rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #2679cc;
-  color: #ffffff;
-  border-radius: 16rpx;
-  text-align: center;
-  font-size: 28rpx;
-  font-weight: 500;
+.btn-icon {
+  color: white;
+}
+
+.create-btn {
+  background-color: #ff9f43; // 橙色
+  color: white;
+  flex-grow: 1.2; // 稍微宽一点
+}
+
+.main-action-btn {
+  flex-grow: 1.5; // 占比更大
+}
+
+.remind-btn {
+  background-color: #4CAF50; // 绿色
+  color: white;
+}
+
+.join-btn {
+  background-color: #1888E8; // 主题蓝
+  color: white;
+}
+
+.info-btn {
+  background-color: #546E7A; // 蓝灰色
+  color: white;
 }
 
 .disabled-btn {
-  background-color: #e5e7eb !important;
-  color: #9ca3af !important;
+  background-color: #BDBDBD !important;
+  color: #757575 !important;
+  cursor: not-allowed;
+}
+
+.disabled-btn .btn-icon {
+  color: #757575 !important;
 }
 
 /* 添加加载状态样式 */

@@ -359,7 +359,7 @@ export default {
         // 如果所有尝试都失败且没有数据显示错误提示
         if (this.recommendedTeams.length === 0) {
           uni.showToast({
-            title: '获取推荐失败，请稍后再试',
+            title: '推荐服务繁忙，请稍后再试',
             icon: 'none',
             duration: 2000
           });

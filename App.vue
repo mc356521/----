@@ -6,7 +6,7 @@ import { TUIChatKit } from './TUIKit';
 import TencentCloudChat from '@tencentcloud/chat';
 TUIChatKit.init();
 let vueVersion = 3;
-uni.$SDKAppID = 1600089635; // Your SDKAppID
+uni.$SDKAppID = 1600094068; // Your SDKAppID
 uni.$IMOptions = {
 	SDKAppID: uni.$SDKAppID, // 接入时需要将0替换为您的云通信应用的 SDKAppID，类型为 Number
 };
@@ -42,7 +42,7 @@ export default {
 				uni.reLaunch({
 					url: '/pages/login/login'
 				});
-			}, 300);
+			}, 500);
 			}
 			return; // 未登录不执行后续初始化
 		}

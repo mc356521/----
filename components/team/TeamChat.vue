@@ -427,9 +427,9 @@
 		const {
 			userSig
 		} = genTestUserSig({
-			SDKAppID: 1600089635,
+			SDKAppID: 1600094068,
 			userID: userid,
-			secretKey: 'e0b01fef05f7f7b644b7c374bf26ae5a9afc88853a4817fc18494fc2a1f56540'
+			secretKey: '763dc0b66ff840de47ef5ee2394ce2bce72236530f78dad5e85dc9a37866b858'
 		});
 		// 设置用户名称
 		let userName = '会议用户';

@@ -100,7 +100,7 @@
       <view 
         v-else
         class="join-btn gray-join">
-        已组满
+        {{ team.statusText }}
       </view>
     </view>
   </view>
@@ -138,8 +138,8 @@ const showHotIcon = computed(() => {
 });
 
 const isPulse = computed(() => {
-  // 状态为招募中或status等于0时
-  return props.team.status === '0' || props.team.statusText === '招募中';
+  // 状态为招募中时，标签有动效
+  return props.team.status === '0';
 });
 
 // 获取状态样式类
@@ -147,16 +147,22 @@ const getStatusClass = computed(() => {
   const status = props.team.status;
   const statusText = props.team.statusText;
   
-  if (status === '0' || statusText === '招募中') {
-    return 'status-recruiting';
-  } else if (status === '1' || statusText === '进行中') {
-    return 'status-ongoing';
-  } else if (status === '2' || statusText === '已完成') {
-    return 'status-completed';
-  } else if (status === '3' || statusText === '已截止') {
-    return 'status-ended';
-  } else {
-    return 'status-default';
+  // 根据DB schema: 0-招募中, 1-已满员, 2-已结束, 3-已解散
+  switch (status) {
+    case '0':
+      return 'status-recruiting'; // 蓝色系
+    case '1':
+      return 'status-ended'; // 红色系，表示已满
+    case '2':
+      return 'status-completed'; // 绿色系
+    case '3':
+      return 'status-ended'; // 红色系，表示已解散
+    default:
+      // 如果status不匹配，则根据文本进行降级判断
+      if (statusText === '招募中') return 'status-recruiting';
+      if (statusText === '已结束' || statusText === '已完成') return 'status-completed';
+      if (statusText === '已满员' || statusText === '已解散' || statusText === '已截止') return 'status-ended';
+      return 'status-default'; // 默认样式
   }
 });
 
@@ -191,8 +197,8 @@ const hasMembers = computed(() => {
 });
 
 const canJoin = computed(() => {
-  // 判断是否可以加入
-  return props.team.status === '0' || props.team.statusText === '招募中';
+  // 判断是否可以加入，仅当状态为招募中
+  return props.team.status === '0';
 });
 
 const hasProgress = computed(() => {

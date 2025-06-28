@@ -22,7 +22,7 @@
             </view>
           </view>
           <view class="edit-btn" @click="goToUserInfo">
-            <SvgIcon name="bianji">22</SvgIcon>
+            <SvgIcon name="bianji"></SvgIcon>
           </view>
         </view>
         <view class="user-stats">
@@ -109,6 +109,7 @@ import userApi from '@/api/modules/user';
 import store from '@/store';
 import SvgIcon from '@/components/SvgIcon.vue';
 import api from '@/api';
+import { logoutChat } from '@/utils/chatUtils';
 
 // 用户信息状态
 const userInfo = ref({
@@ -226,7 +227,9 @@ function logout() {
     content: '确定要退出登录吗？',
     success: function (res) {
       if (res.confirm) {
-       
+        // IM退出登录
+        logoutChat();
+        
         // 清除全局状态
         store.clearState();
       
@@ -243,7 +246,7 @@ function logout() {
           icon: 'success',
           success: () => {
             setTimeout(() => {
-              uni.redirectTo({
+              uni.reLaunch({
                 url: '/pages/login/login'
               });
             }, 1500);

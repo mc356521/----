@@ -135,6 +135,7 @@
 import { ref, reactive, onMounted, computed } from 'vue';
 import api from '@/api';
 import SvgIcon from '@/components/SvgIcon.vue';
+import { loginChat } from '@/utils/chatUtils';
 
 // 响应式状态
 const isRemember = ref(false);
@@ -388,6 +389,7 @@ async function handleLogin() {
       const userInfo = await api.user.getUserProfile();
       if (userInfo && userInfo.code === 200 && userInfo.data) {
         uni.setStorageSync('userId', userInfo.data.id); // 假设 userId 字段叫 id
+        loginChat()
       }
       // 登录成功，跳转到首页
       setTimeout(() => {

@@ -12,7 +12,7 @@
   
     
     <!-- 页面内容 -->
-    <scroll-view scroll-y class="content-scroll">
+    <view class="content-scroll">
       <!-- 轮播图 -->
       <view class="swiper-container">
         <swiper class="swiper animate__animated animate__fadeIn" 
@@ -161,7 +161,7 @@
           </view>
         </view>
       </view>
-    </scroll-view>
+    </view>
     
     <!-- 底部TabBar - 由自定义组件处理 -->
     <TabBar activeTab="home" />
@@ -213,6 +213,7 @@
 
 <script setup>
 import { ref, onMounted, watch, getCurrentInstance, computed, nextTick } from 'vue';
+import { onPullDownRefresh } from '@dcloudio/uni-app';
 import teamApi from '@/api/modules/team';
 import competitionsApi from '@/api/modules/competitions';
 import TeamCard from '@/components/team/TeamCard.vue';
@@ -259,9 +260,14 @@ const loadingRoles = ref(false);
 const aiAnalyzing = ref(false);
 const aiAnalyzingTexts = [
   '正在分析您的个人资料...',
+  '正在扫描您的竞赛历史...',
+  '正在分析您的项目经验...',
+  '正在评估您的技术栈偏好...',
+  '正在分析您的活跃时间和协作习惯...',
+  '正在比对全平台用户的匿名数据...',
   '正在匹配与您技能相符的队伍...',
-  '正在计算兴趣匹配度...',
-  '正在生成个性化推荐...'
+  '最后润色，即将完成...',
+  '即将为您呈现最佳匹配结果...'
 ];
 let aiAnalyzingTimer = null;
 const currentTextIndex = ref(0);
@@ -292,12 +298,44 @@ onMounted(() => {
   Promise.all([
     getTeamList(),
     getCompetitionsList(),
-    getRecommendedTeams() // 提前预加载AI推荐数据
+    // getRecommendedTeams() // 不在此处预加载，在用户点击时再决定是否加载
   ]).then(() => {
     console.log('所有数据加载完成');
   }).catch(err => {
     console.error('数据加载出错:', err);
   });
+});
+
+onPullDownRefresh(async () => {
+  console.log('触发下拉刷新');
+  try {
+    // 为了确保获取最新数据，在刷新时可以主动清除AI推荐的缓存
+    uni.removeStorageSync('ai_recommend_cache_time');
+    uni.removeStorageSync('ai_recommended_teams');
+    uni.removeStorageSync('ai_summary');
+    console.log('下拉刷新：已清除AI推荐缓存');
+    
+    // 并行请求新数据
+    await Promise.all([
+      getTeamList(),
+      getCompetitionsList(),
+      getRecommendedTeams()
+    ]);
+    
+    uni.showToast({
+      title: '刷新成功',
+      icon: 'none'
+    });
+  } catch (error) {
+    console.error('下拉刷新失败:', error);
+    uni.showToast({
+      title: '刷新失败，请稍后重试',
+      icon: 'none'
+    });
+  } finally {
+    // 无论成功还是失败，都停止下拉刷新动画
+    uni.stopPullDownRefresh();
+  }
 });
 
 // 获取热门竞赛数据
@@ -672,7 +710,7 @@ watch(showApplyModal, (newVal) => {
 });
 
 // 显示AI推荐弹窗
-function showAiRecommendPopup() {
+async function showAiRecommendPopup() {
   // 检查用户是否已登录
   const token = uni.getStorageSync('token');
   if (!token) {
@@ -692,101 +730,97 @@ function showAiRecommendPopup() {
     return;
   }
 
-  // 获取用户是否已点击过AI推荐的状态
-  const hasClickedAiRecommend = store.getState('hasClickedAiRecommend');
+  // 获取会话状态和缓存信息
+  const hasAnalyzed = store.getState('hasAnalyzedInSession');
+  const cachedTeams = uni.getStorageSync('ai_recommended_teams');
+  const cachedTime = uni.getStorageSync('ai_recommend_cache_time');
+  const CACHE_VALID_DURATION = 5 * 60 * 60 * 1000; // 5小时
+  const isCacheValid = cachedTime && cachedTeams && (Date.now() - Number(cachedTime) < CACHE_VALID_DURATION);
   
-  // 如果已经点击过，直接跳转到推荐页面
-  if (hasClickedAiRecommend) {
-    console.log('用户已点击过AI推荐，直接跳转到推荐页面');
+  // 场景A: 本会话已分析过，直接跳转
+  if (hasAnalyzed) {
+      console.log("AI推荐：本会话已分析，直接跳转");
     navigateToAiRecommend();
     return;
   }
   
-  console.log('用户首次点击AI推荐，显示分析动画');
-  
-  // 显示分析动画
+  // 场景B: 缓存有效，但本会话未分析过 -> 播放假动画
+  if (isCacheValid) {
+      console.log("AI推荐：缓存有效，模拟分析动画后跳转");
   aiAnalyzing.value = true;
   currentTextIndex.value = 0;
+      if (aiAnalyzingTimer) clearInterval(aiAnalyzingTimer);
+      
+      let textIndex = 0;
+      uni.showLoading({ title: aiAnalyzingTexts[textIndex], mask: true });
   
-  // 使用uni.showLoading来显示加载状态
-  uni.showLoading({
-    title: aiAnalyzingTexts[currentTextIndex.value],
-    mask: true
-  });
-  
-  // 清除现有定时器
-  if (aiAnalyzingTimer) {
+      aiAnalyzingTimer = setInterval(() => {
+          textIndex++;
+          if (textIndex >= aiAnalyzingTexts.length) {
+              // 动画播放完毕
     clearInterval(aiAnalyzingTimer);
-    aiAnalyzingTimer = null;
+              uni.hideLoading();
+              aiAnalyzing.value = false;
+              store.updateState('hasAnalyzedInSession', true); // 设置会话状态
+              navigateToAiRecommend();
+          } else {
+              uni.showLoading({ title: aiAnalyzingTexts[textIndex], mask: true });
+          }
+      }, 1500);
+      return;
   }
   
-  // 设置定时器切换文本并更新loading提示
+  // 场景C: 缓存无效 -> 播放真动画并请求数据
+  console.log('AI推荐：缓存无效，执行真实请求');
+  aiAnalyzing.value = true;
+  currentTextIndex.value = 0;
+  if (aiAnalyzingTimer) clearInterval(aiAnalyzingTimer);
+
+  uni.showLoading({ title: aiAnalyzingTexts[currentTextIndex.value], mask: true });
   aiAnalyzingTimer = setInterval(() => {
     currentTextIndex.value = (currentTextIndex.value + 1) % aiAnalyzingTexts.length;
-    
-    // 使用uni.showLoading更新提示文本
-    uni.showLoading({
-      title: aiAnalyzingTexts[currentTextIndex.value],
-      mask: true
-    });
-    
-    // 最后一个文本时停止动画，显示结果
-    if (currentTextIndex.value === aiAnalyzingTexts.length - 1) {
-      setTimeout(() => {
+      uni.showLoading({ title: aiAnalyzingTexts[currentTextIndex.value], mask: true });
+  }, 1500);
+
+  try {
+      await getRecommendedTeams(); // 该函数内部会请求并缓存新数据
+      
         clearInterval(aiAnalyzingTimer);
         aiAnalyzingTimer = null;
-        
-        // 隐藏loading
         uni.hideLoading();
+      aiAnalyzing.value = false;
+      store.updateState('hasAnalyzedInSession', true); // 设置会话状态
         
-        // 标记用户已经点击过AI推荐
-        store.updateState('hasClickedAiRecommend', true);
-        
-        // 显示分析完成提示
         uni.showToast({
           title: '分析完成',
           icon: 'success',
           duration: 1000
         });
         
-        // 延迟后导航到推荐页面
-        setTimeout(() => {
-          navigateToAiRecommend();
-        }, 1000);
-      }, 1500);
-    }
-  }, 1500);
-}
+      setTimeout(navigateToAiRecommend, 1000);
 
-// 关闭AI推荐弹窗
-function closeAiRecommendPopup() {
-  console.log('关闭AI推荐分析');
-  
-  // 清除定时器
-  if (aiAnalyzingTimer) {
+  } catch (error) {
+      console.error('获取AI推荐失败:', error);
     clearInterval(aiAnalyzingTimer);
     aiAnalyzingTimer = null;
-  }
-  
-  // 隐藏loading
   uni.hideLoading();
-  
-  // 重置分析状态
   aiAnalyzing.value = false;
-  currentTextIndex.value = 0;
+      uni.showToast({
+          title: '推荐服务繁忙，请稍后重试',
+          icon: 'none'
+      });
 }
-
-// 查看推荐队伍详情
-function viewRecommendedTeam(id) {
-  // 不再需要关闭弹窗
-  viewDetail('team', id);
 }
 
 // 重置AI推荐状态（开发测试用）
 function resetAiRecommendForTesting() {
   console.log('重置AI推荐状态（开发测试用）');
-  // 调用store中的重置方法
-  store.resetAiRecommendState();
+  // 清除本地缓存
+  uni.removeStorageSync('ai_recommended_teams');
+  uni.removeStorageSync('ai_summary');
+  uni.removeStorageSync('ai_recommend_cache_time');
+  // 重置会话状态
+  store.updateState('hasAnalyzedInSession', false);
   
   // 重置本地状态
   aiAnalyzing.value = false;
@@ -800,7 +834,7 @@ function resetAiRecommendForTesting() {
   
   // 显示提示
   uni.showToast({
-    title: '已重置AI推荐状态',
+    title: '已重置AI推荐缓存和会话状态',
     icon: 'success',
     duration: 1500
   });

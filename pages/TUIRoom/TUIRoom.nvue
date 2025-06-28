@@ -32,10 +32,10 @@ async function getUserInfo() {
 // 检查房间是否存在
 async function checkRoomExists(roomId) {
     try {
-        const adminkey="eJwtjF0LgjAYRv-LrsOW23QIXXRhgUSlGUh0I2zVi19rrhFF-72lXj7nPJwPyrdHz0qNIuR7GM2GDUK2Bq4w4FI00EJvdGk6PR16UZVKgUDRIsAYc079cDTypUBLxxljvlMjNdD8WUg5w4QwPlXg5vp50p2lKtZ7XCSVzlaPmNMgfqo7uczfti52fNOH2cHW6Sldou8PkNU1Qw__"
+        const adminkey="eJwtzNEKgjAYBeB32W1hv6HThC6K7jKSVaLerbbkJ3RzGxFE795QL893DudLrvkleEtDMrIOgCzHjEL2Dp84Mhcd9mid4U6ZeWDFi2uNgmQhBYBNBDSdGoed9JrEHsOU0knlR6PxTiFKAeYPbP174Wyd9111bKqhXQG7DwdW34qHS2IrmTyX5U4p2C8GPG3J7w8H3zTX*pq-eSHKx67xSUFvc8ZtBXLBV9et3bA1N8flSRwq6R3MyPcHP2wz8Q__"
         
         const response = await uni.request({
-            url: `https://console.tim.qq.com/v4/room_engine_http_srv/get_room_info?sdkappid=1600088427&identifier=administrator&usersig=${adminkey}&random=99999999&contenttype=json`,
+            url: `https://console.tim.qq.com/v4/room_engine_http_srv/get_room_info?sdkappid=1600094068&identifier=administrator&usersig=${adminkey}&random=99999999&contenttype=json`,
             method: 'POST',
             data: {
                 RoomId: roomId
@@ -84,20 +84,23 @@ onMounted(async () => {
         // 确保用户ID是字符串类型且不为空
         let userid = '';
         if (userInfo && userInfo.id) {
-            userid = String(userInfo.id);
-        } 
+            userid = String(userInfo.id); // TODO: 应该为 String(userInfo.id)
+        } else {
+            // 测试目的，如果获取不到用户信息，默认使用 administrator
+            userid = "administrator";
+        }
 
         // 生成用户签名
         const {userSig} = genTestUserSig({
-            SDKAppID: 1600089635,
+            SDKAppID: 1600094068,
             userID: userid,
-            secretKey: 'e0b01fef05f7f7b644b7c374bf26ae5a9afc88853a4817fc18494fc2a1f56540'
+            secretKey: '763dc0b66ff840de47ef5ee2394ce2bce72236530f78dad5e85dc9a37866b858'
         });
         console.log("用户ID是"+userid+"，签名是"+userSig);
 
         // 登录
         await conference.login({    
-            sdkAppId: 1600089635,
+            sdkAppId: 1600094068,
             userId: userid,
             userSig: userSig, 
         });

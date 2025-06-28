@@ -95,13 +95,19 @@
           </view>
           
           <button 
-            class="apply-btn" 
-            :class="role.currentCount >= role.requiredCount ? 'disabled-btn' : 'active-btn'"
-            :disabled="role.currentCount >= role.requiredCount"
+            v-if="isTeamRecruiting && role.currentCount < role.requiredCount"
+            class="apply-btn active-btn"
             @click="applyRole(role.id)"
           >
-            <SvgIcon name="chuangjianduiwu" size="30" v-if="role.currentCount < role.requiredCount" />
-            申请加入
+            <SvgIcon name="chuangjianduiwu" size="20" />
+            <text>申请加入</text>
+          </button>
+          <button
+            v-else
+            class="apply-btn disabled-btn"
+            disabled
+          >
+            {{ isTeamRecruiting ? '已满员' : teamInfo.statusText }}
           </button>
         </view>
       </view>
@@ -128,7 +134,7 @@
     <view class="info-card" v-if="teamInfo.teachers && teamInfo.teachers.length > 0">
       <text class="section-header">指导老师</text>
       <view class="member-grid">
-        <view class="member-item" v-for="(teacher, index) in teamInfo.teachers" :key="index" @click="viewUserProfile(teacher.userId)">
+        <view class="member-item" v-for="(teacher, index) in teamInfo.teachers" :key="index" @click="viewUserProfile(teacher.id)">
           <image class="member-avatar" :src="teacher.avatarUrl || defaultAvatar"></image>
           <text class="member-name">{{teacher.name}}</text>
           <text v-if="teacher.major" class="teacher-major">{{teacher.major}}</text>
@@ -189,6 +195,10 @@ export default {
   },
   
   computed: {
+    isTeamRecruiting() {
+      // 仅当状态为'0'(招募中)时，队伍才算在招募
+      return this.teamInfo.status === '0';
+    },
     hasAvailableRoles() {
       if (!this.teamInfo.roles) return false;
       return this.teamInfo.roles.some(role => role.currentCount < role.requiredCount);
@@ -252,7 +262,9 @@ export default {
       switch (status) {
         case '0': return 'status-recruiting';
         case '1': return 'status-filled';
-        case '2': return 'status-disbanded';
+        case '2': return 'status-ended';
+        case '3': return 'status-disbanded';
+        case '4': return 'status-ongoing';
         default: return 'status-recruiting';
       }
     },
@@ -262,6 +274,8 @@ export default {
         case '0': return 'icon-check-circle';
         case '1': return 'icon-hourglass';
         case '2': return 'icon-times-circle';
+        case '3': return 'icon-hourglass';
+        case '4': return 'icon-hourglass';
         default: return 'icon-check-circle';
       }
     },
@@ -570,7 +584,7 @@ export default {
     viewUserProfile(userId) {
       if (!userId) {
         uni.showToast({
-          title: '无法获取用户ID',
+          title: '无法获取该用户的ID',
           icon: 'none'
         });
         return;
@@ -678,7 +692,7 @@ export default {
   padding: 6rpx 40rpx;
   border-radius: 30rpx;
   font-size: 24rpx;
-  margin-left: 90px;
+  margin-left: 80px;
 }
 
 .status-recruiting {
@@ -689,6 +703,16 @@ export default {
 .status-filled {
   background-color: #FEF3C7;
   color: #F59E0B;
+}
+
+.status-ongoing {
+  background-color: #E0E7FF;
+  color: #4338CA;
+}
+
+.status-ended {
+  background-color: #F1F5F9;
+  color: #475569;
 }
 
 .status-disbanded {
@@ -716,7 +740,7 @@ export default {
 }
 
 .leader-name {
-  font-size: 30rpx;
+  font-size: 28rpx;
   font-weight: bold;
   color: #1E293B;
   text-shadow: 0 1rpx 2rpx rgba(0,0,0,0.1);
@@ -874,6 +898,10 @@ export default {
   border-radius: 40rpx;
   font-size: 28rpx;
   font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
 }
 
 .active-btn {

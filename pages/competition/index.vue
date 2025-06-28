@@ -494,6 +494,11 @@ export default {
         if (res && res.code === 200 && res.data) {
           let competitionData = Array.isArray(res.data.list) ? res.data.list : [];
           
+          // 为每个竞赛对象添加statusText
+          competitionData.forEach(comp => {
+            comp.statusText = this.getStatusText(comp.status);
+          });
+          
           // 获取每个竞赛的团队数量
           if (competitionData.length > 0) {
             await Promise.all(competitionData.map(async (competition) => {
@@ -776,6 +781,22 @@ export default {
       if (this.selectedSort) count++;
       if (this.onlyHot) count++;
       return count;
+    },
+    
+    // 获取状态文本
+    getStatusText(status) {
+      switch(status) {
+        case '0':
+          return '未开始';
+        case '1':
+          return '报名中';
+        case '2':
+          return '进行中';
+        case '3':
+          return '已结束';
+        default:
+          return '未知状态';
+      }
     }
   }
 }
